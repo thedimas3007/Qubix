@@ -1,6 +1,8 @@
 #ifndef TERRACOTTA_CONFIGURATION_H
 #define TERRACOTTA_CONFIGURATION_H
 
+#include <Wire.h>
+
 #define EXT_I2C_SDA     6
 #define EXT_I2C_SCL     7
 

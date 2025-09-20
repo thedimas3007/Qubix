@@ -3,6 +3,7 @@
 #include <RadioLib.h>
 
 #include "configuration.h"
+#include "Consolas_Regular6pt7b.h"
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI);
 
@@ -13,6 +14,33 @@ void setFlag() {
     if (!enableInterrupt) return;
     receivedFlag = true;
 }
+
+String utf8(const String& s) {
+    String out;
+    out.reserve(s.length());
+
+    for (uint16_t i = 0, k = s.length(); i < k; ) {
+        uint8_t c = s[i++];
+
+        if ((c == 0xD0 || c == 0xD1) && i < k) {
+            uint8_t x = s[i++];
+
+            if (c == 0xD0) {
+                if (x == 0x81)      c = 0xA8;
+                else if (x >= 0x90) c = x + 0x30;
+                else                c = x;
+            } else {
+                if (x == 0x91)      c = 0xB8;
+                else if (x <= 0x8F) c = x + 0x70;
+                else                c = x;
+            }
+        }
+
+        out += (char)c;
+    }
+    return out;
+}
+
 
 String buffer = "";
 
@@ -29,10 +57,12 @@ void setup() {
     display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
 #endif
 
+    display.cp437();
     display.setTextColor(DISPLAY_FG);
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.println("Loading radio...");
+    display.println("Hello world...");
+    display.println(utf8("Димасик любит пивасик"));
     display.display();
 
     int state = radio.begin(868.0, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 1.6, false);
