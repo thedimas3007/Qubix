@@ -37,4 +37,4 @@ Adafruit_SSD1306 display(128, 64, &extI2C, -1);
 #define DISPLAY_BG SSD1306_BLACK
 #endif
 
-#endif //TERRACOTTA_CONFIGURATION_H
+#endif

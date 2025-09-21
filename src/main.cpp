@@ -3,7 +3,6 @@
 #include <RadioLib.h>
 
 #include "configuration.h"
-#include "Consolas_Regular6pt7b.h"
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI);
 
@@ -113,6 +112,9 @@ void loop() {
             buffer += c;
         }
 
+        if (c != 0) {
+            printf("%c\t0x%02x\n", c, c);
+        }
         display.clearDisplay();
         display.setCursor(0, 0);
         display.print(buffer);
@@ -143,7 +145,5 @@ void loop() {
 
         enableInterrupt = true;
     }
-
-    // delay(1);
 #endif
 }
