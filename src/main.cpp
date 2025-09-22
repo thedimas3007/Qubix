@@ -5,6 +5,7 @@
 
 #include "configuration.h"
 #include "keycodes.h"
+#include "ui_core.h"
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI);
 
@@ -44,7 +45,6 @@ String utf8(const String& s) {
 
 String buffer = "";
 
-#define MAX_ELEMENTS 6 // elements per page
 std::vector<String> menus = {
     "Home",
     "Chats",
@@ -102,55 +102,32 @@ void setup() {
     delay(1000);
 }
 
-int16_t start = 0;
-int16_t menu_pointer = 0;
+Root root = Root({
+    new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
+    new Label("Menu"),
+    new MenuView("Elements", {
+        new Label("Test1"),
+        new Label("Test2"),
+        new Label("Test3"),
+        new Label("Test4"),
+        new Label("Test5"),
+        new Label("Test6"),
+        new Label("Test7"),
+    })
+});
 
 void loop() {
-    const int16_t n = menus.size();
-    if (n <= 0) return;
-
-    const int16_t window_size = min<int16_t>(MAX_ELEMENTS, n);
-
     extI2C.requestFrom(KEYBOARD_ADDRESS, 1);
     while (extI2C.available()) {
         char c = extI2C.read();
         if (c == 0) continue;
-
-        if (c == KEY_UP) {
-            menu_pointer = (menu_pointer - 1 + n) % n;
-        } else if (c == KEY_DOWN) {
-            menu_pointer = (menu_pointer + 1) % n;
-        }
-
-        const int margin = 1;
-        int end_ex = start + window_size;
-        if (end_ex > n) end_ex = n;
-
-        if (menu_pointer < start + margin) {
-            start = menu_pointer - margin;
-            if (start < 0) start = 0;
-        } else if (menu_pointer >= end_ex - margin) {
-            start = menu_pointer - (window_size - 1 - margin);
-            if (start < 0) start = 0;
-        }
-
-        Serial1.println(menu_pointer);
-    }
-
-    int end_ex = start + window_size;
-    if (end_ex > n) {
-        end_ex = n;
-        if (start > n - window_size) start = max(0, n - window_size);
+        root.update(c);
+        // Serial1.println(menu_pointer);
     }
 
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.println("\xAD\x99\x9A             \xAF \x9D\xA1\xA3");
-    display.println("Menu:");
-    for (int16_t i = start; i < end_ex; ++i) {
-        display.print(i == menu_pointer ? "\x1A" : " ");
-        display.println(menus[i]);
-    }
+    root.render(&display, false);
     display.display();
 }
 
