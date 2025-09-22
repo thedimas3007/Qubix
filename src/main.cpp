@@ -7,6 +7,15 @@
 #include "keycodes.h"
 #include "ui_core.h"
 
+MbedI2C extI2C(EXT_I2C_SDA, EXT_I2C_SCL);
+MbedSPI extSPI(EXT_SPI_MISO, EXT_SPI_MOSI, EXT_SPI_SCK);
+
+#ifdef TARGET_SH1106
+Adafruit_SH1106G display(128, 64, &extI2C, -1);
+#elif defined(TARGET_SSD1306)
+Adafruit_SSD1306 display(128, 64, &extI2C, -1);
+#endif
+
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI);
 
 volatile bool receivedFlag = false;
@@ -62,7 +71,7 @@ void setup() {
     display.setTextColor(DISPLAY_FG);
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.println("Hello world...");
+    display.println("Loading radio...");
     display.display();
 
     int state = radio.begin(868.0, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 1.6, false);
@@ -99,6 +108,8 @@ Stack root = Stack({
         new MenuView("Status"),
         new MenuView("Debug"),
         new MenuView("Power"),
+        new MenuView("About"),
+        new MenuView("Status"),
     })
 });
 

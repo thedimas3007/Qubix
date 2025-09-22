@@ -6,8 +6,6 @@
 #ifndef TERRACOTTA_UI_CORE_H
 #define TERRACOTTA_UI_CORE_H
 
-#define MAX_MENU_ELEMENTS 7 // elements per page
-
 class UIElement {
 public:
     virtual ~UIElement() = default;
@@ -37,19 +35,18 @@ public:
 class MenuView : public UIElement {
     UIElement* selected = nullptr;
     std::vector<UIElement*> children;
+    const uint8_t max_elements;
 
     int16_t start = 0;
     int16_t pointer = 0;
-    int16_t end = min(children.size(), MAX_MENU_ELEMENTS);
-    const int16_t window_size = min(children.size(), MAX_MENU_ELEMENTS);
-    const int margin = 0;
-
+    int16_t end = min(children.size(), max_elements);
+    const int16_t window_size = min(children.size(), max_elements);
     void checkPointer();
 public:
     String title;
 
-    MenuView(String title, std::initializer_list<UIElement*> children = {})
-        : children(children), title(std::move(title)) {}
+    MenuView(String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6)
+        : children(children), max_elements(max_elements), title(std::move(title)) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     bool update(char key) override;

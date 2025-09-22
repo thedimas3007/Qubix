@@ -1,5 +1,6 @@
 #include "ui_core.h"
 
+#include "configuration.h"
 #include "keycodes.h"
 
 bool UIElement::update(char key) {
@@ -26,7 +27,7 @@ void MenuView::checkPointer() {
     if (pointer < start) {
         start = pointer;
     } else if (pointer >= min(start + window_size, children.size())) {
-        start = pointer - (window_size - 1); if (start < 0) start = 0;
+        start = max(0, pointer - (window_size - 1));
     }
 }
 
@@ -106,7 +107,10 @@ void NumberPicker::render(Adafruit_GFX* display, bool minimalized) { // Minimali
 }
 
 void NumberPicker::renderInline(Adafruit_GFX* display) {
-    display->println(text + " >" + number + "<");
+    display->print(text + " ");
+    display->setTextColor(DISPLAY_BG, DISPLAY_FG);
+    display->println(number);
+    display->setTextColor(DISPLAY_FG, DISPLAY_BG);
 }
 
 bool NumberPicker::update(char key) {

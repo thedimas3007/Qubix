@@ -18,21 +18,21 @@
 #define DISPLAY_ADDRESS 0x3C
 #define KEYBOARD_ADDRESS 0x5F
 
-MbedI2C extI2C(6, 7);
-MbedSPI extSPI(4, 3, 2);
+extern MbedI2C extI2C;
+extern MbedSPI extSPI;
 
 
 // Display type (automatically configured)
 #ifdef TARGET_SH1106
 #include <Adafruit_SH110X.h>
-Adafruit_SH1106G display(128, 64, &extI2C, -1);
+extern Adafruit_SH1106G display;
 #define DISPLAY_FG SH110X_WHITE
 #define DISPLAY_BG SH110X_BLACK
 #endif
 
 #ifdef TARGET_SSD1306
 #include <Adafruit_SSD1306.h>
-Adafruit_SSD1306 display(128, 64, &extI2C, -1);
+extern Adafruit_SSD1306 display
 #define DISPLAY_FG SSD1306_WHITE
 #define DISPLAY_BG SSD1306_BLACK
 #endif
