@@ -45,19 +45,6 @@ String utf8(const String& s) {
 
 String buffer = "";
 
-std::vector<String> menus = {
-    "Home",
-    "Chats",
-    "Settings",
-    "Tools",
-    "Status",
-    "Debug",
-    "Scanner",
-    "Poweroff"
-};
-
-
-
 void setup() {
     Serial1.begin(115200);
     extI2C.begin();
@@ -102,17 +89,16 @@ void setup() {
     delay(1000);
 }
 
-Root root = Root({
+Stack root = Stack({
     new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
-    new Label("Menu"),
-    new MenuView("Elements", {
-        new Label("Test1"),
-        new Label("Test2"),
-        new Label("Test3"),
-        new Label("Test4"),
-        new Label("Test5"),
-        new Label("Test6"),
-        new Label("Test7"),
+    new MenuView("Radio", {
+        new NumberPicker("Frequency"),
+        new MenuView("Presets"),
+        new MenuView("Settings"),
+        new MenuView("Tools"),
+        new MenuView("Status"),
+        new MenuView("Debug"),
+        new MenuView("Power"),
     })
 });
 

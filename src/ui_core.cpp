@@ -7,21 +7,22 @@ bool UIElement::update(char key) {
 }
 
 
-void Root::render(Adafruit_GFX* display, bool minimalized) {
+void Stack::render(Adafruit_GFX* display, bool minimalized) {
     for (auto &i : children) {
         i->render(display, false);
     }
 }
 
-bool Root::update(char key) {
+bool Stack::update(char key) {
+    bool updated = false;
     for (auto &i : children) {
-        if (i->update(key)) return true;
+        if (i->update(key)) updated = true;
     }
-    return false;
+    return updated;
 }
 
 
-void MenuView::check_pointer() {
+void MenuView::checkPointer() {
     if (pointer < start) {
         start = pointer;
     } else if (pointer >= min(start + window_size, children.size())) {
@@ -36,15 +37,15 @@ bool MenuView::update(char key) {
 
         if (key == KEY_UP) {
             pointer = (pointer - 1 + n) % n;
-            check_pointer();
+            checkPointer();
             return true;
         } if (key == KEY_DOWN) {
             pointer = (pointer + 1) % n;
-            check_pointer();
+            checkPointer();
             return true;
-        } if (key == KEY_RIGHT) {
+        } if (key == KEY_RIGHT || key == KEY_ENTER) {
             selected = children[pointer];
-            check_pointer();
+            checkPointer();
             return true;
         }
 
@@ -54,7 +55,7 @@ bool MenuView::update(char key) {
             return true;
         }
 
-        if (key == KEY_LEFT) {
+        if (key == KEY_LEFT || key == KEY_ESC) {
             selected = nullptr;
             return true;
         }
@@ -71,18 +72,59 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
         if (minimalized) {
             display->println(title);
         } else {
+            display->println(title);
             for (int16_t i = start; i < last; ++i) {
                 display->print(i == pointer ? "\x1A" : " ");
                 children[i]->render(display, true);
             }
         }
     } else {
-        selected->render(display, false);
+        if (selected->isInline()) {
+            display->println(title);
+            for (int16_t i = start; i < last; ++i) {
+                display->print(i == pointer ? "\x1A" : " ");
+                if (children[i] == selected) {
+                    static_cast<UIInline*>(children[i])->renderInline(display);
+                } else {
+                    children[i]->render(display, true);
+                }
+            }
+
+        } else {
+            selected->render(display, false);
+        }
     }
 }
 
 
 void Label::render(Adafruit_GFX* display, bool minimalized) {
     display->println(text);
+}
+
+void NumberPicker::render(Adafruit_GFX* display, bool minimalized) { // Minimalized is
+    display->println(text + "  " + number);
+}
+
+void NumberPicker::renderInline(Adafruit_GFX* display) {
+    display->println(text + " >" + number + "<");
+}
+
+bool NumberPicker::update(char key) {
+    switch (key) {
+        case KEY_UP:
+            number += 1;
+            return true;
+        case KEY_DOWN:
+            number -= 1;
+            return true;
+        case KEY_RIGHT:
+            number += 10;
+            return true;
+        case KEY_LEFT:
+            number -= 10;
+            return true;
+        default:
+            return false;
+    }
 }
 
