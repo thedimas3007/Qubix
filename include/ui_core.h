@@ -61,17 +61,30 @@ public:
     void render(Adafruit_GFX* display, bool minimalized) override;
 };
 
+// TODO:
+// Number output format maybe
+// Step
 class NumberPicker : public UIInline {
-    int16_t number = 0;
+    uint8_t getDigits() const;
+
+    typedef int32_t num_t;
+
+    num_t number = 0;
+    int8_t pointer;
+    const num_t minimum;
+    const num_t maximum;
+    const num_t step;
+    const uint8_t scale;
 public:
     String text;
 
-    explicit NumberPicker(String text)
-        : text(std::move(text)) {};
+    explicit NumberPicker(String text, num_t def = 0, num_t step = 1, num_t min = 0, num_t max = 0, uint8_t scale = 1, int8_t pointer = 0)
+        : number(def), pointer(pointer), minimum(min), maximum(max), step(step), scale(scale), text(std::move(text)) {};
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;
     bool update(char key) override;
 };
+
 
 #endif

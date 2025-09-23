@@ -101,15 +101,18 @@ void setup() {
 Stack root = Stack({
     new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
     new MenuView("Radio", {
-        new NumberPicker("Frequency"),
         new MenuView("Presets"),
-        new MenuView("Settings"),
+        new MenuView("Settings", {
+                new NumberPicker("Frequency", 868000, 150, 868000, 915000, 3, 2),
+        }),
         new MenuView("Tools"),
         new MenuView("Status"),
         new MenuView("Debug"),
         new MenuView("Power"),
         new MenuView("About"),
-        new MenuView("Status"),
+        new MenuView("Status", {
+            // new Label("Frequency: " + radio.get)
+        }),
     })
 });
 

@@ -102,33 +102,69 @@ void Label::render(Adafruit_GFX* display, bool minimalized) {
     display->println(text);
 }
 
-void NumberPicker::render(Adafruit_GFX* display, bool minimalized) { // Minimalized is
-    display->println(text + "  " + number);
+uint8_t NumberPicker::getDigits() const {
+    if (number > 0) {
+        return log10(number) + 1;
+    }
+    if (number < 0) {
+        return log10(-number) + 1;
+    }
+    return 1; // for zeros
+}
+
+void NumberPicker::render(Adafruit_GFX* display, bool minimalized) {
+    display->print(text + " ");
+    if (number < 0) display->print("-");
+
+    num_t num_copy = abs(number);
+    for (uint8_t i = getDigits(); i > 0; i--) {
+        if (i == scale) display->print(".");
+        num_t digit = num_copy / pow(10, i-1);
+        num_copy -= digit * pow(10, i-1);
+        display->print(digit);
+    }
 }
 
 void NumberPicker::renderInline(Adafruit_GFX* display) {
     display->print(text + " ");
-    display->setTextColor(DISPLAY_BG, DISPLAY_FG);
-    display->println(number);
+    if (number < 0) display->print("-");
+
+    num_t num_copy = abs(number);
+    for (uint8_t i = getDigits(); i > 0; i--) {
+        if (i == scale) display->print(".");
+
+        if (i == pointer+1) display->setTextColor(DISPLAY_BG, DISPLAY_FG);
+        else                display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+        num_t digit = num_copy / pow(10, i-1);
+        num_copy -= digit * pow(10, i-1);
+        display->print(digit);
+        display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+    }
     display->setTextColor(DISPLAY_FG, DISPLAY_BG);
 }
 
 bool NumberPicker::update(char key) {
-    switch (key) {
-        case KEY_UP:
-            number += 1;
-            return true;
-        case KEY_DOWN:
-            number -= 1;
-            return true;
-        case KEY_RIGHT:
-            number += 10;
-            return true;
-        case KEY_LEFT:
-            number -= 10;
-            return true;
-        default:
-            return false;
+    if (key == KEY_UP) {
+        number += pow(10, pointer);
+    } else if (key == KEY_DOWN) {
+        uint8_t digits = getDigits();
+        number -= pow(10, pointer);
+        if (digits > getDigits() && pointer == digits - 1 && pointer != 0) {
+            pointer--;
+        }
+    } else if (key == KEY_RIGHT) {
+        pointer--;
+        if (pointer < 0) {
+            pointer = getDigits() - 1;
+        }
+    } else if (key == KEY_LEFT) {
+        pointer++;
+        if (pointer >= getDigits()) {
+            pointer = 0;
+        }
+    } else {
+        return false;
     }
-}
 
+    return true;
+}
