@@ -21,9 +21,15 @@ public:
     virtual void renderInline(Adafruit_GFX* display) = 0;
 };
 
+
 class Stack : public UIElement {
     std::vector<UIElement*> children;
 public:
+    String title = "";
+
+    Stack(String title, std::initializer_list<UIElement*> children)
+        : children(children), title(std::move(title)) {}
+
     Stack(std::initializer_list<UIElement*> children)
         : children(children) {}
 
@@ -52,6 +58,7 @@ public:
     bool update(char key) override;
 };
 
+// TODO: Tab/Table Label, aka key-value
 class Label : public UIElement {
 public:
     explicit Label(String text)

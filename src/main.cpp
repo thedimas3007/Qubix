@@ -26,30 +26,22 @@ void setFlag() {
     receivedFlag = true;
 }
 
-String utf8(const String& s) {
-    String out;
-    out.reserve(s.length());
+String prettyValue(uint64_t value, const String symbol, uint8_t precision = 0, uint16_t per_kilo = 1000) {
+    String prefixes[] = {"", "K", "M", "G"};
+    int power = 0;
+    double scaled = static_cast<double>(value);
 
-    for (uint16_t i = 0, k = s.length(); i < k; ) {
-        char c = s[i++];
-
-        if ((c == 0xD0 || c == 0xD1) && i < k) {
-            char x = s[i++];
-
-            if (c == 0xD0) {
-                if (x == 0x81)      c = 0xA8;
-                else if (x >= 0x90) c = x + 0x30;
-                else                c = x;
-            } else {
-                if (x == 0x91)      c = 0xB8;
-                else if (x <= 0x8F) c = x + 0x70;
-                else                c = x;
-            }
-        }
-
-        out += c;
+    while (scaled >= per_kilo && power < 3) {
+        scaled /= per_kilo;
+        ++power;
     }
-    return out;
+
+    char fmt[16];
+    std::snprintf(fmt, sizeof(fmt), "%%.%uf", precision);
+
+    char numbuf[64];
+    std::snprintf(numbuf, sizeof(numbuf), fmt, scaled);
+    return numbuf + prefixes[power] + symbol;
 }
 
 String buffer = "";
@@ -106,13 +98,28 @@ Stack root = Stack({
                 new NumberPicker("Frequency", 868000, 150, 868000, 915000, 3, 2),
         }),
         new MenuView("Tools"),
-        new MenuView("Status"),
+        new MenuView("Status", {
+            new Label("Frequency"),
+            new Label("Bandwidth"),
+            new Label("Power"),
+            new Label("SF"),
+        }),
         new MenuView("Debug"),
         new MenuView("Power"),
-        new MenuView("About"),
-        new MenuView("Status", {
-            // new Label("Frequency: " + radio.get)
-        }),
+        new MenuView("Info", {
+            new MenuView("Device", {
+                new Label(String("MCU:   ") + HW_MCU),
+                new Label(String("Clock: ") + prettyValue(HW_F_CPU, "Hz", 0, 1000)),
+                new Label(String("RAM:   ") + prettyValue(HW_RAM_BYTES, "B", 0, 1024)),
+                new Label(String("Flash: ") + prettyValue(HW_FLASH_BYTES, "B", 0, 1024)),
+            }),
+            new MenuView("Libs", {
+                new Label("Work in progress")
+            }),
+            new MenuView("Radio", {
+                new Label("Work in progress")
+            })
+        })
     })
 });
 

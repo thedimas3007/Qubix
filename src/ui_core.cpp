@@ -9,8 +9,15 @@ bool UIElement::update(char key) {
 
 
 void Stack::render(Adafruit_GFX* display, bool minimalized) {
-    for (auto &i : children) {
-        i->render(display, false);
+    if (minimalized) {
+        display->println(title);
+    } else {
+        if (title != "") {
+            display->println(title);
+        }
+        for (auto &i : children) {
+            i->render(display, false);
+        }
     }
 }
 
