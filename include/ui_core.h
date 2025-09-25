@@ -37,7 +37,8 @@ public:
     bool update(char key) override;
 };
 
-/// Updatable children
+// TODO:
+// Updatable children
 class MenuView : public UIElement {
     UIElement* selected = nullptr;
     std::vector<UIElement*> children;
@@ -48,17 +49,23 @@ class MenuView : public UIElement {
     int16_t end = min(children.size(), max_elements);
     const int16_t window_size = min(children.size(), max_elements);
     void checkPointer();
+
 public:
+    char icon;
     String title;
 
+    MenuView(char icon, String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6)
+        : children(children), max_elements(max_elements), icon(icon), title(std::move(title)) {}
+
     MenuView(String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6)
-        : children(children), max_elements(max_elements), title(std::move(title)) {}
+        : children(children), max_elements(max_elements), icon(0x00), title(std::move(title)) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     bool update(char key) override;
 };
 
-// TODO: Tab/Table Label, aka key-value
+// TODO:
+// Tab/Table Label, aka key-value
 class Label : public UIElement {
 public:
     explicit Label(String text)
@@ -72,8 +79,6 @@ public:
 // Number output format maybe
 // Step
 class NumberPicker : public UIInline {
-    uint8_t getDigits() const;
-
     typedef int32_t num_t;
 
     num_t number = 0;
@@ -82,6 +87,8 @@ class NumberPicker : public UIInline {
     const num_t maximum;
     const num_t step;
     const uint8_t scale;
+
+    uint8_t getDigits() const;
 public:
     String text;
 
@@ -93,5 +100,17 @@ public:
     bool update(char key) override;
 };
 
+class CharTable : public UIElement {
+    const uint8_t max_lines = 5;
+    int8_t start = 0;
+public:
+    String text;
+
+    explicit CharTable(String text)
+        : text(std::move(text)) {};
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+    bool update(char key) override;
+};
 
 #endif

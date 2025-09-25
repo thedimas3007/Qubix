@@ -93,20 +93,17 @@ void setup() {
 Stack root = Stack({
     new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
     new MenuView("Radio", {
-        new MenuView("Presets"),
-        new MenuView("Settings", {
-                new NumberPicker("Frequency", 868000, 150, 868000, 915000, 3, 2),
+        new MenuView('\x8C', "Broadcast"),
+        new MenuView('\x8D', "Settings", {
+            new MenuView('\xAD', "Radio"),
+            new MenuView('\x95', "Display")
         }),
-        new MenuView("Tools"),
-        new MenuView("Status", {
-            new Label("Frequency"),
-            new Label("Bandwidth"),
-            new Label("Power"),
-            new Label("SF"),
+        new MenuView('*', "Tools"),
+        new MenuView('\x91', "Debug", {
+            new CharTable("Characters")
         }),
-        new MenuView("Debug"),
-        new MenuView("Power"),
-        new MenuView("Info", {
+        new MenuView('\x93', "Power"),
+        new MenuView('i', "Info", {
             new MenuView("Device", {
                 new Label(String("MCU:   ") + HW_MCU),
                 new Label(String("Clock: ") + prettyValue(HW_F_CPU, "Hz", 0, 1000)),
@@ -116,9 +113,6 @@ Stack root = Stack({
             new MenuView("Libs", {
                 new Label("Work in progress")
             }),
-            new MenuView("Radio", {
-                new Label("Work in progress")
-            })
         })
     })
 });
