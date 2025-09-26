@@ -147,12 +147,23 @@ void NumberPicker<T>::roundToPrecision() {
 
 template<class T>
 void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
-    display->print(text + " ");
+    String prefix = text;
+    if (icon) {
+        prefix = icon+prefix;
+    }
+    display->print(prefix);
 
     T v = getValue();
     if (v < 0) display->print("-");
 
     const uint8_t total = getDigits();
+
+    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length()); // 20 - characters per line available; 21 - 1 (arrow)
+
+    for (uint8_t i = 0; i < spaces; ++i) {
+        display->print(' ');
+    }
+
     const int64_t scale = pow10i(precision);
     int64_t scaled = static_cast<int64_t>(std::llround(getAbsoluteValue() * scale));
 
@@ -162,17 +173,28 @@ void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
         int digit = static_cast<int>((scaled / div) % 10);
         display->print(digit);
     }
-    display->println();
+    display->println(suffix);
 }
 
 template<class T>
 void NumberPicker<T>::renderInline(Adafruit_GFX* display) {
-    display->print(text + " ");
+    String prefix = text;
+    if (icon) {
+        prefix = icon+prefix;
+    }
+    display->print(prefix);
 
     T v = getValue();
     if (v < 0) display->print("-");
 
     const uint8_t total = getDigits();
+
+    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length()); // 20 - characters per line available; 21 - 1 (arrow)
+
+    for (uint8_t i = 0; i < spaces; ++i) {
+        display->print(' ');
+    }
+
     const int64_t scale = pow10i(precision);
     int64_t scaled = static_cast<int64_t>(std::llround(getAbsoluteValue() * scale));
 
@@ -190,7 +212,7 @@ void NumberPicker<T>::renderInline(Adafruit_GFX* display) {
         display->print(digit);
         display->setTextColor(DISPLAY_FG, DISPLAY_BG);
     }
-    display->println();
+    display->println(suffix);
 }
 
 template<class T>

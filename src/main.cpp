@@ -63,11 +63,11 @@ Stack root = Stack({
         new MenuView('\x8C', "Broadcast"),
         new MenuView('\x8D', "Settings", {
             new MenuView('\xAD', "Radio", {
-                new NumberPicker<float>("Freq", &settings.radio_frequency, 868.000, 915.000, 3, 3),
-                new NumberPicker<float>("Bandw", &settings.radio_bandwidth, 31.25, 500.00, 2, 2),
-                new NumberPicker<uint8_t>("SF", &settings.radio_sf, 5, 12),
-                new NumberPicker<uint8_t>("CR", &settings.radio_cr, 5, 8),
-                new NumberPicker<int8_t>("Power", &settings.radio_power, -15, 22),
+                new NumberPicker<float>('\x90', "Freq", "mHz", &settings.radio_frequency, 868.000, 915.000, 3, 3),
+                new NumberPicker<float>('\x1D', "Bandw", "kHz", &settings.radio_bandwidth, 31.25, 500.00, 2, 2),
+                new NumberPicker<uint8_t>('\x12', "SF", "", &settings.radio_sf, 5, 12),
+                new NumberPicker<uint8_t>('\xAF', "CR", "", &settings.radio_cr, 5, 8),
+                new NumberPicker<int8_t>('\x8C', "Power", "dBm", &settings.radio_power, -15, 22),
             }),
             new MenuView('\x95', "Display")
         }),

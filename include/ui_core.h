@@ -91,10 +91,15 @@ public:
     T getAbsoluteValue() const;
     T getValue() const;
 
+    char icon;
     String text;
+    String suffix;
+
+    NumberPicker(char icon, String text, String suffix, T* number, T min = 0, T max = 0, uint8_t precision = 0, int8_t cursor = 0)
+        : number(number), cursor(cursor), minimum(min), maximum(max), precision(precision), icon(icon), text(std::move(text)), suffix(std::move(suffix)) {};
 
     explicit NumberPicker(String text, T* number, T min = 0, T max = 0, uint8_t precision = 0, int8_t cursor = 0)
-        : number(number), cursor(cursor), minimum(min), maximum(max), precision(precision), text(std::move(text)) {};
+        : number(number), cursor(cursor), minimum(min), maximum(max), precision(precision), icon(0x00), text(std::move(text)), suffix("") {};
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;
