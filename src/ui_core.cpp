@@ -190,71 +190,54 @@ void NumberPicker<T>::roundToPrecision() {
 
 template<class T>
 void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
-    String prefix = text;
-    if (icon) {
-        prefix = icon+prefix;
-    }
-    display->print(prefix);
-
+    String prefix = icon ? (icon + text) : text;
     T v = getValue();
-    if (v < 0) display->print("-");
-
     const uint8_t total = getDigits();
-
-    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length()); // 20 - characters per line available; 21 - 1 (arrow)
-
-    for (uint8_t i = 0; i < spaces; ++i) {
-        display->print(' ');
-    }
-
+    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)); // 20 - characters per line available; 21 - 1 (arrow)
     const int64_t scale = pow10i(precision);
     int64_t scaled = static_cast<int64_t>(std::llround(getAbsoluteValue() * scale));
 
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) display->print(' ');
+    if (v < 0) display->print("-");
+
     for (int i = total; i >= 1; --i) {
-        if (i == precision) display->print(".");
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
+
+        if (i == precision) display->print(".");
         display->print(digit);
     }
+
     display->println(suffix);
 }
 
 template<class T>
 void NumberPicker<T>::renderInline(Adafruit_GFX* display) {
-    String prefix = text;
-    if (icon) {
-        prefix = icon+prefix;
-    }
-    display->print(prefix);
-
+    String prefix = icon ? (icon + text) : text;
     T v = getValue();
-    if (v < 0) display->print("-");
-
     const uint8_t total = getDigits();
-
-    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length()); // 20 - characters per line available; 21 - 1 (arrow)
-
-    for (uint8_t i = 0; i < spaces; ++i) {
-        display->print(' ');
-    }
-
+    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)); // 20 - characters per line available; 21 - 1 (arrow)
     const int64_t scale = pow10i(precision);
     int64_t scaled = static_cast<int64_t>(std::llround(getAbsoluteValue() * scale));
 
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) display->print(' ');
+    if (v < 0) display->print("-");
+
     for (int i = total; i >= 1; --i) {
-        if (i == precision) display->print(".");
-
-        if (i == cursor + 1) {
-            display->setTextColor(DISPLAY_BG, DISPLAY_FG);
-        } else {
-            display->setTextColor(DISPLAY_FG, DISPLAY_BG);
-        }
-
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
+
+        if (i == precision) display->print(".");
+
+        if (i == cursor + 1)    display->setTextColor(DISPLAY_BG, DISPLAY_FG);
+        else                    display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+
         display->print(digit);
         display->setTextColor(DISPLAY_FG, DISPLAY_BG);
     }
+
     display->println(suffix);
 }
 
