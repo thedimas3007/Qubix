@@ -6,6 +6,8 @@
 #ifndef TERRACOTTA_UI_CORE_H
 #define TERRACOTTA_UI_CORE_H
 
+#pragma region Base
+
 class UIElement {
 public:
     virtual ~UIElement() = default;
@@ -21,6 +23,9 @@ public:
     virtual void renderInline(Adafruit_GFX* display) = 0;
 };
 
+#pragma endregion
+
+#pragma region Stackers
 
 class Stack : public UIElement {
     std::vector<UIElement*> children;
@@ -64,8 +69,10 @@ public:
     bool update(char key) override;
 };
 
-// TODO:
-// Tab/Table Label, aka key-value
+#pragma endregion
+
+#pragma region Static
+
 class Label : public UIElement {
 public:
     explicit Label(String text)
@@ -74,6 +81,30 @@ public:
     String text;
     void render(Adafruit_GFX* display, bool minimalized) override;
 };
+
+template<class T>
+class Property : public UIElement {
+    T* ptr;
+    const char* format;
+public:
+    char icon;
+    String text;
+
+    Property(char icon, String text, T* ptr, const char* format = "%s")
+        : ptr(ptr), format(format), icon(icon), text(std::move(text)) {}
+
+    Property(String text, T* ptr, const char* format = "%s")
+        : ptr(ptr), format(format), icon(0x00), text(std::move(text)) {}
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+};
+template class Property<uint8_t>;
+template class Property<int8_t>;
+template class Property<float>;
+
+#pragma endregion
+
+#pragma region Inputs
 
 template<class T>
 class NumberPicker : public UIInline {
@@ -109,25 +140,9 @@ template class NumberPicker<uint8_t>;
 template class NumberPicker<int8_t>;
 template class NumberPicker<float>;
 
-template<class T>
-class Property : public UIElement {
-    T* ptr;
-    const char* format;
-public:
-    char icon;
-    String text;
+#pragma endregion
 
-    Property(char icon, String text, T* ptr, const char* format = "%s")
-        : ptr(ptr), format(format), icon(icon), text(std::move(text)) {}
-
-    Property(String text, T* ptr, const char* format = "%s")
-        : ptr(ptr), format(format), icon(0x00), text(std::move(text)) {}
-
-    void render(Adafruit_GFX* display, bool minimalized) override;
-};
-template class Property<uint8_t>;
-template class Property<int8_t>;
-template class Property<float>;
+#pragma region Other
 
 class CharTable : public UIElement {
     const uint8_t max_lines = 5;
@@ -141,5 +156,7 @@ public:
     void render(Adafruit_GFX* display, bool minimalized) override;
     bool update(char key) override;
 };
+
+#pragma endregion
 
 #endif

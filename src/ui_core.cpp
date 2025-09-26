@@ -4,10 +4,22 @@
 #include "configuration.h"
 #include "keycodes.h"
 
+static int64_t pow10i(uint8_t n) {
+    int64_t p = 1;
+    while (n--) p *= 10;
+    return p;
+}
+
+#pragma region UIElement
+
 bool UIElement::update(char key) {
     return false;
 }
 
+#pragma endregion
+
+
+#pragma region Stack
 
 void Stack::render(Adafruit_GFX* display, bool minimalized) {
     if (minimalized) {
@@ -30,6 +42,10 @@ bool Stack::update(char key) {
     return updated;
 }
 
+#pragma endregion
+
+
+#pragma region MenuView
 
 void MenuView::checkPointer() {
     if (cursor < start) {
@@ -105,16 +121,41 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
     }
 }
 
+#pragma endregion
+
+
+#pragma region Label
 
 void Label::render(Adafruit_GFX* display, bool minimalized) {
     display->println(text);
 }
 
-static int64_t pow10i(uint8_t n) {
-    int64_t p = 1;
-    while (n--) p *= 10;
-    return p;
+#pragma endregion
+
+
+#pragma region Property
+
+template <class T>
+void Property<T>::render(Adafruit_GFX* display, bool minimalized) {
+    char buf[16];
+    sprintf(buf, format, *ptr);
+
+    uint8_t spaces = 20 - (text.length() + strlen(buf)); // 20 - characters per line available; 21 - 1 (arrow)
+
+    if (icon) {
+        display->print(icon);
+    }
+    display->print(text);
+    for (uint8_t i = 0; i < spaces; i++) {
+        display->print(" ");
+    }
+    display->println(buf);
 }
+
+#pragma endregion
+
+
+#pragma region NumberPicker
 
 template<class T>
 uint8_t NumberPicker<T>::getDigits() const {
@@ -260,21 +301,10 @@ bool NumberPicker<T>::update(char key) {
     return true;
 }
 
-template <class T> void Property<T>::render(Adafruit_GFX* display, bool minimalized) {
-    char buf[16];
-    sprintf(buf, format, *ptr);
+#pragma endregion
 
-    uint8_t spaces = 20 - (text.length() + strlen(buf)); // 20 - characters per line available; 21 - 1 (arrow)
 
-    if (icon) {
-        display->print(icon);
-    }
-    display->print(text);
-    for (uint8_t i = 0; i < spaces; i++) {
-        display->print(" ");
-    }
-    display->println(buf);
-}
+#pragma region CharTable
 
 void CharTable::render(Adafruit_GFX* display, bool minimalized) {
     if (minimalized) {
@@ -315,3 +345,4 @@ bool CharTable::update(char key) {
     return true;
 }
 
+#pragma endregion
