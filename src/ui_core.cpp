@@ -199,16 +199,32 @@ bool NumberPicker<T>::update(char key) {
 
     if (key == KEY_UP) {
         T step = static_cast<T>(std::pow(10.0, static_cast<int>(cursor) - static_cast<int>(precision)));
-        *number += step;
+        T top = std::min(maximum, std::numeric_limits<T>::max());
+
+        if (top - step <= *number) {
+            *number = top;
+        } else {
+            *number += step;
+        }
         roundToPrecision();
-    } else if (key == KEY_DOWN) {
-        T before = *number;
-        T step = static_cast<T>(std::pow(10.0, static_cast<int>(cursor) - static_cast<int>(precision)));
-        *number -= step;
-        roundToPrecision();
-        uint8_t oldTotal = total;
+
         uint8_t newTotal = getDigits();
-        if (oldTotal > newTotal && cursor == oldTotal - 1 && cursor != 0) {
+        if (total > newTotal && cursor == total - 1 && cursor != 0) {
+            cursor--;
+        }
+    } else if (key == KEY_DOWN) {
+        T step = static_cast<T>(std::pow(10.0, static_cast<int>(cursor) - static_cast<int>(precision)));
+        T bottom = std::max(minimum, std::numeric_limits<T>::min());
+
+        if (bottom + step >= *number) {
+            *number = bottom;
+        } else {
+            *number -= step;
+        }
+        roundToPrecision();
+
+        uint8_t newTotal = getDigits();
+        if (total > newTotal && cursor == total - 1 && cursor != 0) {
             cursor--;
         }
     } else if (key == KEY_RIGHT) {

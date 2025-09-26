@@ -67,7 +67,7 @@ Stack root = Stack({
                 new NumberPicker<float>("Bandw", &settings.radio_bandwidth, 31.25, 500.00, 2, 2),
                 new NumberPicker<uint8_t>("SF", &settings.radio_sf, 5, 12),
                 new NumberPicker<uint8_t>("CR", &settings.radio_cr, 5, 8),
-                new NumberPicker<int8_t>("Power", &settings.radio_power, -10, 22),
+                new NumberPicker<int8_t>("Power", &settings.radio_power, -15, 22),
             }),
             new MenuView('\x95', "Display")
         }),
