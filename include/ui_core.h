@@ -45,7 +45,7 @@ class MenuView : public UIElement {
     const uint8_t max_elements;
 
     int16_t start = 0;
-    int16_t pointer = 0;
+    int16_t cursor = 0;
     int16_t end = min(children.size(), max_elements);
     const int16_t window_size = min(children.size(), max_elements);
     void checkPointer();
@@ -75,30 +75,54 @@ public:
     void render(Adafruit_GFX* display, bool minimalized) override;
 };
 
-// TODO:
-// Number output format maybe
-// Step
+template<class T>
 class NumberPicker : public UIInline {
-    typedef int32_t num_t;
+    static_assert(std::is_arithmetic<T>::value, "T must be a number");
 
-    num_t number = 0;
-    int8_t pointer;
-    const num_t minimum;
-    const num_t maximum;
-    const num_t step;
-    const uint8_t scale;
+    T* number;
+    int8_t cursor;
+    const T minimum;
+    const T maximum;
+    const uint8_t precision;
 
     uint8_t getDigits() const;
+    void roundToPrecision();
 public:
+    T getAbsoluteValue() const;
+    T getValue() const;
+
     String text;
 
-    explicit NumberPicker(String text, num_t def = 0, num_t step = 1, num_t min = 0, num_t max = 0, uint8_t scale = 1, int8_t pointer = 0)
-        : number(def), pointer(pointer), minimum(min), maximum(max), step(step), scale(scale), text(std::move(text)) {};
+    explicit NumberPicker(String text, T* number, T min = 0, T max = 0, uint8_t precision = 0, int8_t cursor = 0)
+        : number(number), cursor(cursor), minimum(min), maximum(max), precision(precision), text(std::move(text)) {};
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;
     bool update(char key) override;
 };
+template class NumberPicker<uint8_t>;
+template class NumberPicker<int8_t>;
+template class NumberPicker<float>;
+
+template<class T>
+class Property : public UIElement {
+    T* ptr;
+    const char* format;
+public:
+    char icon;
+    String text;
+
+    Property(char icon, String text, T* ptr, const char* format = "%s")
+        : ptr(ptr), format(format), icon(icon), text(std::move(text)) {}
+
+    Property(String text, T* ptr, const char* format = "%s")
+        : ptr(ptr), format(format), icon(0x00), text(std::move(text)) {}
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+};
+template class Property<uint8_t>;
+template class Property<int8_t>;
+template class Property<float>;
 
 class CharTable : public UIElement {
     const uint8_t max_lines = 5;

@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "configuration.h"
-#include "keycodes.h"
 #include "ui_core.h"
 
 MbedI2C extI2C(EXT_I2C_SDA, EXT_I2C_SCL);
@@ -26,7 +25,7 @@ void setFlag() {
     receivedFlag = true;
 }
 
-String prettyValue(uint64_t value, const String symbol, uint8_t precision = 0, uint16_t per_kilo = 1000) {
+String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, uint16_t per_kilo = 1000) {
     String prefixes[] = {"", "K", "M", "G"};
     int power = 0;
     double scaled = static_cast<double>(value);
@@ -45,6 +44,58 @@ String prettyValue(uint64_t value, const String symbol, uint8_t precision = 0, u
 }
 
 String buffer = "";
+
+struct Settings {
+    float radio_frequency;
+    float radio_bandwidth;
+    uint8_t radio_sf;
+    uint8_t radio_cr;
+    int8_t radio_power;
+    uint8_t radio_preamble;
+};
+
+
+Settings settings {868.000, 125.000, 9, 7, 10, 8};
+
+Stack root = Stack({
+    new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
+    new MenuView("Radio", {
+        new MenuView('\x8C', "Broadcast"),
+        new MenuView('\x8D', "Settings", {
+            new MenuView('\xAD', "Radio", {
+                new NumberPicker<float>("Freq", &settings.radio_frequency, 868.000, 915.000, 3, 3),
+                new NumberPicker<float>("Bandw", &settings.radio_bandwidth, 31.25, 500.00, 2, 2),
+                new NumberPicker<uint8_t>("SF", &settings.radio_sf, 5, 12),
+                new NumberPicker<uint8_t>("CR", &settings.radio_cr, 5, 8),
+                new NumberPicker<int8_t>("Power", &settings.radio_power, -10, 22),
+            }),
+            new MenuView('\x95', "Display")
+        }),
+        new MenuView('*', "Tools"),
+        new MenuView('\x91', "Debug", {
+            new CharTable("Characters"),
+            new MenuView("Settings", {
+                new Property<float>("Freq", &settings.radio_frequency, "%.3fmHz"),
+                new Property<float>("Bandw", &settings.radio_bandwidth, "%.2fkHz"),
+                new Property<uint8_t>("SF", &settings.radio_sf, "%d"),
+                new Property<uint8_t>("CR", &settings.radio_cr, "%d"),
+                new Property<int8_t>("Power", &settings.radio_power, "%ddBm"),
+            })
+        }),
+        new MenuView('\x93', "Power"),
+        new MenuView('i', "Info", {
+            new MenuView("Device", {
+                new Label(String("MCU:   ") + HW_MCU),
+                new Label(String("Clock: ") + prettyValue(HW_F_CPU, "Hz", 0, 1000)),
+                new Label(String("RAM:   ") + prettyValue(HW_RAM_BYTES, "B", 0, 1024)),
+                new Label(String("Flash: ") + prettyValue(HW_FLASH_BYTES, "B", 0, 1024)),
+            }),
+            new MenuView("Libs", {
+                new Label("Work in progress")
+            }),
+        })
+    })
+});
 
 void setup() {
     Serial1.begin(115200);
@@ -89,33 +140,6 @@ void setup() {
     display.display();
     delay(1000);
 }
-
-Stack root = Stack({
-    new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
-    new MenuView("Radio", {
-        new MenuView('\x8C', "Broadcast"),
-        new MenuView('\x8D', "Settings", {
-            new MenuView('\xAD', "Radio"),
-            new MenuView('\x95', "Display")
-        }),
-        new MenuView('*', "Tools"),
-        new MenuView('\x91', "Debug", {
-            new CharTable("Characters")
-        }),
-        new MenuView('\x93', "Power"),
-        new MenuView('i', "Info", {
-            new MenuView("Device", {
-                new Label(String("MCU:   ") + HW_MCU),
-                new Label(String("Clock: ") + prettyValue(HW_F_CPU, "Hz", 0, 1000)),
-                new Label(String("RAM:   ") + prettyValue(HW_RAM_BYTES, "B", 0, 1024)),
-                new Label(String("Flash: ") + prettyValue(HW_FLASH_BYTES, "B", 0, 1024)),
-            }),
-            new MenuView("Libs", {
-                new Label("Work in progress")
-            }),
-        })
-    })
-});
 
 void loop() {
     extI2C.requestFrom(KEYBOARD_ADDRESS, 1);
