@@ -145,7 +145,7 @@ template class NumberPicker<float>;
 
 class Selector : public UIInline {
     std::vector<String> items;
-    int8_t cursor;
+    int8_t cursor = 0;
 public:
     char icon;
     String text;

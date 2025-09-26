@@ -25,9 +25,7 @@ void Stack::render(Adafruit_GFX* display, bool minimalized) {
     if (minimalized) {
         display->println(title);
     } else {
-        if (title != "") {
-            display->println(title);
-        }
+        if (title != "") display->println(title);
         for (auto &i : children) {
             i->render(display, false);
         }
@@ -76,9 +74,7 @@ bool MenuView::update(char key) {
 
         return false;
     } /* else if (selected != nullptr) */ {
-        if (selected->update(key)) {
-            return true;
-        }
+        if (selected->update(key)) return true;
 
         if (key == KEY_LEFT || key == KEY_ESC) {
             selected = nullptr;
@@ -114,7 +110,6 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
                     children[i]->render(display, true);
                 }
             }
-
         } else {
             selected->render(display, false);
         }
@@ -137,20 +132,14 @@ void Label::render(Adafruit_GFX* display, bool minimalized) {
 
 template <class T>
 void Property<T>::render(Adafruit_GFX* display, bool minimalized) {
-    String text = this->text;
-    if (icon) {
-        text = icon+text;
-    }
-
     char buf[16];
     sprintf(buf, format, *ptr);
 
-    uint8_t spaces = 20 - (text.length() + strlen(buf)); // 20 - characters per line available; 21 - 1 (arrow)
+    String prefix = icon ? (icon + text) : text;
+    uint8_t spaces = 20 - (prefix.length() + strlen(buf)); // 20 - characters per line available; 21 - 1 (arrow)
 
-    display->print(text);
-    for (uint8_t i = 0; i < spaces; i++) {
-        display->print(" ");
-    }
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
     display->println(buf);
 }
 
@@ -249,11 +238,8 @@ bool NumberPicker<T>::update(char key) {
         T step = static_cast<T>(std::pow(10.0, static_cast<int>(cursor) - static_cast<int>(precision)));
         T top = std::min(maximum, std::numeric_limits<T>::max());
 
-        if (top - step <= *number) {
-            *number = top;
-        } else {
-            *number += step;
-        }
+        if (top - step <= *number)  *number = top;
+        else                        *number += step;
         roundToPrecision();
 
         uint8_t newTotal = getDigits();
@@ -264,11 +250,8 @@ bool NumberPicker<T>::update(char key) {
         T step = static_cast<T>(std::pow(10.0, static_cast<int>(cursor) - static_cast<int>(precision)));
         T bottom = std::max(minimum, std::numeric_limits<T>::min());
 
-        if (bottom + step >= *number) {
-            *number = bottom;
-        } else {
-            *number -= step;
-        }
+        if (bottom + step >= *number)   *number = bottom;
+        else                            *number -= step;
         roundToPrecision();
 
         uint8_t newTotal = getDigits();
@@ -292,33 +275,20 @@ bool NumberPicker<T>::update(char key) {
 #pragma region Selector
 
 void Selector::render(Adafruit_GFX* display, bool /* minimalized */) {
-    String text = this->text;
-    if (icon) {
-        text = icon+text;
-    }
+    String prefix = icon ? (icon + text) : text;
+    uint8_t spaces = 20 - (prefix.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
 
-    uint8_t spaces = 20 - (text.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
-
-    display->print(text);
-    for (uint8_t i = 0; i < spaces; i++) {
-        display->print(" ");
-    }
-
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
     display->println(items.at(cursor));
 }
 
 void Selector::renderInline(Adafruit_GFX* display) {
-    String text = this->text;
-    if (icon) {
-        text = icon+text;
-    }
+    String prefix = icon ? (icon + text) : text;
+    uint8_t spaces = 20 - (prefix.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
 
-    uint8_t spaces = 20 - (text.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
-
-    display->print(text);
-    for (uint8_t i = 0; i < spaces; i++) {
-        display->print(" ");
-    }
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
 
     // display->print(cursor > 0 ? "<" : " ");
     display->setTextColor(DISPLAY_BG, DISPLAY_FG);
@@ -357,7 +327,7 @@ void CharTable::render(Adafruit_GFX* display, bool minimalized) {
             if (y == 0x10) {
                 display->println(" -+----------------+-");
             } else {
-                display->print(" ");
+                display->print(' ');
                 display->print(y, HEX);
                 display->print("|");
                 for (uint8_t x = 0; x < 16; x++) {
