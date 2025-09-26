@@ -68,6 +68,7 @@ Stack root = Stack({
                 new NumberPicker<uint8_t>('\x12', "SF", "", &settings.radio_sf, 5, 12),
                 new NumberPicker<uint8_t>('\xAF', "CR", "", &settings.radio_cr, 5, 8),
                 new NumberPicker<int8_t>('\x8C', "Power", "dBm", &settings.radio_power, -15, 22),
+                new Selector('x', "Band", {"B1@LP", "B2@GP", "B3@GP", "B4@LP", "B5@HP", "B6@SP", "B7@GP"})
             }),
             new MenuView('\x95', "Display")
         }),

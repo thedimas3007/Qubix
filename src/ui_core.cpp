@@ -137,14 +137,16 @@ void Label::render(Adafruit_GFX* display, bool minimalized) {
 
 template <class T>
 void Property<T>::render(Adafruit_GFX* display, bool minimalized) {
+    String text = this->text;
+    if (icon) {
+        text = icon+text;
+    }
+
     char buf[16];
     sprintf(buf, format, *ptr);
 
     uint8_t spaces = 20 - (text.length() + strlen(buf)); // 20 - characters per line available; 21 - 1 (arrow)
 
-    if (icon) {
-        display->print(icon);
-    }
     display->print(text);
     for (uint8_t i = 0; i < spaces; i++) {
         display->print(" ");
@@ -298,6 +300,62 @@ bool NumberPicker<T>::update(char key) {
         return false;
     }
 
+    return true;
+}
+
+#pragma endregion
+
+
+#pragma region Selector
+
+void Selector::render(Adafruit_GFX* display, bool /* minimalized */) {
+    String text = this->text;
+    if (icon) {
+        text = icon+text;
+    }
+
+    uint8_t spaces = 20 - (text.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
+
+    display->print(text);
+    for (uint8_t i = 0; i < spaces; i++) {
+        display->print(" ");
+    }
+
+    display->println(items.at(cursor));
+}
+
+void Selector::renderInline(Adafruit_GFX* display) {
+    String text = this->text;
+    if (icon) {
+        text = icon+text;
+    }
+
+    uint8_t spaces = 20 - (text.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
+
+    display->print(text);
+    for (uint8_t i = 0; i < spaces; i++) {
+        display->print(" ");
+    }
+
+    // display->print(cursor > 0 ? "<" : " ");
+    display->setTextColor(DISPLAY_BG, DISPLAY_FG);
+    display->print(items.at(cursor));
+    display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+    // display->println(cursor < items.size()-1 ? ">" : " ");
+}
+
+bool Selector::update(char key) {
+    if (key == KEY_LEFT) {
+        cursor--;
+        if (cursor < 0) {
+            cursor = items.size() - 1;
+        }
+    } else if (key == KEY_RIGHT) {
+        cursor++;
+        cursor %= items.size();
+    } else {
+        return false;
+    }
     return true;
 }
 

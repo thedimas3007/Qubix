@@ -29,6 +29,7 @@ public:
 
 class Stack : public UIElement {
     std::vector<UIElement*> children;
+
 public:
     String title = "";
 
@@ -86,6 +87,7 @@ template<class T>
 class Property : public UIElement {
     T* ptr;
     const char* format;
+
 public:
     char icon;
     String text;
@@ -118,6 +120,7 @@ class NumberPicker : public UIInline {
 
     uint8_t getDigits() const;
     void roundToPrecision();
+
 public:
     T getAbsoluteValue() const;
     T getValue() const;
@@ -139,6 +142,24 @@ public:
 template class NumberPicker<uint8_t>;
 template class NumberPicker<int8_t>;
 template class NumberPicker<float>;
+
+class Selector : public UIInline {
+    std::vector<String> items;
+    int8_t cursor;
+public:
+    char icon;
+    String text;
+
+    Selector(char icon, String text, std::initializer_list<String> items)
+        : items(items), icon(icon), text(std::move(text)) {};
+
+    Selector(String text, std::initializer_list<String> items)
+        : items(items), icon(0x00), text(std::move(text)) {};
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+    void renderInline(Adafruit_GFX* display) override;
+    bool update(char key) override;
+};
 
 #pragma endregion
 
