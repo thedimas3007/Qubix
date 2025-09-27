@@ -69,6 +69,13 @@ Stack root = Stack({
                 new NumberPicker<uint8_t>('\xAF', "CR", "", &settings.radio_cr, 5, 8),
                 new NumberPicker<int8_t>('\x8C', "Power", "dBm", &settings.radio_power, -15, 22),
                 new Selector('x', "Band", {"B1@LP", "B2@GP", "B3@GP", "B4@LP", "B5@HP", "B6@SP", "B7@GP"})
+            }, 6, [] {
+                radio.setFrequency(settings.radio_frequency);
+                radio.setBandwidth(settings.radio_bandwidth);
+                radio.setSpreadingFactor(settings.radio_sf);
+                radio.setCodingRate(settings.radio_cr);
+                radio.setOutputPower(settings.radio_power);
+                Serial1.println("Radio updated");
             }),
             new MenuView('\x95', "Display")
         }),

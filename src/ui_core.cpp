@@ -78,6 +78,7 @@ bool MenuView::update(char key) {
 
         if (key == KEY_LEFT || key == KEY_ESC) {
             selected = nullptr;
+            on_exit();
             return true;
         }
 

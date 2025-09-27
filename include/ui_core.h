@@ -55,16 +55,16 @@ class MenuView : public UIElement {
     int16_t end = min(children.size(), max_elements);
     const int16_t window_size = min(children.size(), max_elements);
     void checkPointer();
-
+    std::function<void()> on_exit;
 public:
     char icon;
     String title;
 
-    MenuView(char icon, String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6)
-        : children(children), max_elements(max_elements), icon(icon), title(std::move(title)) {}
+    MenuView(char icon, String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6, std::function<void()> on_exit = [] {})
+        : children(children), max_elements(max_elements), on_exit(std::move(on_exit)), icon(icon), title(std::move(title)) {}
 
-    MenuView(String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6)
-        : children(children), max_elements(max_elements), icon(0x00), title(std::move(title)) {}
+    explicit MenuView(String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6, std::function<void()> on_exit = [] {})
+        : children(children), max_elements(max_elements), on_exit(std::move(on_exit)), icon(0x00), title(std::move(title)) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     bool update(char key) override;
