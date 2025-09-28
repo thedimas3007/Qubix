@@ -57,53 +57,58 @@ struct Settings {
 
 Settings settings {868.000, 125.000, 9, 7, 10, 8};
 
-Stack root = Stack({
-    new Label("\xAD\x99\x9A             \xAF \x9D\xA1\xA3"),
-    new MenuView("Radio", {
-        new MenuView('\x8C', "Broadcast"),
-        new MenuView('\x8D', "Settings", {
-            new MenuView('\xAD', "Radio", {
-                new NumberPicker<float>('\x90', "Freq", "mHz", &settings.radio_frequency, 868.000, 915.000, 3, 3),
-                new NumberPicker<float>('\x1D', "Bandw", "kHz", &settings.radio_bandwidth, 31.25, 500.00, 2, 2),
-                new NumberPicker<uint8_t>('\x12', "SF", "", &settings.radio_sf, 5, 12),
-                new NumberPicker<uint8_t>('\xAF', "CR", "", &settings.radio_cr, 5, 8),
-                new NumberPicker<int8_t>('\x8C', "Power", "dBm", &settings.radio_power, -15, 22),
-                new Selector('x', "Band", {"B1@LP", "B2@GP", "B3@GP", "B4@LP", "B5@HP", "B6@SP", "B7@GP"})
-            }, 6, [] {
+Stack root = Stack::make().children({
+    Label::make().title("\xAD\x99\x9A             \xAF \x9D\xA1\xA3").buildPtr(),
+
+    MenuView::make().title("Radio").children({
+        MenuView::make().icon('\x8C').title("Broadcast").buildPtr(),
+        MenuView::make().icon('\x8D').title("Settings").children({
+            MenuView::make().icon('\xAD').title("Radio").children({
+                NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.radio_frequency).min(868.000f).max(915.000f).precision(3).cursor(3).buildPtr(),
+                NumberPicker<float>::make().icon('\x1D').title("Bandw").suffix("kHz").pointer(&settings.radio_bandwidth).min(31.25).max(500.00).precision(2).cursor(2).buildPtr(),
+                NumberPicker<uint8_t>::make().icon('\x12').title("SF").pointer(&settings.radio_sf).min(5).max(12).buildPtr(),
+                NumberPicker<uint8_t>::make().icon('\xAF').title("CR").pointer(&settings.radio_cr).min(5).max(8).buildPtr(),
+                NumberPicker<int8_t>::make().icon('\x8C').title("Power").suffix("dBm").pointer(&settings.radio_power).min(-15).max(22).buildPtr(),
+                Selector::make().icon('x').title("Band").items({ "B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP" }).buildPtr()
+            }).onExit([] {
                 radio.setFrequency(settings.radio_frequency);
                 radio.setBandwidth(settings.radio_bandwidth);
                 radio.setSpreadingFactor(settings.radio_sf);
                 radio.setCodingRate(settings.radio_cr);
                 radio.setOutputPower(settings.radio_power);
                 Serial1.println("Radio updated");
-            }),
-            new MenuView('\x95', "Display")
-        }),
-        new MenuView('*', "Tools"),
-        new MenuView('\x91', "Debug", {
-            new CharTable("Characters"),
-            new MenuView("Settings", {
-                new Property<float>("Freq", &settings.radio_frequency, "%.3fmHz"),
-                new Property<float>("Bandw", &settings.radio_bandwidth, "%.2fkHz"),
-                new Property<uint8_t>("SF", &settings.radio_sf, "%d"),
-                new Property<uint8_t>("CR", &settings.radio_cr, "%d"),
-                new Property<int8_t>("Power", &settings.radio_power, "%ddBm"),
-            })
-        }),
-        new MenuView('\x93', "Power"),
-        new MenuView('i', "Info", {
-            new MenuView("Device", {
-                new Label(String("MCU:   ") + HW_MCU),
-                new Label(String("Clock: ") + prettyValue(HW_F_CPU, "Hz", 0, 1000)),
-                new Label(String("RAM:   ") + prettyValue(HW_RAM_BYTES, "B", 0, 1024)),
-                new Label(String("Flash: ") + prettyValue(HW_FLASH_BYTES, "B", 0, 1024)),
-            }),
-            new MenuView("Libs", {
-                new Label("Work in progress")
-            }),
-        })
-    })
-});
+            }).buildPtr(),
+          MenuView::make().icon('\x95').title("Display").buildPtr()
+        }).buildPtr(),
+
+        MenuView::make().icon('*').title("Tools").buildPtr(),
+
+        MenuView::make().icon('\x91').title("Debug").children({
+            CharTable::make().title("Characters").buildPtr(),
+            MenuView::make().title("Settings").children({
+                Property<float>::make().title("Freq").pointer(&settings.radio_frequency).fmt("%.3fmHz").buildPtr(),
+                Property<float>::make().title("Bandw").pointer(&settings.radio_bandwidth).fmt("%.2fkHz").buildPtr(),
+                Property<uint8_t>::make().title("SF").pointer(&settings.radio_sf).fmt("%d").buildPtr(),
+                Property<uint8_t>::make().title("CR").pointer(&settings.radio_cr).fmt("%d").buildPtr(),
+                Property<int8_t>::make().title("Power").pointer(&settings.radio_power).fmt("%ddBm").buildPtr()
+            }).buildPtr()
+        }).buildPtr(),
+
+        MenuView::make().icon('\x93').title("Power").buildPtr(),
+
+        MenuView::make().icon('i').title("Info").children({
+            MenuView::make().title("Device").children({
+                Label::make().title(String("MCU:   ") + HW_MCU).buildPtr(),
+                Label::make().title(String("Clock: ") + prettyValue(HW_F_CPU,"Hz",0,1000)).buildPtr(),
+                Label::make().title(String("RAM:   ") + prettyValue(HW_RAM_BYTES,"B",0,1024)).buildPtr(),
+                Label::make().title(String("Flash: ") + prettyValue(HW_FLASH_BYTES,"B",0,1024)).buildPtr()
+            }).buildPtr(),
+            MenuView::make().title("Libs").children({
+                Label::make().title("Work in progress").buildPtr()
+            }).buildPtr()
+        }).buildPtr()
+    }).buildPtr()
+}).build();
 
 void setup() {
     Serial1.begin(115200);

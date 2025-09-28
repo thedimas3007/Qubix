@@ -1,4 +1,8 @@
 #include <type_traits>
+#include <cmath>
+#include <cstdio>
+#include <limits>
+#include <algorithm>
 
 #include "ui_core.h"
 #include "configuration.h"
@@ -12,7 +16,7 @@ static int64_t pow10i(uint8_t n) {
 
 #pragma region UIElement
 
-bool UIElement::update(char key) {
+bool UIElement::update(char /*key*/) {
     return false;
 }
 
@@ -46,34 +50,42 @@ bool Stack::update(char key) {
 #pragma region MenuView
 
 void MenuView::checkPointer() {
+    const int16_t n = static_cast<int16_t>(children.size());
+    const int16_t lastStart = std::max<int16_t>(0, n - window_size);
+
     if (cursor < start) {
         start = cursor;
-    } else if (cursor >= min(start + window_size, children.size())) {
-        start = max(0, cursor - (window_size - 1));
+    } else if (cursor >= start + window_size) {
+        start = cursor - (window_size - 1);
     }
+
+    if (start < 0) start = 0;
+    if (start > lastStart) start = lastStart;
 }
 
 bool MenuView::update(char key) {
     if (selected == nullptr) {
-        const int16_t n = children.size();
+        const int16_t n = static_cast<int16_t>(children.size());
         if (key == 0 || n <= 0) return false;
 
         if (key == KEY_UP) {
             cursor = (cursor - 1 + n) % n;
             checkPointer();
             return true;
-        } if (key == KEY_DOWN) {
+        }
+        if (key == KEY_DOWN) {
             cursor = (cursor + 1) % n;
             checkPointer();
             return true;
-        } if (key == KEY_RIGHT || key == KEY_ENTER) {
+        }
+        if (key == KEY_RIGHT || key == KEY_ENTER) {
             selected = children[cursor];
             checkPointer();
             return true;
         }
 
         return false;
-    } /* else if (selected != nullptr) */ {
+    } else {
         if (selected->update(key)) return true;
 
         if (key == KEY_LEFT || key == KEY_ESC) {
@@ -87,12 +99,12 @@ bool MenuView::update(char key) {
 }
 
 void MenuView::render(Adafruit_GFX* display, bool minimalized) {
-    const int16_t n = children.size();
+    const int16_t n = static_cast<int16_t>(children.size());
     const int16_t last = std::min<int16_t>(start + window_size, n);
 
     if (selected == nullptr) {
         if (minimalized) {
-            display->println(icon + title);
+            display->println(String(icon) + title);
         } else {
             display->println(title);
             for (int16_t i = start; i < last; ++i) {
@@ -122,8 +134,8 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
 
 #pragma region Label
 
-void Label::render(Adafruit_GFX* display, bool minimalized) {
-    display->println(text);
+void Label::render(Adafruit_GFX* display, bool /*minimalized*/) {
+    display->println(title);
 }
 
 #pragma endregion
@@ -132,17 +144,23 @@ void Label::render(Adafruit_GFX* display, bool minimalized) {
 #pragma region Property
 
 template <class T>
-void Property<T>::render(Adafruit_GFX* display, bool minimalized) {
+void Property<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
     char buf[16];
-    sprintf(buf, format, *ptr);
+    std::snprintf(buf, sizeof(buf), format, *ptr);
 
-    String prefix = icon ? (icon + text) : text;
-    uint8_t spaces = 20 - (prefix.length() + strlen(buf)); // 20 - characters per line available; 21 - 1 (arrow)
+    String prefix = icon ? (String(icon) + title) : title;
+    uint8_t spaces = (20 > (prefix.length() + std::strlen(buf)))
+                     ? uint8_t(20 - (prefix.length() + std::strlen(buf)))
+                     : 0;
 
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
     display->println(buf);
 }
+
+template void Property<uint8_t>::render(Adafruit_GFX*, bool);
+template void Property<int8_t>::render(Adafruit_GFX*, bool);
+template void Property<float>::render(Adafruit_GFX*, bool);
 
 #pragma endregion
 
@@ -152,16 +170,14 @@ void Property<T>::render(Adafruit_GFX* display, bool minimalized) {
 template<class T>
 uint8_t NumberPicker<T>::getDigits() const {
     T v = getAbsoluteValue();
-    uint8_t intDigits = v >= static_cast<T>(1) ?
-                        static_cast<uint8_t>(std::floor(std::log10(v)) + 1) : 1;
-    return intDigits + precision;
+    uint8_t intDigits = v >= static_cast<T>(1)
+                        ? static_cast<uint8_t>(std::floor(std::log10(static_cast<double>(v))) + 1)
+                        : 1;
+    return static_cast<uint8_t>(intDigits + precision);
 }
 
 template <class T>
 T NumberPicker<T>::getAbsoluteValue() const {
-    if (std::is_floating_point<T>::value) {
-        return fabs(getValue());
-    }
     return abs(getValue());
 }
 
@@ -174,18 +190,20 @@ template <class T>
 void NumberPicker<T>::roundToPrecision() {
     const int64_t p = pow10i(precision);
     if (std::is_floating_point<T>::value) {
-        *number = std::round((*number) * p) / p;
-    } else {}
+        *number = static_cast<T>(std::round(static_cast<double>((*number) * p)) / p);
+    }
 }
 
 template<class T>
 void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
-    String prefix = icon ? (icon + text) : text;
+    String prefix = icon ? (String(icon) + title) : title;
     T v = getValue();
     const uint8_t total = getDigits();
-    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)); // 20 - characters per line available; 21 - 1 (arrow)
+    const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
+                           ? uint8_t(20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
+                           : 0;
     const int64_t scale = pow10i(precision);
-    int64_t scaled = static_cast<int64_t>(std::llround(getAbsoluteValue() * scale));
+    int64_t scaled = static_cast<int64_t>(std::llround(static_cast<double>(getAbsoluteValue()) * scale));
 
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; ++i) display->print(' ');
@@ -194,7 +212,6 @@ void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
     for (int i = total; i >= 1; --i) {
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
-
         if (i == precision) display->print(".");
         display->print(digit);
     }
@@ -204,12 +221,14 @@ void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
 
 template<class T>
 void NumberPicker<T>::renderInline(Adafruit_GFX* display) {
-    String prefix = icon ? (icon + text) : text;
+    String prefix = icon ? (String(icon) + title) : title;
     T v = getValue();
     const uint8_t total = getDigits();
-    const uint8_t spaces = 20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)); // 20 - characters per line available; 21 - 1 (arrow)
+    const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
+                           ? uint8_t(20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
+                           : 0;
     const int64_t scale = pow10i(precision);
-    int64_t scaled = static_cast<int64_t>(std::llround(getAbsoluteValue() * scale));
+    int64_t scaled = static_cast<int64_t>(std::llround(static_cast<double>(getAbsoluteValue()) * scale));
 
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; ++i) display->print(' ');
@@ -276,37 +295,41 @@ bool NumberPicker<T>::update(char key) {
 #pragma region Selector
 
 void Selector::render(Adafruit_GFX* display, bool /* minimalized */) {
-    String prefix = icon ? (icon + text) : text;
-    uint8_t spaces = 20 - (prefix.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
+    String prefix = icon ? (String(icon) + title) : title;
+    const String& current = items.at(cursor);
+    uint8_t spaces = (20 > (prefix.length() + current.length()))
+                     ? uint8_t(20 - (prefix.length() + current.length()))
+                     : 0;
 
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->println(items.at(cursor));
+    display->println(current);
 }
 
 void Selector::renderInline(Adafruit_GFX* display) {
-    String prefix = icon ? (icon + text) : text;
-    uint8_t spaces = 20 - (prefix.length() + items.at(cursor).length()); // 20 - characters per line available; 21 - 1 (arrow)
+    String prefix = icon ? (String(icon) + title) : title;
+    const String& current = items.at(cursor);
+    uint8_t spaces = (20 > (prefix.length() + current.length()))
+                     ? uint8_t(20 - (prefix.length() + current.length()))
+                     : 0;
 
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
 
-    // display->print(cursor > 0 ? "<" : " ");
     display->setTextColor(DISPLAY_BG, DISPLAY_FG);
-    display->print(items.at(cursor));
+    display->print(current);
     display->setTextColor(DISPLAY_FG, DISPLAY_BG);
-    // display->println(cursor < items.size()-1 ? ">" : " ");
 }
 
 bool Selector::update(char key) {
     if (key == KEY_LEFT) {
         cursor--;
         if (cursor < 0) {
-            cursor = items.size() - 1;
+            cursor = static_cast<int8_t>(items.size()) - 1;
         }
     } else if (key == KEY_RIGHT) {
         cursor++;
-        cursor %= items.size();
+        cursor = static_cast<int8_t>(cursor % static_cast<int>(items.size()));
     } else {
         return false;
     }
@@ -320,11 +343,11 @@ bool Selector::update(char key) {
 
 void CharTable::render(Adafruit_GFX* display, bool minimalized) {
     if (minimalized) {
-        display->println(text);
+        display->println(title);
     } else {
         display->println("  |0123456789ABCDEF| ");
         display->println(" -+----------------+-");
-        for (uint8_t y = start; y < start+max_lines; y++) {
+        for (uint8_t y = static_cast<uint8_t>(start); y < static_cast<uint8_t>(start + max_lines); y++) {
             if (y == 0x10) {
                 display->println(" -+----------------+-");
             } else {
@@ -332,7 +355,7 @@ void CharTable::render(Adafruit_GFX* display, bool minimalized) {
                 display->print(y, HEX);
                 display->print("|");
                 for (uint8_t x = 0; x < 16; x++) {
-                    char c = x + y * 16;
+                    char c = static_cast<char>(x + y * 16);
                     if (c == 0x0A || c == 0x0D || c == '\n' || c == '\t') c = ' ';
                     display->print(c);
                 }
@@ -349,7 +372,7 @@ bool CharTable::update(char key) {
         if (start < 0) start++;
     } else if (key == KEY_DOWN) {
         start++;
-        if (start > 16-max_lines+1) start--;
+        if (start > 16 - static_cast<int>(max_lines) + 1) start--;
     } else {
         return false;
     }
