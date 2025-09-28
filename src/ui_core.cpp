@@ -145,17 +145,29 @@ void Label::render(Adafruit_GFX* display, bool /*minimalized*/) {
 
 template <class T>
 void Property<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
-    char buf[16];
-    std::snprintf(buf, sizeof(buf), format, *ptr);
+    String data = "";
+    if (with_values && std::is_integral<T>::value) {
+        if (*ptr < 0) {
+            data = values.empty() ? "<null>" : values.front();
+        } else if (*ptr >= values.size()) {
+            data = values.back();
+        } else {
+            data = values[*ptr];
+        }
+    } else {
+        char buf[16];
+        std::snprintf(buf, sizeof(buf), format, *ptr);
+        data = String(buf);
+    }
 
     String prefix = icon ? (String(icon) + title) : title;
-    uint8_t spaces = (20 > (prefix.length() + std::strlen(buf)))
-                     ? uint8_t(20 - (prefix.length() + std::strlen(buf)))
+    uint8_t spaces = (20 > (prefix.length() + data.length()))
+                     ? uint8_t(20 - (prefix.length() + data.length()))
                      : 0;
 
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->println(buf);
+    display->println(data);
 }
 
 template void Property<uint8_t>::render(Adafruit_GFX*, bool);
@@ -333,6 +345,7 @@ bool Selector::update(char key) {
     } else {
         return false;
     }
+    if (selection != nullptr) *selection = cursor;
     return true;
 }
 

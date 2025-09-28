@@ -52,10 +52,11 @@ struct Settings {
     uint8_t radio_cr;
     int8_t radio_power;
     uint8_t radio_preamble;
+    uint8_t radio_band;
 };
 
-
-Settings settings {868.000, 125.000, 9, 7, 10, 8};
+std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
+Settings settings {868.000, 125.000, 9, 7, 10, 8, 0};
 
 Stack root = Stack::make().children({
     Label::make().title("\xAD\x99\x9A             \xAF \x9D\xA1\xA3").buildPtr(),
@@ -64,12 +65,12 @@ Stack root = Stack::make().children({
         MenuView::make().icon('\x8C').title("Broadcast").buildPtr(),
         MenuView::make().icon('\x8D').title("Settings").children({
             MenuView::make().icon('\xAD').title("Radio").children({
-                NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.radio_frequency).min(868.000f).max(915.000f).precision(3).cursor(3).buildPtr(),
+                NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.radio_frequency).min(868.000).max(915.000).precision(3).cursor(3).buildPtr(),
                 NumberPicker<float>::make().icon('\x1D').title("Bandw").suffix("kHz").pointer(&settings.radio_bandwidth).min(31.25).max(500.00).precision(2).cursor(2).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\x12').title("SF").pointer(&settings.radio_sf).min(5).max(12).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\xAF').title("CR").pointer(&settings.radio_cr).min(5).max(8).buildPtr(),
                 NumberPicker<int8_t>::make().icon('\x8C').title("Power").suffix("dBm").pointer(&settings.radio_power).min(-15).max(22).buildPtr(),
-                Selector::make().icon('x').title("Band").items({ "B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP" }).buildPtr()
+                Selector::make().icon('x').title("Band").pointer(&settings.radio_band).items(bands).buildPtr()
             }).onExit([] {
                 radio.setFrequency(settings.radio_frequency);
                 radio.setBandwidth(settings.radio_bandwidth);
@@ -90,7 +91,8 @@ Stack root = Stack::make().children({
                 Property<float>::make().title("Bandw").pointer(&settings.radio_bandwidth).fmt("%.2fkHz").buildPtr(),
                 Property<uint8_t>::make().title("SF").pointer(&settings.radio_sf).fmt("%d").buildPtr(),
                 Property<uint8_t>::make().title("CR").pointer(&settings.radio_cr).fmt("%d").buildPtr(),
-                Property<int8_t>::make().title("Power").pointer(&settings.radio_power).fmt("%ddBm").buildPtr()
+                Property<int8_t>::make().title("Power").pointer(&settings.radio_power).fmt("%ddBm").buildPtr(),
+                Property<uint8_t>::make().title("Band").pointer(&settings.radio_band).values(bands).buildPtr()
             }).buildPtr()
         }).buildPtr(),
 

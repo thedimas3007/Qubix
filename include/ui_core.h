@@ -170,13 +170,16 @@ template<class T>
 class Property : public UIElement {
     T* ptr;
     const char* format;
-
+    std::vector<String> values;
+    bool with_values;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
         T* ptr = nullptr;
         const char* format = "%s";
+        std::vector<String> values = std::vector<String>();
+        bool with_values = false;
     };
 
     class Builder {
@@ -186,7 +189,7 @@ public:
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& pointer(T* p) { c_.ptr = p; return *this; }
         Builder& fmt(const char* f) { c_.format = f; return *this; }
-
+        Builder& values(std::vector<String>& v) { c_.with_values = true, c_.values = v; return *this; }
         Property build() const { return Property(c_); }
         Property* buildPtr() const { return new Property(c_); }
     };
@@ -197,13 +200,7 @@ public:
     String title;
 
     explicit Property(const Config& cfg)
-        : ptr(cfg.ptr), format(cfg.format), icon(cfg.icon), title(cfg.title) {}
-
-    Property(char icon, String title, T* ptr, const char* format = "%s")
-        : ptr(ptr), format(format), icon(icon), title(std::move(title)) {}
-
-    Property(String title, T* ptr, const char* format = "%s")
-        : ptr(ptr), format(format), icon(0x00), title(std::move(title)) {}
+        : ptr(cfg.ptr), format(cfg.format), values(cfg.values), with_values(cfg.with_values), icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
 };
@@ -286,12 +283,14 @@ template class NumberPicker<float>;
 
 
 class Selector : public UIInline {
+    uint8_t* selection;
     std::vector<String> items;
     int8_t cursor = 0;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
+        uint8_t* selection = nullptr;
         std::vector<String> items{};
     };
 
@@ -300,6 +299,7 @@ public:
     public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& pointer(uint8_t* s) { c_.selection = s; return *this; }
         Builder& items(const std::vector<String>& v) { c_.items = v; return *this; }
         Builder& items(const std::initializer_list<String>& v) { c_.items = v; return *this; }
         Builder& addItem(const String& s) { c_.items.push_back(s); return *this; }
@@ -314,13 +314,13 @@ public:
     String title;
 
     explicit Selector(const Config& cfg)
-        : items(cfg.items), icon(cfg.icon), title(cfg.title) {}
+        : selection(cfg.selection), items(cfg.items), icon(cfg.icon), title(cfg.title) {}
 
-    Selector(char icon, String title, std::initializer_list<String> items)
-        : items(items), icon(icon), title(std::move(title)) {};
+    Selector(char icon, String title, uint8_t* selection, std::initializer_list<String> items)
+        : selection(selection), items(items), icon(icon), title(std::move(title)) {};
 
-    Selector(String title, std::initializer_list<String> items)
-        : items(items), icon(0x00), title(std::move(title)) {};
+    Selector(String title, uint8_t* selection, std::initializer_list<String> items)
+        : selection(selection), items(items), icon(0x00), title(std::move(title)) {};
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;
