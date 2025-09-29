@@ -53,6 +53,11 @@ struct Settings {
     int8_t radio_power;
     uint8_t radio_preamble;
     uint8_t radio_band;
+
+    uint8_t display_brightness;
+    uint8_t display_inverted;
+    uint8_t display_up_down; // upside-down
+
     String device_name;
 };
 
@@ -82,7 +87,7 @@ Stack root = Stack::make().children({
             }).buildPtr(),
             MenuView::make().icon('\x95').title("Display").buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
-                Input::make().title("Name").pointer(&settings.device_name).buildPtr()
+                Input::make().title("Name").pointer(&settings.device_name).buildPtr(),
             }).buildPtr(),
         }).buildPtr(),
 

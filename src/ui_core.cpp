@@ -376,6 +376,9 @@ void Input::render(Adafruit_GFX* display, bool minimalized) {
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                  ? uint8_t(20 - (prefix.length() + data.length()))
                  : 0;
+
+    if (prefix.length() == 0) spaces = 0;
+
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
     display->println(data);
@@ -388,6 +391,9 @@ void Input::renderInline(Adafruit_GFX* display) {
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                  ? uint8_t(20 - (prefix.length() + data.length() + has_cursor))
                  : 0;
+
+    if (prefix.length() == 0) spaces = 0;
+
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
     for (uint8_t i = 0; i < data.length(); i++) {
@@ -426,11 +432,11 @@ bool Input::update(char key) {
             cursor--;
         }
     } else if (key == KEY_LEFT) {
-        if (cursor > 0) { cursor--; }
+        if (cursor > 0) cursor--;
     } else if (key == KEY_FN_LEFT) {
         cursor = 0;
     } else if (key == KEY_RIGHT) {
-        if (cursor < ptr->length()) { cursor++; }
+        if (cursor < ptr->length()) cursor++;
     } else if (key == KEY_FN_RIGHT) {
         cursor = ptr->length();
     } else if (key == KEY_FN_BACK) {
