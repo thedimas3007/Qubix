@@ -191,6 +191,7 @@ public:
         Builder& pointer(T* p) { c_.ptr = p; return *this; }
         Builder& fmt(const char* f) { c_.format = f; return *this; }
         Builder& values(std::vector<String>& v) { c_.with_values = true, c_.values = v; return *this; }
+
         Property build() const { return Property(c_); }
         Property* buildPtr() const { return new Property(c_); }
     };
@@ -224,6 +225,7 @@ public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& pointer(String* p) { c_.ptr = p; return *this; }
+
         StringProperty build() const { return StringProperty(c_); }
         StringProperty* buildPtr() const { return new StringProperty(c_); }
     };
@@ -363,11 +365,13 @@ class Input : public UIInline {
     String* ptr;
     uint8_t cursor = 0;
     const uint8_t window_size = 8;
+    uint8_t max_length;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
         String* ptr = nullptr;
+        uint8_t max_length = 12;
     };
 
     class Builder {
@@ -376,6 +380,7 @@ public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& pointer(String* s) { c_.ptr = s; return *this; }
+        Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
 
         Input build() const { return Input(c_); }
         Input* buildPtr() const { return new Input(c_); }
@@ -387,7 +392,7 @@ public:
     String title;
 
     explicit Input(const Config& cfg)
-        : ptr(cfg.ptr), icon(cfg.icon), title(cfg.title) {}
+        : ptr(cfg.ptr), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;

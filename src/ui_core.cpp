@@ -384,19 +384,24 @@ void Input::render(Adafruit_GFX* display, bool minimalized) {
 void Input::renderInline(Adafruit_GFX* display) {
     String prefix = icon ? (String(icon) + title) : title;
     String data = ptr != nullptr ? *ptr : "<null>";
+    bool has_cursor = ptr != nullptr && data.length() < max_length;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                 ? uint8_t(20 - (prefix.length() + data.length() + 1))
+                 ? uint8_t(20 - (prefix.length() + data.length() + has_cursor))
                  : 0;
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
     display->print(data);
-    if (ptr != nullptr) display->println((millis() / 500 % 2) ? '_' : ' ');
+    if (has_cursor) display->println((millis() / 500 % 2) ? '_' : ' ');
 }
 
 bool Input::update(char key) {
+    if (ptr == nullptr) return false;
+
     if (key >= ' ' && key <= '~') {
-        *ptr += key;
-        cursor++;
+        if (ptr->length() < max_length) {
+            *ptr += key;
+            cursor++;
+        }
     } else if (key == KEY_BACK) {
         if (cursor > 0) {
             *ptr = ptr->substring(0, --cursor);
