@@ -390,7 +390,21 @@ void Input::renderInline(Adafruit_GFX* display) {
                  : 0;
     display->print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->print(data);
+    for (uint8_t i = 0; i < data.length(); i++) {
+        if (i == cursor) {
+            uint16_t fg = DISPLAY_FG;
+            uint16_t bg = DISPLAY_BG;
+            if (millis() / 500 % 2) fg = DISPLAY_BG; bg = DISPLAY_FG;
+
+            display->setTextColor(fg, bg);
+            display->print(data.charAt(i));
+            display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+            has_cursor = false;
+        } else {
+            display->print(data.charAt(i));
+        }
+    };
+
     if (has_cursor) display->println((millis() / 500 % 2) ? '_' : ' ');
 }
 
@@ -399,13 +413,35 @@ bool Input::update(char key) {
 
     if (key >= ' ' && key <= '~') {
         if (ptr->length() < max_length) {
-            *ptr += key;
+            String start = ptr->substring(0, cursor);
+            String end = cursor < ptr->length() ? ptr->substring(cursor) : "";
+            *ptr = start + key + end;
             cursor++;
         }
     } else if (key == KEY_BACK) {
         if (cursor > 0) {
-            *ptr = ptr->substring(0, --cursor);
+            String start = cursor > 0 ? ptr->substring(0, cursor-1) : "";
+            String end = cursor < ptr->length() ? ptr->substring(cursor) : "";
+            *ptr = start + end;
+            cursor--;
         }
+    } else if (key == KEY_LEFT) {
+        if (cursor > 0) { cursor--; }
+    } else if (key == KEY_FN_LEFT) {
+        cursor = 0;
+    } else if (key == KEY_RIGHT) {
+        if (cursor < ptr->length()) { cursor++; }
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = ptr->length();
+    } else if (key == KEY_FN_BACK) {
+        String start = cursor > 0 ? ptr->substring(0, cursor) : "";
+        String end = cursor+1 < ptr->length() ? ptr->substring(cursor+1) : "";
+        *ptr = start + end;
+    } else if (key == KEY_SHIFT_BACK) {
+        String start = "";
+        String end = cursor < ptr->length() ? ptr->substring(cursor) : "";
+        *ptr = start + end;
+        cursor = 0;
     } else {
         return false;
     }

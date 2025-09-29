@@ -165,9 +165,7 @@
 #define KEY_BACK        0x08
 #define KEY_SPACE       0x20
 #define KEY_ENTER       0x0D
-#define KEY_DEL         0x7F /* Shift + BACK */
-
-#define KEY_SHIFT_BACK  KEY_DEL
+#define KEY_SHIFT_BACK  0x7F
 
 #define KEY_FN_ESC      0x80
 #define KEY_FN_TAB      0x8C
@@ -182,7 +180,7 @@
 
 #define KEY_FN_LEFT     0x98
 #define KEY_FN_UP       0x99
-#define KEY_FN_DOWN     0xA5
-#define KEY_FN_RIGHT    0xA4
+#define KEY_FN_DOWN     0xA4
+#define KEY_FN_RIGHT    0xA5
 
 #endif

@@ -33,7 +33,7 @@ extern Adafruit_SH1106G display;
 
 #ifdef TARGET_SSD1306
 #include <Adafruit_SSD1306.h>
-extern Adafruit_SSD1306 display
+extern Adafruit_SSD1306 display;
 #define DISPLAY_FG SSD1306_WHITE
 #define DISPLAY_BG SSD1306_BLACK
 #endif
