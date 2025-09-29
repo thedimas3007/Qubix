@@ -177,6 +177,22 @@ template void Property<float>::render(Adafruit_GFX*, bool);
 #pragma endregion
 
 
+#pragma region StringProperty
+
+void StringProperty::render(Adafruit_GFX* display, bool minimalized) {
+    String prefix = icon ? (String(icon) + title) : title;
+    String data = ptr != nullptr ? *ptr : "<null>";
+    uint8_t spaces = (20 > (prefix.length() + data.length()))
+                     ? uint8_t(20 - (prefix.length() + data.length()))
+                     : 0;
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
+    display->println(data);
+}
+
+#pragma endregion
+
+
 #pragma region NumberPicker
 
 template<class T>
@@ -346,6 +362,48 @@ bool Selector::update(char key) {
         return false;
     }
     if (selection != nullptr) *selection = cursor;
+    return true;
+}
+
+#pragma endregion
+
+
+#pragma region Input
+
+void Input::render(Adafruit_GFX* display, bool minimalized) {
+    String prefix = icon ? (String(icon) + title) : title;
+    String data = ptr != nullptr ? *ptr : "<null>";
+    uint8_t spaces = (20 > (prefix.length() + data.length()))
+                 ? uint8_t(20 - (prefix.length() + data.length()))
+                 : 0;
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
+    display->println(data);
+}
+
+void Input::renderInline(Adafruit_GFX* display) {
+    String prefix = icon ? (String(icon) + title) : title;
+    String data = ptr != nullptr ? *ptr : "<null>";
+    uint8_t spaces = (20 > (prefix.length() + data.length()))
+                 ? uint8_t(20 - (prefix.length() + data.length() + 1))
+                 : 0;
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
+    display->print(data);
+    if (ptr != nullptr) display->println((millis() / 500 % 2) ? '_' : ' ');
+}
+
+bool Input::update(char key) {
+    if (key >= ' ' && key <= '~') {
+        *ptr += key;
+        cursor++;
+    } else if (key == KEY_BACK) {
+        if (cursor > 0) {
+            *ptr = ptr->substring(0, --cursor);
+        }
+    } else {
+        return false;
+    }
     return true;
 }
 

@@ -137,6 +137,7 @@ public:
 
 #pragma endregion
 
+
 #pragma region Static
 
 class Label : public UIElement {
@@ -207,6 +208,36 @@ public:
 template class Property<uint8_t>;
 template class Property<int8_t>;
 template class Property<float>;
+
+class StringProperty : public UIElement {
+    String* ptr;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        String* ptr = nullptr;
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& pointer(String* p) { c_.ptr = p; return *this; }
+        StringProperty build() const { return StringProperty(c_); }
+        StringProperty* buildPtr() const { return new StringProperty(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    char icon;
+    String title;
+
+    explicit StringProperty(const Config& cfg)
+        : ptr(cfg.ptr), icon(cfg.icon), title(cfg.title) {}
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+};
 
 #pragma endregion
 
@@ -321,6 +352,42 @@ public:
 
     Selector(String title, uint8_t* selection, std::initializer_list<String> items)
         : selection(selection), items(items), icon(0x00), title(std::move(title)) {};
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+    void renderInline(Adafruit_GFX* display) override;
+    bool update(char key) override;
+};
+
+
+class Input : public UIInline {
+    String* ptr;
+    uint8_t cursor = 0;
+    const uint8_t window_size = 8;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        String* ptr = nullptr;
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& pointer(String* s) { c_.ptr = s; return *this; }
+
+        Input build() const { return Input(c_); }
+        Input* buildPtr() const { return new Input(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    char icon;
+    String title;
+
+    explicit Input(const Config& cfg)
+        : ptr(cfg.ptr), icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;

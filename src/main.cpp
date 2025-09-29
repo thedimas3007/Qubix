@@ -53,6 +53,7 @@ struct Settings {
     int8_t radio_power;
     uint8_t radio_preamble;
     uint8_t radio_band;
+    String device_name;
 };
 
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
@@ -79,7 +80,10 @@ Stack root = Stack::make().children({
                 radio.setOutputPower(settings.radio_power);
                 Serial1.println("Radio updated");
             }).buildPtr(),
-          MenuView::make().icon('\x95').title("Display").buildPtr()
+            MenuView::make().icon('\x95').title("Display").buildPtr(),
+            MenuView::make().icon('\x91').title("Device").children({
+                Input::make().title("Name").pointer(&settings.device_name).buildPtr()
+            }).buildPtr(),
         }).buildPtr(),
 
         MenuView::make().icon('*').title("Tools").buildPtr(),
@@ -92,7 +96,8 @@ Stack root = Stack::make().children({
                 Property<uint8_t>::make().title("SF").pointer(&settings.radio_sf).fmt("%d").buildPtr(),
                 Property<uint8_t>::make().title("CR").pointer(&settings.radio_cr).fmt("%d").buildPtr(),
                 Property<int8_t>::make().title("Power").pointer(&settings.radio_power).fmt("%ddBm").buildPtr(),
-                Property<uint8_t>::make().title("Band").pointer(&settings.radio_band).values(bands).buildPtr()
+                Property<uint8_t>::make().title("Band").pointer(&settings.radio_band).values(bands).buildPtr(),
+                StringProperty::make().title("Name").pointer(&settings.device_name).buildPtr(),
             }).buildPtr()
         }).buildPtr(),
 
@@ -162,7 +167,6 @@ void loop() {
         char c = extI2C.read();
         if (c == 0) continue;
         root.update(c);
-        // Serial1.println(menu_pointer);
     }
 
     display.clearDisplay();
