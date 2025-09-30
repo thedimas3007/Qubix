@@ -1,24 +1,21 @@
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
+#include <cstdio>
 #include <RadioLib.h>
 #include <vector>
 
 #include "configuration.h"
 #include "ui_core.h"
 
-MbedI2C extI2C(EXT_I2C_SDA, EXT_I2C_SCL);
-MbedSPI extSPI0(EXT_SPI0_MISO, EXT_SPI0_MOSI, EXT_SPI0_SCK);
-MbedSPI extSPI1(EXT_SPI1_MISO, EXT_SPI1_MOSI, EXT_SPI1_SCK);
-
 #ifdef TARGET_SH1106
-Adafruit_SH1106G display(128, 64, &extI2C, -1);
+Adafruit_SH1106G display(128, 64, &Wire1, -1);
 #elif defined(TARGET_SSD1306)
-Adafruit_SSD1306 display(128, 64, &extI2C, -1);
+Adafruit_SSD1306 display(128, 64, &Wire1, -1);
 #elif defined(TARGET_ST7567)
-ST7567 display(128, 64, &extSPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
+ST7567 display(128, 64, &SPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #endif
 
-SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI0);
+SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, SPI);
 
 volatile bool receivedFlag = false;
 volatile bool enableInterrupt = true;
@@ -49,27 +46,24 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, 
 String buffer = "";
 
 struct Settings {
-    float radio_frequency;
-    float radio_bandwidth;
-    uint8_t radio_sf;
-    uint8_t radio_cr;
-    int8_t radio_power;
-    uint8_t radio_preamble;
-    uint8_t radio_band;
+    float   radio_frequency =   868.000;
+    float   radio_bandwidth =   125.000;
+    uint8_t radio_sf =          9;
+    uint8_t radio_cr =          7;
+    int8_t  radio_power =       10;
+    uint8_t radio_preamble =    8;
+    uint8_t radio_band =        0;
 
-    uint8_t display_contrast;
-    uint8_t display_backlight;
-    bool display_inverted;
-    bool display_flipped;
+    uint8_t display_contrast =  50;
+    uint8_t display_backlight = 128;
+    bool    display_inverted =  false;
+    bool    display_flipped =   false;
 
-    String device_name;
+    String  device_name =       "mein_radio";
 };
 
+Settings settings;
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
-Settings settings {
-    868.000, 125.000, 9, 7, 10, 8, 0,
-    50, 128, 0, 0
-};
 
 void updateDisplay() {
     display.setContrast(settings.display_contrast);
@@ -149,8 +143,21 @@ Stack root = Stack::make().children({
 
 void setup() {
     Serial.begin(115200);
-    extI2C.begin();
-    extSPI0.begin();
+
+    Wire1.setSCL(EXT_I2C_SCL);
+    Wire1.setSDA(EXT_I2C_SDA);
+
+    SPI.setMISO(EXT_SPI0_MISO);
+    SPI.setMOSI(EXT_SPI0_MOSI);
+    SPI.setSCK(EXT_SPI0_SCK);
+
+    SPI1.setMISO(EXT_SPI1_MISO);
+    SPI1.setMOSI(EXT_SPI1_MOSI);
+    SPI1.setSCK(EXT_SPI1_SCK);
+
+    Wire1.begin();
+    SPI.begin();
+    SPI1.begin();
 
 #ifdef TARGET_SH1106
     display.begin(DISPLAY_ADDRESS, true);
@@ -193,9 +200,9 @@ void setup() {
 }
 
 void loop() {
-    extI2C.requestFrom(KEYBOARD_ADDRESS, 1);
-    while (extI2C.available()) {
-        char c = extI2C.read();
+    Wire1.requestFrom(KEYBOARD_ADDRESS, 1);
+    while (Wire1.available()) {
+        char c = Wire1.read();
         if (c == 0) continue;
         root.update(c);
     }
@@ -209,9 +216,9 @@ void loop() {
 // Void for Radio
 void loop_old() {
 #ifndef RADIO_SLAVE
-    extI2C.requestFrom(KEYBOARD_ADDRESS, 1);
-    while (extI2C.available()) {
-        char c = extI2C.read();
+    Wire1.requestFrom(KEYBOARD_ADDRESS, 1);
+    while (Wire1.available()) {
+        char c = Wire1.read();
 
         if (c == 0x0D) { // Enter
             if (buffer.length() > 0) {

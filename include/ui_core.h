@@ -405,12 +405,10 @@ public:
     void activate(Adafruit_GFX* display) override;
 };
 
-#pragma endregion
-
 
 class Input : public UIInline {
     String* ptr;
-    uint8_t cursor = 0;
+    uint8_t cursor;
     const uint8_t window_size = 8;
     uint8_t max_length;
 public:
@@ -439,12 +437,13 @@ public:
     String title;
 
     explicit Input(const Config& cfg)
-        : ptr(cfg.ptr), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
+        : ptr(cfg.ptr), cursor(cfg.ptr != nullptr ? cfg.ptr->length() : 0), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;
     bool update(char key) override;
 };
+#pragma endregion
 
 #pragma region Other
 
