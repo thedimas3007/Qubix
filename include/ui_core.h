@@ -12,19 +12,29 @@
 
 #pragma region Base
 
+enum class ElementType {
+    BASIC, INLINE, CLICKABLE
+};
+
 class UIElement {
 public:
     virtual ~UIElement() = default;
     virtual void render(Adafruit_GFX* display, bool minimalized) = 0;
     virtual bool update(char key);
 
-    virtual bool isInline() const { return false; };
+    virtual ElementType getType() const { return ElementType::BASIC; };
 };
 
 class UIInline : public UIElement {
 public:
-    bool isInline() const override { return true; };
+    ElementType getType() const override { return ElementType::INLINE; };
     virtual void renderInline(Adafruit_GFX* display) = 0;
+};
+
+class UIClickable : public UIElement {
+public:
+    ElementType getType() const override { return ElementType::CLICKABLE; };
+    virtual void activate(Adafruit_GFX* display) = 0;
 };
 
 #pragma endregion
@@ -138,7 +148,6 @@ public:
 };
 
 #pragma endregion
-
 
 #pragma region Static
 
@@ -266,8 +275,8 @@ public:
         String title = "";
         String suffix = "";
         T* number = nullptr;
-        T min = 0;
-        T max = 0;
+        T min = std::numeric_limits<T>::lowest();
+        T max = std::numeric_limits<T>::max();
         uint8_t precision = 0;
         int8_t cursor = 0;
     };
@@ -363,6 +372,42 @@ public:
 };
 
 
+class Toggle : public UIClickable {
+    bool* ptr;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        bool* pointer = nullptr;
+        std::vector<String> items{};
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& pointer(bool* b) { c_.pointer = b; return *this; }
+
+        Toggle build() const { return Toggle(c_); }
+        Toggle* buildPtr() const { return new Toggle(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    char icon;
+    String title;
+
+    explicit Toggle(const Config& cfg)
+        : ptr(cfg.pointer), icon(cfg.icon), title(cfg.title) {}
+
+    void render(Adafruit_GFX* display, bool minimalized) override;
+    void activate(Adafruit_GFX* display) override;
+};
+
+#pragma endregion
+
+
 class Input : public UIInline {
     String* ptr;
     uint8_t cursor = 0;
@@ -400,8 +445,6 @@ public:
     void renderInline(Adafruit_GFX* display) override;
     bool update(char key) override;
 };
-
-#pragma endregion
 
 #pragma region Other
 

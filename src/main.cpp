@@ -7,18 +7,18 @@
 #include "ui_core.h"
 
 MbedI2C extI2C(EXT_I2C_SDA, EXT_I2C_SCL);
+MbedSPI extSPI0(EXT_SPI0_MISO, EXT_SPI0_MOSI, EXT_SPI0_SCK);
 MbedSPI extSPI1(EXT_SPI1_MISO, EXT_SPI1_MOSI, EXT_SPI1_SCK);
-MbedSPI extSPI2(EXT_SPI2_MISO, EXT_SPI2_MOSI, EXT_SPI2_SCK);
 
 #ifdef TARGET_SH1106
 Adafruit_SH1106G display(128, 64, &extI2C, -1);
 #elif defined(TARGET_SSD1306)
 Adafruit_SSD1306 display(128, 64, &extI2C, -1);
 #elif defined(TARGET_ST7567)
-ST7567 display(128, 64, &extSPI2, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
+ST7567 display(128, 64, &extSPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #endif
 
-SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI1);
+SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI0);
 
 volatile bool receivedFlag = false;
 volatile bool enableInterrupt = true;
@@ -59,8 +59,8 @@ struct Settings {
 
     uint8_t display_contrast;
     uint8_t display_backlight;
-    uint8_t display_inverted;
-    uint8_t display_flipped; // upside-down
+    bool display_inverted;
+    bool display_flipped;
 
     String device_name;
 };
@@ -101,12 +101,12 @@ Stack root = Stack::make().children({
                 radio.setOutputPower(settings.radio_power);
             }).buildPtr(),
             MenuView::make().icon('\x95').title("Display").children({
-                NumberPicker<uint8_t>::make().title("Contrast").pointer(&settings.display_contrast).min(0).max(255).buildPtr(),
+                NumberPicker<uint8_t>::make().title("Contrast").pointer(&settings.display_contrast).buildPtr(),
 #ifdef HAS_BACKLIGHT
-                NumberPicker<uint8_t>::make().title("Backlight").pointer(&settings.display_backlight).min(0).max(255).buildPtr(),
+                NumberPicker<uint8_t>::make().title("Backlight").pointer(&settings.display_backlight).buildPtr(),
 #endif
-                NumberPicker<uint8_t>::make().title("Flipped").pointer(&settings.display_flipped).min(0).max(1).buildPtr(),
-                NumberPicker<uint8_t>::make().title("Inverted").pointer(&settings.display_inverted).min(0).max(1).buildPtr(),
+                Toggle::make().title("Flipped").pointer(&settings.display_flipped).buildPtr(),
+                Toggle::make().title("Inverted").pointer(&settings.display_inverted).buildPtr()
             }).onExit([] {
                 updateDisplay();
                 display.display();
@@ -150,7 +150,7 @@ Stack root = Stack::make().children({
 void setup() {
     Serial.begin(115200);
     extI2C.begin();
-    extSPI1.begin();
+    extSPI0.begin();
 
 #ifdef TARGET_SH1106
     display.begin(DISPLAY_ADDRESS, true);

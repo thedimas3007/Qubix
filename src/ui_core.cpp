@@ -51,7 +51,7 @@ bool Stack::update(char key) {
 
 void MenuView::checkPointer() {
     const int16_t n = static_cast<int16_t>(children.size());
-    const int16_t lastStart = std::max<int16_t>(0, n - window_size);
+    const int16_t last_start = std::max<int16_t>(0, n - window_size);
 
     if (cursor < start) {
         start = cursor;
@@ -60,7 +60,7 @@ void MenuView::checkPointer() {
     }
 
     if (start < 0) start = 0;
-    if (start > lastStart) start = lastStart;
+    if (start > last_start) start = last_start;
 }
 
 bool MenuView::update(char key) {
@@ -79,12 +79,16 @@ bool MenuView::update(char key) {
             return true;
         }
         if (key == KEY_RIGHT || key == KEY_ENTER) {
-            selected = children[cursor];
+            auto element = children[cursor];
+            if (element->getType() == ElementType::CLICKABLE) {
+                    static_cast<UIClickable*>(element)->activate(&display);
+                    on_exit();
+            } else {
+                selected = children[cursor];
+            }
             checkPointer();
             return true;
         }
-
-        return false;
     } else {
         if (selected->update(key)) return true;
 
@@ -93,9 +97,9 @@ bool MenuView::update(char key) {
             on_exit();
             return true;
         }
-
-        return false;
     }
+
+    return false;
 }
 
 void MenuView::render(Adafruit_GFX* display, bool minimalized) {
@@ -113,7 +117,7 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
             }
         }
     } else {
-        if (selected->isInline()) {
+        if (selected->getType() == ElementType::INLINE) {
             display->println(title);
             for (int16_t i = start; i < last; ++i) {
                 display->print(i == cursor ? "\x1A" : " ");
@@ -124,6 +128,7 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
                 }
             }
         } else {
+            // NOTE: Clickable can't be normally selected
             selected->render(display, false);
         }
     }
@@ -363,6 +368,28 @@ bool Selector::update(char key) {
     }
     if (selection != nullptr) *selection = cursor;
     return true;
+}
+
+#pragma endregion
+
+
+#pragma region Toggle
+
+void Toggle::render(Adafruit_GFX* display, bool minimalized) {
+    String prefix = icon ? (String(icon) + title) : title;
+    uint8_t spaces = (20 > (prefix.length() + 3))
+                     ? uint8_t(20 - (prefix.length() + 3))
+                     : 0;
+
+    display->print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
+    display->print('[');
+    display->print(*ptr ? 'x' : ' ');
+    display->println(']');
+}
+
+void Toggle::activate(Adafruit_GFX* /* display */) {
+    *ptr = !*ptr;
 }
 
 #pragma endregion
