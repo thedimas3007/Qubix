@@ -357,12 +357,14 @@ void Selector::renderInline(Adafruit_GFX* display) {
 bool Selector::update(char key) {
     if (key == KEY_LEFT) {
         cursor--;
-        if (cursor < 0) {
-            cursor = static_cast<int8_t>(items.size()) - 1;
-        }
+        if (cursor < 0) cursor = items.size() - 1;
+    } else if (key == KEY_FN_LEFT) {
+        cursor = 0;
     } else if (key == KEY_RIGHT) {
         cursor++;
-        cursor = static_cast<int8_t>(cursor % static_cast<int>(items.size()));
+        cursor = cursor % items.size();
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = items.size() - 1;
     } else {
         return false;
     }
