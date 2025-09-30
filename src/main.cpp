@@ -58,6 +58,7 @@ struct Settings {
     uint8_t radio_band;
 
     uint8_t display_contrast;
+    uint8_t display_backlight;
     uint8_t display_inverted;
     uint8_t display_flipped; // upside-down
 
@@ -67,8 +68,17 @@ struct Settings {
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
 Settings settings {
     868.000, 125.000, 9, 7, 10, 8, 0,
-    50, 0, 0
+    50, 128, 0, 0
 };
+
+void updateDisplay() {
+    display.setContrast(settings.display_contrast);
+    display.setRotation(settings.display_flipped*2);
+    display.invertDisplay(settings.display_inverted);
+#ifdef HAS_BACKLIGHT
+    analogWrite(DISPLAY_BL, settings.display_backlight);
+#endif
+}
 
 Stack root = Stack::make().children({
     Label::make().title("\xAD\x99\x9A             \xAF \x9D\xA1\xA3").buildPtr(),
@@ -92,12 +102,13 @@ Stack root = Stack::make().children({
             }).buildPtr(),
             MenuView::make().icon('\x95').title("Display").children({
                 NumberPicker<uint8_t>::make().title("Contrast").pointer(&settings.display_contrast).min(0).max(255).buildPtr(),
+#ifdef HAS_BACKLIGHT
+                NumberPicker<uint8_t>::make().title("Backlight").pointer(&settings.display_backlight).min(0).max(255).buildPtr(),
+#endif
                 NumberPicker<uint8_t>::make().title("Flipped").pointer(&settings.display_flipped).min(0).max(1).buildPtr(),
                 NumberPicker<uint8_t>::make().title("Inverted").pointer(&settings.display_inverted).min(0).max(1).buildPtr(),
             }).onExit([] {
-                display.setContrast(settings.display_contrast);
-                display.setRotation(settings.display_flipped*2);
-                display.invertDisplay(settings.display_inverted);
+                updateDisplay();
                 display.display();
             }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
@@ -140,7 +151,6 @@ void setup() {
     Serial.begin(115200);
     extI2C.begin();
     extSPI1.begin();
-    Serial.println("Hello World!");
 
 #ifdef TARGET_SH1106
     display.begin(DISPLAY_ADDRESS, true);
@@ -148,12 +158,11 @@ void setup() {
     display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
 #elif defined(TARGET_ST7567)
     display.begin();
-    display.setContrast(100);
 #endif
 
-    Serial.println("Hello World 2!");
     display.cp437();
     display.setTextColor(DISPLAY_FG);
+    updateDisplay();
     display.clearDisplay();
     display.setCursor(0, 0);
     display.println("Loading radio...");
@@ -173,7 +182,6 @@ void setup() {
     if (state == RADIOLIB_ERR_NONE) {
         display.println("Radio OK!");
     } else {
-        Serial.println("Radio Error!");
         display.println("Radio ERROR!");
         display.println(state);
         display.display();
