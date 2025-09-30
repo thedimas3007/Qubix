@@ -299,6 +299,9 @@ bool NumberPicker<T>::update(char key) {
         if (total > newTotal && cursor == total - 1 && cursor != 0) {
             cursor--;
         }
+    } else if (key == KEY_FN_UP) {
+        // I can actually use step here
+        *number = std::min(maximum, std::numeric_limits<T>::max());
     } else if (key == KEY_DOWN) {
         T step = static_cast<T>(std::pow(10.0, static_cast<int>(cursor) - static_cast<int>(precision)));
         T bottom = std::max(minimum, std::numeric_limits<T>::min());
@@ -311,10 +314,16 @@ bool NumberPicker<T>::update(char key) {
         if (total > newTotal && cursor == total - 1 && cursor != 0) {
             cursor--;
         }
-    } else if (key == KEY_RIGHT) {
-        cursor = (cursor == 0) ? (total - 1) : (cursor - 1);
+    } else if (key == KEY_FN_DOWN) {
+        *number = std::max(minimum, std::numeric_limits<T>::min());
     } else if (key == KEY_LEFT) {
         cursor = (cursor + 1) % total;
+    } else if (key == KEY_FN_LEFT) {
+        cursor = total - 1;
+    } else if (key == KEY_RIGHT) {
+        cursor = (cursor == 0) ? (total - 1) : (cursor - 1);
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = 0;
     } else {
         return false;
     }
