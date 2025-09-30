@@ -7,15 +7,18 @@
 #include "ui_core.h"
 
 MbedI2C extI2C(EXT_I2C_SDA, EXT_I2C_SCL);
-MbedSPI extSPI(EXT_SPI_MISO, EXT_SPI_MOSI, EXT_SPI_SCK);
+MbedSPI extSPI1(EXT_SPI1_MISO, EXT_SPI1_MOSI, EXT_SPI1_SCK);
+MbedSPI extSPI2(EXT_SPI2_MISO, EXT_SPI2_MOSI, EXT_SPI2_SCK);
 
 #ifdef TARGET_SH1106
 Adafruit_SH1106G display(128, 64, &extI2C, -1);
 #elif defined(TARGET_SSD1306)
 Adafruit_SSD1306 display(128, 64, &extI2C, -1);
+#elif defined(TARGET_ST7567)
+ST7567 display(128, 64, &extSPI2, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #endif
 
-SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI);
+SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, extSPI1);
 
 volatile bool receivedFlag = false;
 volatile bool enableInterrupt = true;
@@ -54,15 +57,18 @@ struct Settings {
     uint8_t radio_preamble;
     uint8_t radio_band;
 
-    uint8_t display_brightness;
+    uint8_t display_contrast;
     uint8_t display_inverted;
-    uint8_t display_up_down; // upside-down
+    uint8_t display_flipped; // upside-down
 
     String device_name;
 };
 
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
-Settings settings {868.000, 125.000, 9, 7, 10, 8, 0};
+Settings settings {
+    868.000, 125.000, 9, 7, 10, 8, 0,
+    50, 0, 0
+};
 
 Stack root = Stack::make().children({
     Label::make().title("\xAD\x99\x9A             \xAF \x9D\xA1\xA3").buildPtr(),
@@ -83,9 +89,17 @@ Stack root = Stack::make().children({
                 radio.setSpreadingFactor(settings.radio_sf);
                 radio.setCodingRate(settings.radio_cr);
                 radio.setOutputPower(settings.radio_power);
-                Serial1.println("Radio updated");
             }).buildPtr(),
-            MenuView::make().icon('\x95').title("Display").buildPtr(),
+            MenuView::make().icon('\x95').title("Display").children({
+                NumberPicker<uint8_t>::make().title("Contrast").pointer(&settings.display_contrast).min(0).max(255).buildPtr(),
+                NumberPicker<uint8_t>::make().title("Flipped").pointer(&settings.display_flipped).min(0).max(1).buildPtr(),
+                NumberPicker<uint8_t>::make().title("Inverted").pointer(&settings.display_inverted).min(0).max(1).buildPtr(),
+            }).onExit([] {
+                display.setContrast(settings.display_contrast);
+                display.setRotation(settings.display_flipped*2);
+                display.invertDisplay(settings.display_inverted);
+                display.display();
+            }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
                 Input::make().title("Name").pointer(&settings.device_name).buildPtr(),
             }).buildPtr(),
@@ -123,18 +137,21 @@ Stack root = Stack::make().children({
 }).build();
 
 void setup() {
-    Serial1.begin(115200);
+    Serial.begin(115200);
     extI2C.begin();
-    extSPI.begin();
+    extSPI1.begin();
+    Serial.println("Hello World!");
 
 #ifdef TARGET_SH1106
     display.begin(DISPLAY_ADDRESS, true);
-#endif
-
-#ifdef TARGET_SSD1306
+#elif defined(TARGET_SSD1306)
     display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
+#elif defined(TARGET_ST7567)
+    display.begin();
+    display.setContrast(100);
 #endif
 
+    Serial.println("Hello World 2!");
     display.cp437();
     display.setTextColor(DISPLAY_FG);
     display.clearDisplay();
@@ -156,6 +173,7 @@ void setup() {
     if (state == RADIOLIB_ERR_NONE) {
         display.println("Radio OK!");
     } else {
+        Serial.println("Radio Error!");
         display.println("Radio ERROR!");
         display.println(state);
         display.display();

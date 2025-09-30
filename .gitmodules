@@ -1,0 +1,3 @@
+[submodule "lib/ST7567"]
+	path = lib/ST7567
+	url = https://github.com/nstepanets/ST7567
