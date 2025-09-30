@@ -82,9 +82,11 @@ Stack root = Stack::make().children({
                 settings.applyDisplay(display);
                 display.display();
             }).buildPtr(),
-            // MenuView::make().icon('\x91').title("Device").children({
-            //     Input::make().title("Name").pointer(&settings.data.device_name).buildPtr(),
-            // }).buildPtr(),
+            MenuView::make().icon('\x91').title("Device").children({
+                Input::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
+            }).onExit([] {
+                settings.save();
+            }).buildPtr(),
         }).buildPtr(),
 
         MenuView::make().icon('*').title("Tools").buildPtr(),
@@ -98,7 +100,7 @@ Stack root = Stack::make().children({
                 Property<uint8_t>::make().title("CR").pointer(&settings.data.radio_cr).fmt("%d").buildPtr(),
                 Property<int8_t>::make().title("Power").pointer(&settings.data.radio_power).fmt("%ddBm").buildPtr(),
                 Property<uint8_t>::make().title("Band").pointer(&settings.data.radio_band).values(bands).buildPtr(),
-                // StringProperty::make().title("Name").pointer(&settings.data.device_name).buildPtr(),
+                StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
             }).buildPtr()
         }).buildPtr(),
 

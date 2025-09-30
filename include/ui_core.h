@@ -222,12 +222,12 @@ template class Property<int8_t>;
 template class Property<float>;
 
 class StringProperty : public UIElement {
-    String* ptr;
+    char* ptr;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
-        String* ptr = nullptr;
+        char* ptr = nullptr;
     };
 
     class Builder {
@@ -235,7 +235,7 @@ public:
     public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
-        Builder& pointer(String* p) { c_.ptr = p; return *this; }
+        Builder& pointer(char p[]) { c_.ptr = p; return *this; }
 
         StringProperty build() const { return StringProperty(c_); }
         StringProperty* buildPtr() const { return new StringProperty(c_); }
@@ -407,15 +407,14 @@ public:
 
 
 class Input : public UIInline {
-    String* ptr;
-    uint8_t cursor;
-    const uint8_t window_size = 8;
+    char* ptr;
+    int16_t cursor;
     uint8_t max_length;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
-        String* ptr = nullptr;
+        char* ptr = nullptr;
         uint8_t max_length = 12;
     };
 
@@ -424,7 +423,7 @@ public:
     public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
-        Builder& pointer(String* s) { c_.ptr = s; return *this; }
+        Builder& pointer(char c[]) { c_.ptr = c; return *this; }
         Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
 
         Input build() const { return Input(c_); }
@@ -437,7 +436,7 @@ public:
     String title;
 
     explicit Input(const Config& cfg)
-        : ptr(cfg.ptr), cursor(cfg.ptr != nullptr ? cfg.ptr->length() : 0), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
+        : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX* display, bool minimalized) override;
     void renderInline(Adafruit_GFX* display) override;

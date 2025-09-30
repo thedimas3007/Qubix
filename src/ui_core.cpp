@@ -186,7 +186,7 @@ template void Property<float>::render(Adafruit_GFX*, bool);
 
 void StringProperty::render(Adafruit_GFX* display, bool minimalized) {
     String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr != nullptr ? *ptr : "<null>";
+    String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                      ? uint8_t(20 - (prefix.length() + data.length()))
                      : 0;
@@ -398,8 +398,9 @@ void Toggle::activate(Adafruit_GFX* /* display */) {
 #pragma region Input
 
 void Input::render(Adafruit_GFX* display, bool minimalized) {
+    if (cursor == -1) cursor = strlen(ptr);
     String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr != nullptr ? *ptr : "<null>";
+    String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                  ? uint8_t(20 - (prefix.length() + data.length()))
                  : 0;
@@ -413,7 +414,7 @@ void Input::render(Adafruit_GFX* display, bool minimalized) {
 
 void Input::renderInline(Adafruit_GFX* display) {
     String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr != nullptr ? *ptr : "<null>";
+    String data = ptr != nullptr ? String(ptr) : "<null>";
     bool has_cursor = ptr != nullptr && data.length() < max_length;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                  ? uint8_t(20 - (prefix.length() + data.length() + has_cursor))
@@ -444,18 +445,19 @@ void Input::renderInline(Adafruit_GFX* display) {
 bool Input::update(char key) {
     if (ptr == nullptr) return false;
 
+    String buf = ptr; // I know using Strings may be inefficient, but it is much more convenient
     if (key >= ' ' && key <= '~') {
-        if (ptr->length() < max_length) {
-            String start = ptr->substring(0, cursor);
-            String end = cursor < ptr->length() ? ptr->substring(cursor) : "";
-            *ptr = start + key + end;
+        if (buf.length() < max_length) {
+            String start = buf.substring(0, cursor);
+            String end = cursor < buf.length() ? buf.substring(cursor) : "";
+            buf = start + key + end;
             cursor++;
         }
     } else if (key == KEY_BACK) {
         if (cursor > 0) {
-            String start = cursor > 0 ? ptr->substring(0, cursor-1) : "";
-            String end = cursor < ptr->length() ? ptr->substring(cursor) : "";
-            *ptr = start + end;
+            String start = cursor > 0 ? buf.substring(0, cursor-1) : "";
+            String end = cursor < buf.length() ? buf.substring(cursor) : "";
+            buf = start + end;
             cursor--;
         }
     } else if (key == KEY_LEFT) {
@@ -463,21 +465,23 @@ bool Input::update(char key) {
     } else if (key == KEY_FN_LEFT) {
         cursor = 0;
     } else if (key == KEY_RIGHT) {
-        if (cursor < ptr->length()) cursor++;
+        if (cursor < buf.length()) cursor++;
     } else if (key == KEY_FN_RIGHT) {
-        cursor = ptr->length();
+        cursor = buf.length();
     } else if (key == KEY_FN_BACK) {
-        String start = cursor > 0 ? ptr->substring(0, cursor) : "";
-        String end = cursor+1 < ptr->length() ? ptr->substring(cursor+1) : "";
-        *ptr = start + end;
+        String start = cursor > 0 ? buf.substring(0, cursor) : "";
+        String end = cursor+1 < buf.length() ? buf.substring(cursor+1) : "";
+        buf = start + end;
     } else if (key == KEY_SHIFT_BACK) {
         String start = "";
-        String end = cursor < ptr->length() ? ptr->substring(cursor) : "";
-        *ptr = start + end;
+        String end = cursor < buf.length() ? buf.substring(cursor) : "";
+        buf = start + end;
         cursor = 0;
     } else {
         return false;
     }
+    
+    strcpy(ptr, buf.c_str());
     return true;
 }
 
