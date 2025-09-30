@@ -31,19 +31,26 @@
 #ifdef TARGET_SH1106
 #include <Adafruit_SH110X.h>
 extern Adafruit_SH1106G display;
+#define HAS_CONTRAST
+inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
 #define DISPLAY_FG SH110X_WHITE
 #define DISPLAY_BG SH110X_BLACK
 
 #elif defined(TARGET_SSD1306)
 #include <Adafruit_SSD1306.h>
 extern Adafruit_SSD1306 display;
+#define HAS_CONTRAST
+inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
 #define DISPLAY_FG SSD1306_WHITE
 #define DISPLAY_BG SSD1306_BLACK
 
 #elif defined(TARGET_ST7567)
 #include <ST7567.h>
 extern ST7567 display;
+#define HAS_CONTRAST
+inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
 #define HAS_BACKLIGHT // comment if backlight isn't connected
+inline void setBacklight(uint8_t brightness) { analogWrite(DISPLAY_BL, brightness); }
 #define DISPLAY_FG BLACK
 #define DISPLAY_BG WHITE
 #endif
