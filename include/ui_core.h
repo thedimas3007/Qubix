@@ -383,6 +383,7 @@ class TextField : public UIInline {
     uint8_t slice_at = 0;
     std::function<void(char*)> on_submit;
     bool submittable;
+    bool owns_mem = false;
 public:
     struct Config {
         char icon = 0x00;
@@ -420,7 +421,19 @@ public:
         : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length),
           window_size(cfg.window_size ? std::min<uint8_t>(cfg.max_length, cfg.window_size) : cfg.max_length),
           on_submit(cfg.on_submit), submittable(cfg.submittable),
-          icon(cfg.icon), title(cfg.title), spacer(cfg.spacer) {}
+          icon(cfg.icon), title(cfg.title), spacer(cfg.spacer) {
+        if (!ptr) {
+            ptr = new char[window_size];
+            ptr[0] = '\0';
+            owns_mem = true;
+        }
+    }
+
+    ~TextField() {
+        if (owns_mem) {
+            delete[] ptr;
+        }
+    }
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     void renderInline(Adafruit_GFX &display) override;

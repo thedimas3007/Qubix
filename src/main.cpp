@@ -47,14 +47,13 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, 
 
 Settings settings;
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
-char message[128];
 
 Stack root = Stack::make().children({
     Label::make().title("\xAD\x99\x9A             \xAF \x9D\xA1\xA3").buildPtr(),
 
     MenuView::make().title("Radio").children({
         MenuView::make().icon('\x8C').title("Broadcast").children({
-            TextField::make().pointer(message).title(">").spacer(false).maxLength(127).windowSize(12).onSubmit([](char* buf) {
+            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(12).onSubmit([](char* buf) {
                 Serial.println(buf);
             }).buildPtr(),
         }).buildPtr(),

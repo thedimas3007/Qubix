@@ -55,4 +55,6 @@ inline void setBacklight(uint8_t brightness) { analogWrite(DISPLAY_BL, brightnes
 #define DISPLAY_BG WHITE
 #endif
 
+#define MESSAGE_LENGTH 128
+
 #endif
