@@ -411,6 +411,42 @@ public:
     void renderInline(Adafruit_GFX &display) override;
     bool update(char key) override;
 };
+
+
+class TextField : public UIInline {
+    char* ptr;
+    int16_t cursor;
+    uint8_t max_length;
+    uint8_t window_size;
+    uint8_t slice_at = 0;
+public:
+    struct Config {
+        char* ptr = nullptr;
+        uint8_t max_length = 64;
+        uint8_t window_size = 12;
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& pointer(char c[]) { c_.ptr = c; return *this; }
+        Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
+        Builder& windowSize(uint8_t s) { c_.window_size = s; return *this; };
+
+        [[nodiscard]] TextField build() const { return TextField(c_); }
+        [[nodiscard]] TextField* buildPtr() const { return new TextField(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit TextField(const Config& cfg)
+        : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length), window_size(std::min<uint8_t>(cfg.max_length, cfg.window_size)) {}
+
+    void render(Adafruit_GFX &display, bool minimalized) override;
+    void renderInline(Adafruit_GFX &display) override;
+    bool update(char key) override;
+};
+
 #pragma endregion
 
 #pragma region Other

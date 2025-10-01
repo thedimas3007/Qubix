@@ -167,7 +167,7 @@ void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
 
     String prefix = icon ? (String(icon) + title) : title;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? static_cast<uint8_t>(20 - (prefix.length() + data.length()))
+                     ? (20 - (prefix.length() + data.length()))
                      : 0;
 
     display.print(prefix);
@@ -184,7 +184,7 @@ void StringProperty::render(Adafruit_GFX& display, bool minimalized) {
     String prefix = icon ? (String(icon) + title) : title;
     String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? static_cast<uint8_t>(20 - (prefix.length() + data.length()))
+                     ? (20 - (prefix.length() + data.length()))
                      : 0;
     display.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) display.print(' ');
@@ -232,7 +232,7 @@ void NumberPicker<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
     T v = getValue();
     const uint8_t total = getDigits();
     const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
-                           ? static_cast<uint8_t>(20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
+                           ? (20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
                            : 0;
     const int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
@@ -257,7 +257,7 @@ void NumberPicker<T>::renderInline(Adafruit_GFX& display) {
     T v = getValue();
     const uint8_t total = getDigits();
     const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
-                           ? static_cast<uint8_t>(20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
+                           ? (20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
                            : 0;
     const int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
@@ -339,7 +339,7 @@ void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
     String prefix = icon ? (String(icon) + title) : title;
     const String& current = items.at(cursor);
     uint8_t spaces = (20 > (prefix.length() + current.length()))
-                     ? static_cast<uint8_t>(20 - (prefix.length() + current.length()))
+                     ? (20 - (prefix.length() + current.length()))
                      : 0;
 
     display.print(prefix);
@@ -351,7 +351,7 @@ void Selector::renderInline(Adafruit_GFX& display) {
     String prefix = icon ? (String(icon) + title) : title;
     const String& current = items.at(cursor);
     uint8_t spaces = (20 > (prefix.length() + current.length()))
-                     ? static_cast<uint8_t>(20 - (prefix.length() + current.length()))
+                     ? (20 - (prefix.length() + current.length()))
                      : 0;
 
     display.print(prefix);
@@ -388,7 +388,7 @@ bool Selector::update(char key) {
 void Toggle::render(Adafruit_GFX& display, bool minimalized) {
     String prefix = icon ? (String(icon) + title) : title;
     uint8_t spaces = (20 > (prefix.length() + 3))
-                     ? static_cast<uint8_t>(20 - (prefix.length() + 3))
+                     ? (20 - (prefix.length() + 3))
                      : 0;
 
     display.print(prefix);
@@ -408,11 +408,13 @@ void Toggle::activate(Adafruit_GFX& /* display */) {
 #pragma region Input
 
 void Input::render(Adafruit_GFX& display, bool minimalized) {
+    if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
+
     String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr != nullptr ? String(ptr) : "<null>";
+    String data = ptr;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                 ? static_cast<uint8_t>(20 - (prefix.length() + data.length()))
+                 ? (20 - (prefix.length() + data.length()))
                  : 0;
 
     if (prefix.length() == 0) spaces = 0;
@@ -423,11 +425,14 @@ void Input::render(Adafruit_GFX& display, bool minimalized) {
 }
 
 void Input::renderInline(Adafruit_GFX& display) {
+    if (ptr == nullptr) return;
+    if (cursor == -1) cursor = strlen(ptr);
+
     String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr != nullptr ? String(ptr) : "<null>";
-    bool has_cursor = ptr != nullptr && data.length() < max_length;
+    String data = ptr;
+    bool has_cursor = data.length() < max_length;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                 ? static_cast<uint8_t>(20 - (prefix.length() + data.length() + has_cursor))
+                 ? (20 - (prefix.length() + data.length() + has_cursor))
                  : 0;
 
     if (prefix.length() == 0) spaces = 0;
@@ -494,6 +499,100 @@ bool Input::update(char key) {
     strcpy(ptr, buf.c_str());
     return true;
 }
+
+#pragma endregion
+
+
+#pragma region TextField
+
+void TextField::render(Adafruit_GFX& display, bool minimalized) {
+    if (ptr == nullptr) return;
+    if (cursor == -1) cursor = strlen(ptr);
+
+    display.print('>');
+    display.println(ptr);
+}
+
+void TextField::renderInline(Adafruit_GFX& display) {
+    if (ptr == nullptr) return;
+    if (cursor == -1) cursor = strlen(ptr);
+
+    String data = ptr;
+    bool has_cursor = data.length() < max_length && cursor == data.length();
+    if (has_cursor && data.length() > window_size-1) {
+        data = data.substring(slice_at+1, std::min<uint8_t>(slice_at+window_size, data.length()));
+    } else {
+        data = data.substring(slice_at, std::min<uint8_t>(slice_at+window_size, data.length()));
+    }
+    display.print('>');
+    for (uint8_t i = 0; i < data.length(); i++) {
+        if (i == cursor-slice_at) {
+            uint16_t fg = DISPLAY_FG;
+            uint16_t bg = DISPLAY_BG;
+            if (millis() / 500 % 2) fg = DISPLAY_BG; bg = DISPLAY_FG;
+
+            display.setTextColor(fg, bg);
+            display.print(data.charAt(i));
+            display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+            has_cursor = false;
+        } else {
+            display.print(data.charAt(i));
+        }
+    };
+
+    if (has_cursor) display.println((millis() / 500 % 2) ? '_' : ' ');
+}
+
+bool TextField::update(char key) {
+    if (ptr == nullptr) return false;
+
+    String buf = ptr; // I know using Strings may be inefficient, but it is much more convenient
+    if (key >= ' ' && key <= '~') {
+        if (buf.length() < max_length) {
+            String start = buf.substring(0, cursor);
+            String end = cursor < buf.length() ? buf.substring(cursor) : "";
+            buf = start + key + end;
+            cursor++;
+            if (buf.length() > window_size) slice_at++;
+        }
+    } else if (key == KEY_BACK) {
+        if (cursor > 0) {
+            String start = cursor > 0 ? buf.substring(0, cursor-1) : "";
+            String end = cursor < buf.length() ? buf.substring(cursor) : "";
+            buf = start + end;
+            cursor--;
+            if (slice_at > 0) slice_at--;
+        }
+    } else if (key == KEY_LEFT) {
+        if (cursor > 0) cursor--;
+        if (cursor < slice_at) slice_at--;
+    } else if (key == KEY_FN_LEFT) {
+        cursor = 0;
+        slice_at = 0;
+    } else if (key == KEY_RIGHT) {
+        if (cursor < buf.length()) cursor++;
+        if (cursor > slice_at+window_size-1 && cursor < buf.length()) slice_at++;
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = buf.length();
+        slice_at = window_size-1 > buf.length() ? 0 : buf.length()-window_size;
+    } else if (key == KEY_FN_BACK) {
+        String start = cursor > 0 ? buf.substring(0, cursor) : "";
+        String end = cursor+1 < buf.length() ? buf.substring(cursor+1) : "";
+        buf = start + end;
+    } else if (key == KEY_SHIFT_BACK) {
+        String start = "";
+        String end = cursor < buf.length() ? buf.substring(cursor) : "";
+        buf = start + end;
+        cursor = 0;
+        slice_at = 0;
+    } else {
+        return false;
+    }
+
+    strcpy(ptr, buf.c_str());
+    return true;
+}
+
 
 #pragma endregion
 
