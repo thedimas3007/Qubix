@@ -8,11 +8,11 @@
 #include "settings.h"
 #include "ui_core.h"
 
-#ifdef TARGET_SH1106
+#if     defined(TARGET_SH1106)
 Adafruit_SH1106G display(128, 64, &Wire1, -1);
-#elif defined(TARGET_SSD1306)
+#elif   defined(TARGET_SSD1306)
 Adafruit_SSD1306 display(128, 64, &Wire1, -1);
-#elif defined(TARGET_ST7567)
+#elif   defined(TARGET_ST7567)
 ST7567 display(128, 64, &SPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #endif
 

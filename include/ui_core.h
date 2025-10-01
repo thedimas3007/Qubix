@@ -22,18 +22,18 @@ public:
     virtual void render(Adafruit_GFX &display, bool minimalized) = 0;
     virtual bool update(char key);
 
-    virtual ElementType getType() const { return ElementType::BASIC; };
+    [[nodiscard]] virtual ElementType getType() const { return ElementType::BASIC; };
 };
 
 class UIInline : public UIElement {
 public:
-    ElementType getType() const override { return ElementType::INLINE; };
+    [[nodiscard]] ElementType getType() const override { return ElementType::INLINE; };
     virtual void renderInline(Adafruit_GFX &display) = 0;
 };
 
 class UIClickable : public UIElement {
 public:
-    ElementType getType() const override { return ElementType::CLICKABLE; };
+    [[nodiscard]] ElementType getType() const override { return ElementType::CLICKABLE; };
     virtual void activate(Adafruit_GFX &display) = 0;
 };
 
@@ -58,8 +58,8 @@ public:
         Builder& children(const std::initializer_list<UIElement*>& v) { c_.children = v; return *this; }
         Builder& addChild(UIElement* e) { c_.children.push_back(e); return *this; }
 
-        Stack build() const { return Stack(c_); }
-        Stack* buildPtr() const { return new Stack(c_); }
+        [[nodiscard]] Stack build() const { return Stack(c_); }
+        [[nodiscard]] Stack* buildPtr() const { return new Stack(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -68,12 +68,6 @@ public:
 
     explicit Stack(const Config& cfg)
         : children(cfg.children), title(cfg.title) {}
-
-    Stack(String title, std::initializer_list<UIElement*> children)
-        : children(children), title(std::move(title)) {}
-
-    Stack(std::initializer_list<UIElement*> children)
-        : children(children) {}
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;
@@ -111,8 +105,8 @@ public:
         Builder& maxElements(uint8_t m) { c_.max_elements = m; return *this; }
         Builder& onExit(std::function<void()> f) { c_.on_exit = std::move(f); return *this; }
 
-        MenuView build() const { return MenuView(c_); }
-        MenuView* buildPtr() const { return new MenuView(c_); }
+        [[nodiscard]] MenuView build() const { return MenuView(c_); }
+        [[nodiscard]] MenuView* buildPtr() const { return new MenuView(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -125,23 +119,10 @@ public:
           children(cfg.children),
           start(0),
           cursor(0),
-          window_size(static_cast<int16_t>(std::min<int>(cfg.max_elements, (int)cfg.children.size()))),
+          window_size(static_cast<int16_t>(std::min<int>(cfg.max_elements, static_cast<int>(cfg.children.size())))),
           on_exit(cfg.on_exit),
           icon(cfg.icon),
           title(cfg.title) {}
-
-    MenuView(char icon, String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6, std::function<void()> on_exit = [] {})
-        : selected(nullptr),
-          children(children),
-          start(0),
-          cursor(0),
-          window_size(static_cast<int16_t>(std::min<int>(max_elements, (int)children.size()))),
-          on_exit(std::move(on_exit)),
-          icon(icon),
-          title(std::move(title)) {}
-
-    explicit MenuView(String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6, std::function<void()> on_exit = [] {})
-        : MenuView(0x00, std::move(title), children, max_elements, std::move(on_exit)) {}
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;
@@ -161,8 +142,8 @@ public:
         Config c_;
     public:
         Builder& title(const String& t) { c_.title = t; return *this; }
-        Label build() const { return Label(c_); }
-        Label* buildPtr() const { return new Label(c_); }
+        [[nodiscard]] Label build() const { return Label(c_); }
+        [[nodiscard]] Label* buildPtr() const { return new Label(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -203,8 +184,8 @@ public:
         Builder& fmt(const char* f) { c_.format = f; return *this; }
         Builder& values(std::vector<String>& v) { c_.with_values = true, c_.values = v; return *this; }
 
-        Property build() const { return Property(c_); }
-        Property* buildPtr() const { return new Property(c_); }
+        [[nodiscard]] Property build() const { return Property(c_); }
+        [[nodiscard]] Property* buildPtr() const { return new Property(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -237,8 +218,8 @@ public:
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& pointer(char p[]) { c_.ptr = p; return *this; }
 
-        StringProperty build() const { return StringProperty(c_); }
-        StringProperty* buildPtr() const { return new StringProperty(c_); }
+        [[nodiscard]] StringProperty build() const { return StringProperty(c_); }
+        [[nodiscard]] StringProperty* buildPtr() const { return new StringProperty(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -258,7 +239,7 @@ public:
 
 template<class T>
 class NumberPicker : public UIInline {
-    static_assert(std::is_arithmetic<T>::value, "T must be a number");
+    static_assert(std::is_arithmetic_v<T>, "T must be a number");
 
     T* number;
     int8_t cursor;
@@ -266,7 +247,7 @@ class NumberPicker : public UIInline {
     const T maximum;
     const uint8_t precision;
 
-    uint8_t getDigits() const;
+    [[nodiscard]] uint8_t getDigits() const;
     void roundToPrecision();
 
 public:
@@ -293,8 +274,8 @@ public:
         Builder& precision(uint8_t p) { c_.precision = p; return *this; }
         Builder& cursor(int8_t c) { c_.cursor = c; return *this; }
 
-        NumberPicker build() const { return NumberPicker(c_); }
-        NumberPicker* buildPtr() const { return new NumberPicker(c_); }
+        [[nodiscard]] NumberPicker build() const { return NumberPicker(c_); }
+        [[nodiscard]] NumberPicker* buildPtr() const { return new NumberPicker(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -308,14 +289,8 @@ public:
           maximum(cfg.max), precision(cfg.precision),
           icon(cfg.icon), title(cfg.title), suffix(cfg.suffix) {}
 
-    NumberPicker(char icon, String title, String suffix, T* number, T min = 0, T max = 0, uint8_t precision = 0, int8_t cursor = 0)
-        : number(number), cursor(cursor), minimum(min), maximum(max), precision(precision), icon(icon), title(std::move(title)), suffix(std::move(suffix)) {};
-
-    explicit NumberPicker(String title, T* number, T min = 0, T max = 0, uint8_t precision = 0, int8_t cursor = 0)
-        : number(number), cursor(cursor), minimum(min), maximum(max), precision(precision), icon(0x00), title(std::move(title)), suffix("") {};
-
-    T getAbsoluteValue() const;
-    T getValue() const;
+    [[nodiscard]] T getAbsoluteValue() const;
+    [[nodiscard]] T getValue() const;
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     void renderInline(Adafruit_GFX &display) override;
@@ -348,8 +323,8 @@ public:
         Builder& items(const std::initializer_list<String>& v) { c_.items = v; return *this; }
         Builder& addItem(const String& s) { c_.items.push_back(s); return *this; }
 
-        Selector build() const { return Selector(c_); }
-        Selector* buildPtr() const { return new Selector(c_); }
+        [[nodiscard]] Selector build() const { return Selector(c_); }
+        [[nodiscard]] Selector* buildPtr() const { return new Selector(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -359,12 +334,6 @@ public:
 
     explicit Selector(const Config& cfg)
         : selection(cfg.selection), items(cfg.items), icon(cfg.icon), title(cfg.title) {}
-
-    Selector(char icon, String title, uint8_t* selection, std::initializer_list<String> items)
-        : selection(selection), items(items), icon(icon), title(std::move(title)) {};
-
-    Selector(String title, uint8_t* selection, std::initializer_list<String> items)
-        : selection(selection), items(items), icon(0x00), title(std::move(title)) {};
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     void renderInline(Adafruit_GFX &display) override;
@@ -389,8 +358,8 @@ public:
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& pointer(bool* b) { c_.pointer = b; return *this; }
 
-        Toggle build() const { return Toggle(c_); }
-        Toggle* buildPtr() const { return new Toggle(c_); }
+        [[nodiscard]] Toggle build() const { return Toggle(c_); }
+        [[nodiscard]] Toggle* buildPtr() const { return new Toggle(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -426,8 +395,8 @@ public:
         Builder& pointer(char c[]) { c_.ptr = c; return *this; }
         Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
 
-        Input build() const { return Input(c_); }
-        Input* buildPtr() const { return new Input(c_); }
+        [[nodiscard]] Input build() const { return Input(c_); }
+        [[nodiscard]] Input* buildPtr() const { return new Input(c_); }
     };
 
     static Builder make() { return Builder{}; }
@@ -463,8 +432,8 @@ public:
         Builder& start(int8_t s) { c_.start = s; return *this; }
         Builder& maxLines(uint8_t m) { c_.max_lines = m; return *this; }
 
-        CharTable build() const { return CharTable(c_); }
-        CharTable* buildPtr() const { return new CharTable(c_); }
+        [[nodiscard]] CharTable build() const { return CharTable(c_); }
+        [[nodiscard]] CharTable* buildPtr() const { return new CharTable(c_); }
     };
 
     static Builder make() { return Builder{}; }

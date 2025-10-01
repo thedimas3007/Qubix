@@ -12,22 +12,24 @@
 struct SettingsData {
     float   radio_frequency =   868.000f;
     float   radio_bandwidth =   125.000f;
-    uint8_t radio_sf        =   9;
-    uint8_t radio_cr        =   7;
-    int8_t  radio_power     =   10;
-    uint8_t radio_preamble  =   8;
-    uint8_t radio_band      =   0;
+    uint8_t radio_sf =          9;
+    uint8_t radio_cr =          7;
+    int8_t  radio_power =       10;
+    uint8_t radio_preamble =    8;
+    uint8_t radio_band =        0;
 
-    uint8_t display_contrast  = 50;
+    uint8_t display_contrast =  50;
     uint8_t display_backlight = 128;
-    bool    display_inverted  = false;
-    bool    display_flipped   = false;
-    char    device_name[16] = "mein_radio";
+    bool    display_inverted =  false;
+    bool    display_flipped =   false;
+    char    device_name[16] =  "mein_radio";
 
     uint16_t crc = 0;
 };
 
 class Settings {
+    static uint16_t crc16(const uint8_t* p, size_t n);
+    void setDefaults();
 public:
     SettingsData data{};
 
@@ -37,10 +39,6 @@ public:
     void save() const;
 
     void applyDisplay(Adafruit_GFX& gfx) const;
-
-private:
-    static uint16_t crc16(const uint8_t* p, size_t n);
-    void setDefaults();
 };
 
 #endif // TERRACOTTA_SETTINGS_H
