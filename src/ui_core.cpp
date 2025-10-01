@@ -510,7 +510,14 @@ void TextField::render(Adafruit_GFX& display, bool minimalized) {
     if (cursor == -1) cursor = strlen(ptr);
 
     display.print('>');
-    display.println(ptr);
+    String data = ptr;
+    if (data.length() <= window_size) {
+        display.println(data);
+    } else {
+        data = data.substring(window_size-1);
+        display.println(data);
+        display.print('\x96');
+    }
 }
 
 void TextField::renderInline(Adafruit_GFX& display) {
@@ -518,12 +525,17 @@ void TextField::renderInline(Adafruit_GFX& display) {
     if (cursor == -1) cursor = strlen(ptr);
 
     String data = ptr;
+    uint8_t size = data.length();
     bool has_cursor = data.length() < max_length && cursor == data.length();
     if (has_cursor && data.length() > window_size-1) {
         data = data.substring(slice_at+1, std::min<uint8_t>(slice_at+window_size, data.length()));
     } else {
         data = data.substring(slice_at, std::min<uint8_t>(slice_at+window_size, data.length()));
     }
+
+    if (slice_at) data.setCharAt(0, '\x96'); // left trim
+    if (slice_at+window_size < size) data.setCharAt(data.length()-1, '\x96'); // right trim
+
     display.print('>');
     for (uint8_t i = 0; i < data.length(); i++) {
         if (i == cursor-slice_at) {
@@ -565,13 +577,15 @@ bool TextField::update(char key) {
         }
     } else if (key == KEY_LEFT) {
         if (cursor > 0) cursor--;
-        if (cursor < slice_at) slice_at--;
+        if (cursor < slice_at+1 && cursor > 0) slice_at--;
     } else if (key == KEY_FN_LEFT) {
         cursor = 0;
         slice_at = 0;
     } else if (key == KEY_RIGHT) {
         if (cursor < buf.length()) cursor++;
-        if (cursor > slice_at+window_size-1 && cursor < buf.length()) slice_at++;
+        if ((cursor > slice_at+window_size-2 && cursor < buf.length()-1 ||
+            cursor > slice_at+window_size-1) &&
+            cursor < buf.length()) slice_at++;
     } else if (key == KEY_FN_RIGHT) {
         cursor = buf.length();
         slice_at = window_size-1 > buf.length() ? 0 : buf.length()-window_size;
