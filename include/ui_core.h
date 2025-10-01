@@ -375,16 +375,24 @@ public:
 };
 
 
-class Input : public UIInline {
+class TextField : public UIInline {
     char* ptr;
     int16_t cursor;
     uint8_t max_length;
+    uint8_t window_size;
+    uint8_t slice_at = 0;
+    std::function<void(char*)> on_submit;
+    bool submittable;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
+        bool spacer = true;
         char* ptr = nullptr;
-        uint8_t max_length = 12;
+        uint8_t max_length = 64;
+        uint8_t window_size = 0;
+        std::function<void(char*)> on_submit = [](char*) {};
+        bool submittable = false;
     };
 
     class Builder {
@@ -392,46 +400,11 @@ public:
     public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
-        Builder& pointer(char c[]) { c_.ptr = c; return *this; }
-        Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
-
-        [[nodiscard]] Input build() const { return Input(c_); }
-        [[nodiscard]] Input* buildPtr() const { return new Input(c_); }
-    };
-
-    static Builder make() { return Builder{}; }
-
-    char icon;
-    String title;
-
-    explicit Input(const Config& cfg)
-        : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
-
-    void render(Adafruit_GFX &display, bool minimalized) override;
-    void renderInline(Adafruit_GFX &display) override;
-    bool update(char key) override;
-};
-
-
-class TextField : public UIInline {
-    char* ptr;
-    int16_t cursor;
-    uint8_t max_length;
-    uint8_t window_size;
-    uint8_t slice_at = 0;
-public:
-    struct Config {
-        char* ptr = nullptr;
-        uint8_t max_length = 64;
-        uint8_t window_size = 12;
-    };
-
-    class Builder {
-        Config c_;
-    public:
+        Builder& spacer(bool s) { c_.spacer = s; return *this; }
         Builder& pointer(char c[]) { c_.ptr = c; return *this; }
         Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
         Builder& windowSize(uint8_t s) { c_.window_size = s; return *this; };
+        Builder& onSubmit(std::function<void(char*)> f) { c_.on_submit = std::move(f); c_.submittable = true; return *this; }
 
         [[nodiscard]] TextField build() const { return TextField(c_); }
         [[nodiscard]] TextField* buildPtr() const { return new TextField(c_); }
@@ -439,8 +412,15 @@ public:
 
     static Builder make() { return Builder{}; }
 
+    char icon;
+    String title;
+    bool spacer;
+
     explicit TextField(const Config& cfg)
-        : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length), window_size(std::min<uint8_t>(cfg.max_length, cfg.window_size)) {}
+        : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length),
+          window_size(cfg.window_size ? std::min<uint8_t>(cfg.max_length, cfg.window_size) : cfg.max_length),
+          on_submit(cfg.on_submit), submittable(cfg.submittable),
+          icon(cfg.icon), title(cfg.title), spacer(cfg.spacer) {}
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     void renderInline(Adafruit_GFX &display) override;
@@ -453,19 +433,15 @@ public:
 
 class CharTable : public UIElement {
     int8_t start = 0;
-    uint8_t max_lines = 5;
+    uint8_t max_lines;
 public:
     struct Config {
-        String title = "";
-        int8_t start = 0;
         uint8_t max_lines = 5;
     };
 
     class Builder {
         Config c_;
     public:
-        Builder& title(const String& t) { c_.title = t; return *this; }
-        Builder& start(int8_t s) { c_.start = s; return *this; }
         Builder& maxLines(uint8_t m) { c_.max_lines = m; return *this; }
 
         [[nodiscard]] CharTable build() const { return CharTable(c_); }
@@ -474,13 +450,7 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    String title;
-
-    explicit CharTable(const Config& cfg)
-        : start(cfg.start), max_lines(cfg.max_lines), title(cfg.title) {};
-
-    explicit CharTable(String title)
-        : title(std::move(title)) {};
+    explicit CharTable(const Config& cfg) : max_lines(cfg.max_lines) {};
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;

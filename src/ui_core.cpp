@@ -405,112 +405,22 @@ void Toggle::activate(Adafruit_GFX& /* display */) {
 #pragma endregion
 
 
-#pragma region Input
-
-void Input::render(Adafruit_GFX& display, bool minimalized) {
-    if (ptr == nullptr) return;
-    if (cursor == -1) cursor = strlen(ptr);
-
-    String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr;
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                 ? (20 - (prefix.length() + data.length()))
-                 : 0;
-
-    if (prefix.length() == 0) spaces = 0;
-
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.println(data);
-}
-
-void Input::renderInline(Adafruit_GFX& display) {
-    if (ptr == nullptr) return;
-    if (cursor == -1) cursor = strlen(ptr);
-
-    String prefix = icon ? (String(icon) + title) : title;
-    String data = ptr;
-    bool has_cursor = data.length() < max_length;
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                 ? (20 - (prefix.length() + data.length() + has_cursor))
-                 : 0;
-
-    if (prefix.length() == 0) spaces = 0;
-
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    for (uint8_t i = 0; i < data.length(); i++) {
-        if (i == cursor) {
-            uint16_t fg = DISPLAY_FG;
-            uint16_t bg = DISPLAY_BG;
-            if (millis() / 500 % 2) fg = DISPLAY_BG; bg = DISPLAY_FG;
-
-            display.setTextColor(fg, bg);
-            display.print(data.charAt(i));
-            display.setTextColor(DISPLAY_FG, DISPLAY_BG);
-            has_cursor = false;
-        } else {
-            display.print(data.charAt(i));
-        }
-    };
-
-    if (has_cursor) display.println((millis() / 500 % 2) ? '_' : ' ');
-}
-
-bool Input::update(char key) {
-    if (ptr == nullptr) return false;
-
-    String buf = ptr; // I know using Strings may be inefficient, but it is much more convenient
-    if (key >= ' ' && key <= '~') {
-        if (buf.length() < max_length) {
-            String start = buf.substring(0, cursor);
-            String end = cursor < buf.length() ? buf.substring(cursor) : "";
-            buf = start + key + end;
-            cursor++;
-        }
-    } else if (key == KEY_BACK) {
-        if (cursor > 0) {
-            String start = cursor > 0 ? buf.substring(0, cursor-1) : "";
-            String end = cursor < buf.length() ? buf.substring(cursor) : "";
-            buf = start + end;
-            cursor--;
-        }
-    } else if (key == KEY_LEFT) {
-        if (cursor > 0) cursor--;
-    } else if (key == KEY_FN_LEFT) {
-        cursor = 0;
-    } else if (key == KEY_RIGHT) {
-        if (cursor < buf.length()) cursor++;
-    } else if (key == KEY_FN_RIGHT) {
-        cursor = buf.length();
-    } else if (key == KEY_FN_BACK) {
-        String start = cursor > 0 ? buf.substring(0, cursor) : "";
-        String end = cursor+1 < buf.length() ? buf.substring(cursor+1) : "";
-        buf = start + end;
-    } else if (key == KEY_SHIFT_BACK) {
-        String start = "";
-        String end = cursor < buf.length() ? buf.substring(cursor) : "";
-        buf = start + end;
-        cursor = 0;
-    } else {
-        return false;
-    }
-    
-    strcpy(ptr, buf.c_str());
-    return true;
-}
-
-#pragma endregion
-
-
 #pragma region TextField
 
 void TextField::render(Adafruit_GFX& display, bool minimalized) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
-    display.print('>');
+    String prefix = icon ? (String(icon) + title) : title;
     String data = ptr;
+    uint8_t spaces = (20 > (prefix.length() + data.length()))
+                         ? (20 - (prefix.length() + data.length()))
+                         : 0;
+    if (prefix.length() == 0 || !spacer) spaces = 0;
+
+    display.print(prefix);
+    for (uint8_t i = 0; i < (spacer ? spaces : 0); i++) display.print(' ');
+
     if (data.length() <= window_size) {
         display.println(data);
     } else {
@@ -524,6 +434,7 @@ void TextField::renderInline(Adafruit_GFX& display) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
+    String prefix = icon ? (String(icon) + title) : title;
     String data = ptr;
     uint8_t size = data.length();
     bool has_cursor = data.length() < max_length && cursor == data.length();
@@ -533,10 +444,18 @@ void TextField::renderInline(Adafruit_GFX& display) {
         data = data.substring(slice_at, std::min<uint8_t>(slice_at+window_size, data.length()));
     }
 
-    if (slice_at) data.setCharAt(0, '\x96'); // left trim
+    if (slice_at || (has_cursor && size > window_size-1)) data.setCharAt(0, '\x96'); // left trim
     if (slice_at+window_size < size) data.setCharAt(data.length()-1, '\x96'); // right trim
 
-    display.print('>');
+    uint8_t spaces = (20 > (prefix.length() + data.length()))
+                 ? (20 - (prefix.length() + data.length() + has_cursor))
+                 : 0;
+
+    if (prefix.length() == 0 || !spacer) spaces = 0;
+
+    display.print(prefix);
+    for (uint8_t i = 0; i < (spacer ? spaces : 0); i++) display.print(' ');
+
     for (uint8_t i = 0; i < data.length(); i++) {
         if (i == cursor-slice_at) {
             uint16_t fg = DISPLAY_FG;
@@ -552,7 +471,8 @@ void TextField::renderInline(Adafruit_GFX& display) {
         }
     };
 
-    if (has_cursor) display.println((millis() / 500 % 2) ? '_' : ' ');
+    if (has_cursor) display.print((millis() / 500 % 2) ? '_' : ' ');
+    display.println();
 }
 
 bool TextField::update(char key) {
@@ -599,6 +519,13 @@ bool TextField::update(char key) {
         buf = start + end;
         cursor = 0;
         slice_at = 0;
+    } else if (key == KEY_ENTER && submittable) {
+        char copy[max_length];
+        strcpy(copy, buf.c_str());
+        buf = "";
+        on_submit(copy);
+        cursor = 0;
+        slice_at = 0;
     } else {
         return false;
     }
@@ -615,7 +542,7 @@ bool TextField::update(char key) {
 
 void CharTable::render(Adafruit_GFX& display, bool minimalized) {
     if (minimalized) {
-        display.println(title);
+        display.println("Characters");
     } else {
         display.println("  |0123456789ABCDEF| ");
         display.println(" -+----------------+-");

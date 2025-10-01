@@ -54,7 +54,9 @@ Stack root = Stack::make().children({
 
     MenuView::make().title("Radio").children({
         MenuView::make().icon('\x8C').title("Broadcast").children({
-            TextField::make().pointer(message).maxLength(127).windowSize(12).buildPtr()
+            TextField::make().pointer(message).title(">").spacer(false).maxLength(127).windowSize(12).onSubmit([](char* buf) {
+                Serial.println(buf);
+            }).buildPtr(),
         }).buildPtr(),
         MenuView::make().icon('\x8D').title("Settings").children({
             MenuView::make().icon('\xAD').title("Radio").children({
@@ -86,7 +88,7 @@ Stack root = Stack::make().children({
                 display.display();
             }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
-                Input::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
+                TextField::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
             }).onExit([] {
                 settings.save();
             }).buildPtr(),
@@ -95,7 +97,7 @@ Stack root = Stack::make().children({
         MenuView::make().icon('*').title("Tools").buildPtr(),
 
         MenuView::make().icon('\x91').title("Debug").children({
-            CharTable::make().title("Characters").buildPtr(),
+            CharTable::make().buildPtr(),
             MenuView::make().title("Settings").children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
                 Property<float>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).fmt("%.2fkHz").buildPtr(),
