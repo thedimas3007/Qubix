@@ -27,7 +27,7 @@ bool UIElement::update(char /*key*/) {
 
 void Stack::render(Adafruit_GFX& display, bool minimalized) {
     if (minimalized) {
-        display.println(title);
+        display.println(icon ? (String(icon) + title) : title);
     } else {
         if (title != "") display.println(title);
         for (auto &i : children) {
@@ -51,12 +51,12 @@ bool Stack::update(char key) {
 
 void MenuView::checkPointer() {
     const int16_t n = children.size();
-    const int16_t last_start = std::max<int16_t>(0, n - window_size);
+    const int16_t last_start = std::max<int16_t>(0, n - max_elements);
 
     if (cursor < start) {
         start = cursor;
-    } else if (cursor >= start + window_size) {
-        start = cursor - (window_size - 1);
+    } else if (cursor >= start + max_elements) {
+        start = cursor - (max_elements - 1);
     }
 
     if (start < 0) start = 0;
@@ -104,7 +104,7 @@ bool MenuView::update(char key) {
 
 void MenuView::render(Adafruit_GFX& display, bool minimalized) {
     const int16_t n = children.size();
-    const int16_t last = std::min<int16_t>(start + window_size, n);
+    const int16_t last = std::min<int16_t>(start + max_elements, n);
 
     if (selected == nullptr) {
         if (minimalized) {

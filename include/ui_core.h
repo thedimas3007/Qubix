@@ -46,6 +46,7 @@ class Stack : public UIElement {
 
 public:
     struct Config {
+        char icon = 0x00;
         String title = "";
         std::vector<UIElement*> children{};
     };
@@ -53,6 +54,7 @@ public:
     class Builder {
         Config c_;
     public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& children(const std::vector<UIElement*>& v) { c_.children = v; return *this; }
         Builder& children(const std::initializer_list<UIElement*>& v) { c_.children = v; return *this; }
@@ -64,10 +66,11 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    String title = "";
+    char icon;
+    String title;
 
     explicit Stack(const Config& cfg)
-        : children(cfg.children), title(cfg.title) {}
+        : children(cfg.children), icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;
@@ -80,7 +83,7 @@ class MenuView : public UIElement {
 
     int16_t start = 0;
     int16_t cursor = 0;
-    int16_t window_size = 6;
+    int16_t max_elements = 6;
 
     void checkPointer();
     std::function<void()> on_exit;
@@ -119,7 +122,7 @@ public:
           children(cfg.children),
           start(0),
           cursor(0),
-          window_size(static_cast<int16_t>(std::min<int>(cfg.max_elements, static_cast<int>(cfg.children.size())))),
+          max_elements(static_cast<int16_t>(std::min<int>(cfg.max_elements, static_cast<int>(cfg.children.size())))),
           on_exit(cfg.on_exit),
           icon(cfg.icon),
           title(cfg.title) {}
