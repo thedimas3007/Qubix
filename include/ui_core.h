@@ -19,7 +19,7 @@ enum class ElementType {
 class UIElement {
 public:
     virtual ~UIElement() = default;
-    virtual void render(Adafruit_GFX* display, bool minimalized) = 0;
+    virtual void render(Adafruit_GFX &display, bool minimalized) = 0;
     virtual bool update(char key);
 
     virtual ElementType getType() const { return ElementType::BASIC; };
@@ -28,13 +28,13 @@ public:
 class UIInline : public UIElement {
 public:
     ElementType getType() const override { return ElementType::INLINE; };
-    virtual void renderInline(Adafruit_GFX* display) = 0;
+    virtual void renderInline(Adafruit_GFX &display) = 0;
 };
 
 class UIClickable : public UIElement {
 public:
     ElementType getType() const override { return ElementType::CLICKABLE; };
-    virtual void activate(Adafruit_GFX* display) = 0;
+    virtual void activate(Adafruit_GFX &display) = 0;
 };
 
 #pragma endregion
@@ -75,7 +75,7 @@ public:
     Stack(std::initializer_list<UIElement*> children)
         : children(children) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;
 };
 
@@ -143,7 +143,7 @@ public:
     explicit MenuView(String title, std::initializer_list<UIElement*> children = {}, uint8_t max_elements = 6, std::function<void()> on_exit = [] {})
         : MenuView(0x00, std::move(title), children, max_elements, std::move(on_exit)) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;
 };
 
@@ -175,7 +175,7 @@ public:
     explicit Label(String title)
         : title(std::move(title)) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
 };
 
 template<class T>
@@ -215,7 +215,7 @@ public:
     explicit Property(const Config& cfg)
         : ptr(cfg.ptr), format(cfg.format), values(cfg.values), with_values(cfg.with_values), icon(cfg.icon), title(cfg.title) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
 };
 template class Property<uint8_t>;
 template class Property<int8_t>;
@@ -249,7 +249,7 @@ public:
     explicit StringProperty(const Config& cfg)
         : ptr(cfg.ptr), icon(cfg.icon), title(cfg.title) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
 };
 
 #pragma endregion
@@ -317,8 +317,8 @@ public:
     T getAbsoluteValue() const;
     T getValue() const;
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
-    void renderInline(Adafruit_GFX* display) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
+    void renderInline(Adafruit_GFX &display) override;
     bool update(char key) override;
 };
 template class NumberPicker<uint8_t>;
@@ -366,8 +366,8 @@ public:
     Selector(String title, uint8_t* selection, std::initializer_list<String> items)
         : selection(selection), items(items), icon(0x00), title(std::move(title)) {};
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
-    void renderInline(Adafruit_GFX* display) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
+    void renderInline(Adafruit_GFX &display) override;
     bool update(char key) override;
 };
 
@@ -401,8 +401,8 @@ public:
     explicit Toggle(const Config& cfg)
         : ptr(cfg.pointer), icon(cfg.icon), title(cfg.title) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
-    void activate(Adafruit_GFX* display) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
+    void activate(Adafruit_GFX &display) override;
 };
 
 
@@ -438,8 +438,8 @@ public:
     explicit Input(const Config& cfg)
         : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length), icon(cfg.icon), title(cfg.title) {}
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
-    void renderInline(Adafruit_GFX* display) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
+    void renderInline(Adafruit_GFX &display) override;
     bool update(char key) override;
 };
 #pragma endregion
@@ -477,7 +477,7 @@ public:
     explicit CharTable(String title)
         : title(std::move(title)) {};
 
-    void render(Adafruit_GFX* display, bool minimalized) override;
+    void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;
 };
 

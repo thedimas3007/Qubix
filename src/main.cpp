@@ -121,8 +121,6 @@ Stack root = Stack::make().children({
 }).build();
 
 void setup() {
-    Serial.begin(115200);
-
     Wire1.setSCL(EXT_I2C_SCL);
     Wire1.setSDA(EXT_I2C_SDA);
 
@@ -134,6 +132,7 @@ void setup() {
     SPI1.setMOSI(EXT_SPI1_MOSI);
     SPI1.setSCK(EXT_SPI1_SCK);
 
+    Serial.begin(115200);
     Wire1.begin();
     SPI.begin();
     SPI1.begin();
@@ -190,7 +189,7 @@ void loop() {
 
     display.clearDisplay();
     display.setCursor(0, 0);
-    root.render(&display, false);
+    root.render(display, false);
     display.display();
 }
 

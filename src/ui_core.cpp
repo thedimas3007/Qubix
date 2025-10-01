@@ -25,11 +25,11 @@ bool UIElement::update(char /*key*/) {
 
 #pragma region Stack
 
-void Stack::render(Adafruit_GFX* display, bool minimalized) {
+void Stack::render(Adafruit_GFX& display, bool minimalized) {
     if (minimalized) {
-        display->println(title);
+        display.println(title);
     } else {
-        if (title != "") display->println(title);
+        if (title != "") display.println(title);
         for (auto &i : children) {
             i->render(display, false);
         }
@@ -81,7 +81,7 @@ bool MenuView::update(char key) {
         if (key == KEY_RIGHT || key == KEY_ENTER) {
             auto element = children[cursor];
             if (element->getType() == ElementType::CLICKABLE) {
-                    static_cast<UIClickable*>(element)->activate(&display);
+                    static_cast<UIClickable*>(element)->activate(display);
                     on_exit();
             } else {
                 selected = children[cursor];
@@ -102,25 +102,25 @@ bool MenuView::update(char key) {
     return false;
 }
 
-void MenuView::render(Adafruit_GFX* display, bool minimalized) {
+void MenuView::render(Adafruit_GFX& display, bool minimalized) {
     const int16_t n = static_cast<int16_t>(children.size());
     const int16_t last = std::min<int16_t>(start + window_size, n);
 
     if (selected == nullptr) {
         if (minimalized) {
-            display->println(String(icon) + title);
+            display.println(String(icon) + title);
         } else {
-            display->println(title);
+            display.println(title);
             for (int16_t i = start; i < last; ++i) {
-                display->print(i == cursor ? "\x1A" : " ");
+                display.print(i == cursor ? "\x1A" : " ");
                 children[i]->render(display, true);
             }
         }
     } else {
         if (selected->getType() == ElementType::INLINE) {
-            display->println(title);
+            display.println(title);
             for (int16_t i = start; i < last; ++i) {
-                display->print(i == cursor ? "\x1A" : " ");
+                display.print(i == cursor ? "\x1A" : " ");
                 if (children[i] == selected) {
                     static_cast<UIInline*>(children[i])->renderInline(display);
                 } else {
@@ -139,8 +139,8 @@ void MenuView::render(Adafruit_GFX* display, bool minimalized) {
 
 #pragma region Label
 
-void Label::render(Adafruit_GFX* display, bool /*minimalized*/) {
-    display->println(title);
+void Label::render(Adafruit_GFX& display, bool /*minimalized*/) {
+    display.println(title);
 }
 
 #pragma endregion
@@ -149,7 +149,7 @@ void Label::render(Adafruit_GFX* display, bool /*minimalized*/) {
 #pragma region Property
 
 template <class T>
-void Property<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
+void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
     String data = "";
     if (with_values && std::is_integral<T>::value) {
         if (*ptr < 0) {
@@ -170,29 +170,25 @@ void Property<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
                      ? uint8_t(20 - (prefix.length() + data.length()))
                      : 0;
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->println(data);
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
+    display.println(data);
 }
-
-template void Property<uint8_t>::render(Adafruit_GFX*, bool);
-template void Property<int8_t>::render(Adafruit_GFX*, bool);
-template void Property<float>::render(Adafruit_GFX*, bool);
 
 #pragma endregion
 
 
 #pragma region StringProperty
 
-void StringProperty::render(Adafruit_GFX* display, bool minimalized) {
+void StringProperty::render(Adafruit_GFX& display, bool minimalized) {
     String prefix = icon ? (String(icon) + title) : title;
     String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                      ? uint8_t(20 - (prefix.length() + data.length()))
                      : 0;
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->println(data);
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
+    display.println(data);
 }
 
 #pragma endregion
@@ -228,7 +224,7 @@ void NumberPicker<T>::roundToPrecision() {
 }
 
 template<class T>
-void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
+void NumberPicker<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
     String prefix = icon ? (String(icon) + title) : title;
     T v = getValue();
     const uint8_t total = getDigits();
@@ -238,22 +234,22 @@ void NumberPicker<T>::render(Adafruit_GFX* display, bool /*minimalized*/) {
     const int64_t scale = pow10i(precision);
     int64_t scaled = static_cast<int64_t>(std::llround(static_cast<double>(getAbsoluteValue()) * scale));
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; ++i) display->print(' ');
-    if (v < 0) display->print("-");
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) display.print(' ');
+    if (v < 0) display.print("-");
 
     for (int i = total; i >= 1; --i) {
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
-        if (i == precision) display->print(".");
-        display->print(digit);
+        if (i == precision) display.print(".");
+        display.print(digit);
     }
 
-    display->println(suffix);
+    display.println(suffix);
 }
 
 template<class T>
-void NumberPicker<T>::renderInline(Adafruit_GFX* display) {
+void NumberPicker<T>::renderInline(Adafruit_GFX& display) {
     String prefix = icon ? (String(icon) + title) : title;
     T v = getValue();
     const uint8_t total = getDigits();
@@ -263,24 +259,24 @@ void NumberPicker<T>::renderInline(Adafruit_GFX* display) {
     const int64_t scale = pow10i(precision);
     int64_t scaled = static_cast<int64_t>(std::llround(static_cast<double>(getAbsoluteValue()) * scale));
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; ++i) display->print(' ');
-    if (v < 0) display->print("-");
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) display.print(' ');
+    if (v < 0) display.print("-");
 
     for (int i = total; i >= 1; --i) {
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
 
-        if (i == precision) display->print(".");
+        if (i == precision) display.print(".");
 
-        if (i == cursor + 1)    display->setTextColor(DISPLAY_BG, DISPLAY_FG);
-        else                    display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+        if (i == cursor + 1)    display.setTextColor(DISPLAY_BG, DISPLAY_FG);
+        else                    display.setTextColor(DISPLAY_FG, DISPLAY_BG);
 
-        display->print(digit);
-        display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+        display.print(digit);
+        display.setTextColor(DISPLAY_FG, DISPLAY_BG);
     }
 
-    display->println(suffix);
+    display.println(suffix);
 }
 
 template<class T>
@@ -336,31 +332,31 @@ bool NumberPicker<T>::update(char key) {
 
 #pragma region Selector
 
-void Selector::render(Adafruit_GFX* display, bool /* minimalized */) {
+void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
     String prefix = icon ? (String(icon) + title) : title;
     const String& current = items.at(cursor);
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? uint8_t(20 - (prefix.length() + current.length()))
                      : 0;
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->println(current);
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
+    display.println(current);
 }
 
-void Selector::renderInline(Adafruit_GFX* display) {
+void Selector::renderInline(Adafruit_GFX& display) {
     String prefix = icon ? (String(icon) + title) : title;
     const String& current = items.at(cursor);
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? uint8_t(20 - (prefix.length() + current.length()))
                      : 0;
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
 
-    display->setTextColor(DISPLAY_BG, DISPLAY_FG);
-    display->print(current);
-    display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+    display.setTextColor(DISPLAY_BG, DISPLAY_FG);
+    display.print(current);
+    display.setTextColor(DISPLAY_FG, DISPLAY_BG);
 }
 
 bool Selector::update(char key) {
@@ -386,20 +382,20 @@ bool Selector::update(char key) {
 
 #pragma region Toggle
 
-void Toggle::render(Adafruit_GFX* display, bool minimalized) {
+void Toggle::render(Adafruit_GFX& display, bool minimalized) {
     String prefix = icon ? (String(icon) + title) : title;
     uint8_t spaces = (20 > (prefix.length() + 3))
                      ? uint8_t(20 - (prefix.length() + 3))
                      : 0;
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->print('[');
-    display->print(*ptr ? 'x' : ' ');
-    display->println(']');
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
+    display.print('[');
+    display.print(*ptr ? 'x' : ' ');
+    display.println(']');
 }
 
-void Toggle::activate(Adafruit_GFX* /* display */) {
+void Toggle::activate(Adafruit_GFX& /* display */) {
     *ptr = !*ptr;
 }
 
@@ -408,7 +404,7 @@ void Toggle::activate(Adafruit_GFX* /* display */) {
 
 #pragma region Input
 
-void Input::render(Adafruit_GFX* display, bool minimalized) {
+void Input::render(Adafruit_GFX& display, bool minimalized) {
     if (cursor == -1) cursor = strlen(ptr);
     String prefix = icon ? (String(icon) + title) : title;
     String data = ptr != nullptr ? String(ptr) : "<null>";
@@ -418,12 +414,12 @@ void Input::render(Adafruit_GFX* display, bool minimalized) {
 
     if (prefix.length() == 0) spaces = 0;
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
-    display->println(data);
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
+    display.println(data);
 }
 
-void Input::renderInline(Adafruit_GFX* display) {
+void Input::renderInline(Adafruit_GFX& display) {
     String prefix = icon ? (String(icon) + title) : title;
     String data = ptr != nullptr ? String(ptr) : "<null>";
     bool has_cursor = ptr != nullptr && data.length() < max_length;
@@ -433,24 +429,24 @@ void Input::renderInline(Adafruit_GFX* display) {
 
     if (prefix.length() == 0) spaces = 0;
 
-    display->print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display->print(' ');
+    display.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
     for (uint8_t i = 0; i < data.length(); i++) {
         if (i == cursor) {
             uint16_t fg = DISPLAY_FG;
             uint16_t bg = DISPLAY_BG;
             if (millis() / 500 % 2) fg = DISPLAY_BG; bg = DISPLAY_FG;
 
-            display->setTextColor(fg, bg);
-            display->print(data.charAt(i));
-            display->setTextColor(DISPLAY_FG, DISPLAY_BG);
+            display.setTextColor(fg, bg);
+            display.print(data.charAt(i));
+            display.setTextColor(DISPLAY_FG, DISPLAY_BG);
             has_cursor = false;
         } else {
-            display->print(data.charAt(i));
+            display.print(data.charAt(i));
         }
     };
 
-    if (has_cursor) display->println((millis() / 500 % 2) ? '_' : ' ');
+    if (has_cursor) display.println((millis() / 500 % 2) ? '_' : ' ');
 }
 
 bool Input::update(char key) {
@@ -501,26 +497,26 @@ bool Input::update(char key) {
 
 #pragma region CharTable
 
-void CharTable::render(Adafruit_GFX* display, bool minimalized) {
+void CharTable::render(Adafruit_GFX& display, bool minimalized) {
     if (minimalized) {
-        display->println(title);
+        display.println(title);
     } else {
-        display->println("  |0123456789ABCDEF| ");
-        display->println(" -+----------------+-");
+        display.println("  |0123456789ABCDEF| ");
+        display.println(" -+----------------+-");
         for (uint8_t y = static_cast<uint8_t>(start); y < static_cast<uint8_t>(start + max_lines); y++) {
             if (y == 0x10) {
-                display->println(" -+----------------+-");
+                display.println(" -+----------------+-");
             } else {
-                display->print(' ');
-                display->print(y, HEX);
-                display->print("|");
+                display.print(' ');
+                display.print(y, HEX);
+                display.print("|");
                 for (uint8_t x = 0; x < 16; x++) {
                     char c = static_cast<char>(x + y * 16);
                     if (c == 0x0A || c == 0x0D || c == '\n' || c == '\t') c = ' ';
-                    display->print(c);
+                    display.print(c);
                 }
-                display->print("|");
-                display->println(y, HEX);
+                display.print("|");
+                display.println(y, HEX);
             }
         }
     }
