@@ -207,10 +207,8 @@ uint8_t NumberPicker<T>::getDigits() const {
 
 template <class T>
 T NumberPicker<T>::getAbsoluteValue() const {
-    if (std::is_floating_point_v<T>) {
-        return std::fabs(getAbsoluteValue());
-    }
-    return std::abs(getValue());
+    T value = getValue();
+    return value < 0 ? -value : value;
 }
 
 template <class T>
