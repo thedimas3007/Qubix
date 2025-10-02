@@ -97,13 +97,23 @@ Stack root = Stack::make().children({
 
         MenuView::make().icon('\x91').title("Debug").children({
             CharTable::make().buildPtr(),
-            MenuView::make().title("Settings").children({
+            MenuView::make().title("Settings").maxElements(6).children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
                 Property<float>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).fmt("%.2fkHz").buildPtr(),
                 Property<uint8_t>::make().title("SF").pointer(&settings.data.radio_sf).fmt("%d").buildPtr(),
                 Property<uint8_t>::make().title("CR").pointer(&settings.data.radio_cr).fmt("%d").buildPtr(),
                 Property<int8_t>::make().title("Power").pointer(&settings.data.radio_power).fmt("%ddBm").buildPtr(),
                 Property<uint8_t>::make().title("Band").pointer(&settings.data.radio_band).values(bands).buildPtr(),
+                Label::make().title("====").buildPtr(),
+#ifdef HAS_CONTRAST
+                Property<uint8_t>::make().title("Contrast").pointer(&settings.data.display_contrast).fmt("%d").buildPtr(),
+#endif
+#ifdef HAS_BACKLIGHT
+                Property<uint8_t>::make().title("Backlight").pointer(&settings.data.display_backlight).fmt("%d").buildPtr(),
+#endif
+                Property<bool>::make().title("Flipped").pointer(&settings.data.display_flipped).fmt("%d").buildPtr(),
+                Property<bool>::make().title("Inverted").pointer(&settings.data.display_inverted).fmt("%d").buildPtr(),
+                Label::make().title("====").buildPtr(),
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
             }).buildPtr()
         }).buildPtr(),

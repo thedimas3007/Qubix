@@ -30,7 +30,7 @@ void Stack::render(Adafruit_GFX& display, bool minimalized) {
         display.println(icon ? (String(icon) + title) : title);
     } else {
         if (title != "") display.println(title);
-        for (auto &i : children) {
+        for (auto& i : children) {
             i->render(display, false);
         }
     }
@@ -51,16 +51,48 @@ bool Stack::update(char key) {
 
 void MenuView::checkPointer() {
     const int16_t n = children.size();
-    const int16_t last_start = std::max<int16_t>(0, n - max_elements);
+    const int16_t last_start = std::max<int16_t>(0, n - window_size);
 
-    if (cursor < start) {
-        start = cursor;
-    } else if (cursor >= start + max_elements) {
-        start = cursor - (max_elements - 1);
+    if (cursor < slice_at) {
+        slice_at = cursor;
+    } else if (cursor >= slice_at + window_size) {
+        slice_at = cursor - (window_size - 1);
     }
 
-    if (start < 0) start = 0;
-    if (start > last_start) start = last_start;
+    if (slice_at < 0) slice_at = 0;
+    if (slice_at > last_start) slice_at = last_start;
+}
+
+void MenuView::render(Adafruit_GFX& display, bool minimalized) {
+    const int16_t n = children.size();
+    const int16_t last = std::min<int16_t>(slice_at + window_size, n);
+
+    if (selected == nullptr) {
+        if (minimalized) {
+            display.println(String(icon) + title);
+        } else {
+            display.println(title);
+            for (int16_t i = slice_at; i < last; ++i) {
+                display.print(i == cursor ? "\x1A" : " ");
+                children[i]->render(display, true);
+            }
+        }
+    } else {
+        if (selected->getType() == ElementType::INLINE) {
+            display.println(title);
+            for (int16_t i = slice_at; i < last; ++i) {
+                display.print(i == cursor ? "\x1A" : " ");
+                if (children[i] == selected) {
+                    static_cast<UIInline*>(children[i])->renderInline(display);
+                } else {
+                    children[i]->render(display, true);
+                }
+            }
+        } else {
+            // NOTE: Clickable can't be normally selected
+            selected->render(display, false);
+        }
+    }
 }
 
 bool MenuView::update(char key) {
@@ -69,24 +101,36 @@ bool MenuView::update(char key) {
         if (key == 0 || n <= 0) return false;
 
         if (key == KEY_UP) {
-            cursor = (cursor - 1 + n) % n;
-            checkPointer();
+            if (cursor > 0) {
+                cursor--;
+                if (cursor < slice_at+1 && cursor > 0) slice_at--;
+            } else {
+                cursor = n-1;
+                slice_at = n-window_size;
+            }
             return true;
         }
         if (key == KEY_DOWN) {
-            cursor = (cursor + 1) % n;
-            checkPointer();
+            if (cursor < n-1) {
+                cursor++;
+                if ((cursor > slice_at+window_size-2 && cursor < n-1 ||
+                    cursor > slice_at+window_size-1) &&
+                    cursor < n) slice_at++;
+            } else {
+                cursor = 0;
+                slice_at = 0;
+            }
             return true;
         }
         if (key == KEY_RIGHT || key == KEY_ENTER) {
             auto element = children[cursor];
             if (element->getType() == ElementType::CLICKABLE) {
-                    static_cast<UIClickable*>(element)->activate(display);
-                    on_exit();
+                static_cast<UIClickable*>(element)->activate(display);
+                on_exit();
             } else {
                 selected = children[cursor];
             }
-            checkPointer();
+            // checkPointer();
             return true;
         }
     } else {
@@ -100,38 +144,6 @@ bool MenuView::update(char key) {
     }
 
     return false;
-}
-
-void MenuView::render(Adafruit_GFX& display, bool minimalized) {
-    const int16_t n = children.size();
-    const int16_t last = std::min<int16_t>(start + max_elements, n);
-
-    if (selected == nullptr) {
-        if (minimalized) {
-            display.println(String(icon) + title);
-        } else {
-            display.println(title);
-            for (int16_t i = start; i < last; ++i) {
-                display.print(i == cursor ? "\x1A" : " ");
-                children[i]->render(display, true);
-            }
-        }
-    } else {
-        if (selected->getType() == ElementType::INLINE) {
-            display.println(title);
-            for (int16_t i = start; i < last; ++i) {
-                display.print(i == cursor ? "\x1A" : " ");
-                if (children[i] == selected) {
-                    static_cast<UIInline*>(children[i])->renderInline(display);
-                } else {
-                    children[i]->render(display, true);
-                }
-            }
-        } else {
-            // NOTE: Clickable can't be normally selected
-            selected->render(display, false);
-        }
-    }
 }
 
 #pragma endregion

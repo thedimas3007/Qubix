@@ -81,9 +81,9 @@ class MenuView : public UIElement {
     UIElement* selected = nullptr;
     std::vector<UIElement*> children;
 
-    int16_t start = 0;
+    int16_t slice_at = 0;
     int16_t cursor = 0;
-    int16_t max_elements = 6;
+    int16_t window_size = 6;
 
     void checkPointer();
     std::function<void()> on_exit;
@@ -120,9 +120,9 @@ public:
     explicit MenuView(const Config& cfg)
         : selected(nullptr),
           children(cfg.children),
-          start(0),
+          slice_at(0),
           cursor(0),
-          max_elements(static_cast<int16_t>(std::min<int>(cfg.max_elements, static_cast<int>(cfg.children.size())))),
+          window_size(static_cast<int16_t>(std::min<int>(cfg.max_elements, static_cast<int>(cfg.children.size())))),
           on_exit(cfg.on_exit),
           icon(cfg.icon),
           title(cfg.title) {}
@@ -204,6 +204,7 @@ public:
 template class Property<uint8_t>;
 template class Property<int8_t>;
 template class Property<float>;
+template class Property<bool>;
 
 class StringProperty : public UIElement {
     char* ptr;
