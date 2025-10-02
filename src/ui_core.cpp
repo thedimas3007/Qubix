@@ -40,6 +40,12 @@ bool Stack::update(char key) {
 
 #pragma region MenuView
 
+void MenuView::addChild(UIElement* e) {
+    children.push_back(e);
+    cursor = children.size() - 1;
+    if (cursor > window_size+slice_at) slice_at++;
+}
+
 void MenuView::render(Adafruit_GFX& display, bool minimalized) {
     const int16_t n = children.size();
     const int16_t last = std::min<int16_t>(slice_at + window_size, n);
@@ -48,13 +54,13 @@ void MenuView::render(Adafruit_GFX& display, bool minimalized) {
         if (minimalized) {
             display.println(getLabel());
         } else {
-            display.println(title);
+            if (title.length()) display.println(title);
             if (fill_mode == FillMode::TOP && n < window_size) {
                 for (int16_t i = 0; i < window_size-n; i++) display.println();
             }
 
             for (int16_t i = slice_at; i < last; ++i) {
-                display.print(i == cursor ? "\x1A" : " ");
+                display.print(i == cursor && active ? "\x1A" : " ");
                 children[i]->render(display, true);
             }
 
@@ -66,7 +72,7 @@ void MenuView::render(Adafruit_GFX& display, bool minimalized) {
         if (selected->getType() == ElementType::INLINE) {
             display.println(title);
             for (int16_t i = slice_at; i < last; ++i) {
-                display.print(i == cursor ? "\x1A" : " ");
+                display.print(i == cursor && active ? "\x1A" : " ");
                 if (children[i] == selected) {
                     static_cast<UIInline*>(children[i])->renderInline(display);
                 } else {
@@ -91,7 +97,7 @@ bool MenuView::update(char key) {
                 if (cursor < slice_at+1 && cursor > 0) slice_at--;
             } else {
                 cursor = n-1;
-                slice_at = n-window_size;
+                slice_at = (n > window_size) ? (n - window_size) : 0;
             }
             return true;
         }
@@ -134,10 +140,52 @@ bool MenuView::update(char key) {
 #pragma endregion
 
 
+#pragma region TabSelector
+
+void TabSelector::render(Adafruit_GFX& display, bool minimalized) {
+    if (minimalized) {
+        display.println(getLabel());
+    } else {
+        for (int i = 0; i < children.size(); ++i) {
+            auto& element = children[i];
+
+            if (element->getType() == ElementType::ACTIVE) {
+                static_cast<UIActive*>(element)->setActive(i==cursor);
+            }
+
+            if (element->getType() == ElementType::INLINE && i == cursor) {
+                static_cast<UIInline*>(element)->renderInline(display);
+            } else {
+                element->render(display, false);
+            }
+        }
+    }
+}
+
+bool TabSelector::update(char key) {
+    if (key == KEY_TAB) {
+        cursor = (cursor + 1) % children.size();
+        return true;
+    }
+
+    return children[cursor]->update(key);
+}
+
+
+#pragma endregion
+
+
 #pragma region Label
 
-void Label::render(Adafruit_GFX& display, bool /*minimalized*/) {
-    display.println(getLabel());
+void Label::render(Adafruit_GFX& display, bool minimalized) {
+    String data = getLabel();
+    if (max_length && data.length() > max_length && minimalized) {
+        display.println(data.substring(0, max_length-1) + '\x96');
+    } else if (minimalized) {
+        display.println(data);
+    } else {
+        display.println(title);
+    }
 }
 
 #pragma endregion

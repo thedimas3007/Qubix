@@ -48,22 +48,27 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, 
 Settings settings;
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
 
+auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
+
 Stack root = Stack::make().children({
-    Label::make().title("\xAD\x99\x9A             \xAF \x9D\xA1\xA3").buildPtr(),
+    Label::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").buildPtr(),
 
     MenuView::make().title("Radio").children({
-        MenuView::make().icon('\x8C').title("Broadcast").children({
-            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(12).onSubmit([](char* buf) {
-                Serial.println(buf);
+        TabSelector::make().icon('\x8C').title("Broadcast").children({
+            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
+                if (!strlen(buf)) return;
+                message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
             }).buildPtr(),
+            message_menu
         }).buildPtr(),
         MenuView::make().icon('\x8D').title("Settings").children({
             MenuView::make().icon('\xAD').title("Radio").children({
                 NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.data.radio_frequency).min(868.000).max(915.000).precision(3).cursor(3).buildPtr(),
+                // Allowed values are 7.8, 10.4, 15.6, 20.8, 31.25, 41.7, 62.5, 125.0, 250.0 and 500.0 kHz.
                 NumberPicker<float>::make().icon('\x1D').title("Bandw").suffix("kHz").pointer(&settings.data.radio_bandwidth).min(31.25).max(500.00).precision(2).cursor(2).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\x12').title("SF").pointer(&settings.data.radio_sf).min(5).max(12).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\xAF').title("CR").pointer(&settings.data.radio_cr).min(5).max(8).buildPtr(),
-                NumberPicker<int8_t>::make().icon('\x8C').title("Power").suffix("dBm").pointer(&settings.data.radio_power).min(-15).max(22).buildPtr(),
+                NumberPicker<int8_t>::make().icon('\x8C').title("Power").suffix("dBm").pointer(&settings.data.radio_power).min(-9).max(22).buildPtr(),
                 Selector::make().icon('x').title("Band").pointer(&settings.data.radio_band).items(bands).buildPtr()
             }).onExit([] {
                 radio.setFrequency(settings.data.radio_frequency);
@@ -174,12 +179,9 @@ void setup() {
     radio.setCurrentLimit(60.0);
     radio.setDio2AsRfSwitch(true);
     radio.explicitHeader();
-    radio.setCRC(true);
-
-#ifdef RADIO_SLAVE
+    radio.setCRC(1);
     radio.setDio1Action(setFlag);
     radio.startReceive();
-#endif
 
     if (state == RADIOLIB_ERR_NONE) {
         display.println("Radio OK!");

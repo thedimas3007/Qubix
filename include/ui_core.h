@@ -15,7 +15,7 @@
 #pragma region Base
 
 enum class ElementType {
-    BASIC, INLINE, CLICKABLE
+    BASIC, INLINE, CLICKABLE, ACTIVE
 };
 
 class UIElement {
@@ -44,7 +44,16 @@ public:
     virtual void activate(Adafruit_GFX& display) = 0;
 };
 
+class UIActive : public UIElement {
+protected:
+    bool active = true;
+public:
+    [[nodiscard]] ElementType getType() const override { return ElementType::ACTIVE; };
+    void setActive(bool a) { active = a; }
+};
+
 #pragma endregion
+
 
 #pragma region Stackers
 
@@ -85,7 +94,7 @@ enum class FillMode {
     NONE, BOTTOM, TOP
 };
 
-class MenuView : public UIElement {
+class MenuView : public UIActive {
     UIElement* selected = nullptr;
     std::vector<UIElement*> children;
     FillMode fill_mode;
@@ -130,6 +139,42 @@ public:
           window_size(cfg.window_size),
           on_exit(cfg.on_exit) { icon = cfg.icon; title = cfg.title; }
 
+    void addChild(UIElement* e);
+    // void removeLastChild() { children.pop_back(); }
+    // void removeFirstChild() { children.erase(children.begin()); }
+
+    void render(Adafruit_GFX& display, bool minimalized) override;
+    bool update(char key) override;
+};
+
+class TabSelector : public UIElement {
+    std::vector<UIElement*> children;
+    uint8_t cursor = 0;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        std::vector<UIElement*> children{};
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& children(const std::vector<UIElement*>& v) { c_.children = v; return *this; }
+        Builder& children(const std::initializer_list<UIElement*>& v) { c_.children = v; return *this; }
+        Builder& addChild(UIElement* e) { c_.children.push_back(e); return *this; }
+
+        [[nodiscard]] TabSelector build() const { return TabSelector(c_); }
+        [[nodiscard]] TabSelector* buildPtr() const { return new TabSelector(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit TabSelector(const Config& cfg)
+        : children(cfg.children) { icon = cfg.icon; title = cfg.title; }
+
     void render(Adafruit_GFX& display, bool minimalized) override;
     bool update(char key) override;
 };
@@ -139,10 +184,12 @@ public:
 #pragma region Static
 
 class Label : public UIElement {
+    uint8_t max_length;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
+        uint8_t max_length = 0;
     };
 
     class Builder {
@@ -150,13 +197,16 @@ public:
     public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
+
         [[nodiscard]] Label build() const { return Label(c_); }
         [[nodiscard]] Label* buildPtr() const { return new Label(c_); }
     };
 
     static Builder make() { return Builder{}; }
 
-    explicit Label(const Config& cfg) { icon = cfg.icon; title = cfg.title; }
+    explicit Label(const Config& cfg)
+        : max_length(cfg.max_length) { icon = cfg.icon; title = cfg.title; }
 
     void render(Adafruit_GFX& display, bool minimalized) override;
 };
@@ -410,7 +460,7 @@ public:
           on_submit(cfg.on_submit), submittable(cfg.submittable), spacer(cfg.spacer) {
         icon = cfg.icon; title = cfg.title;
         if (!ptr) {
-            ptr = new char[window_size];
+            ptr = new char[max_length+1];
             ptr[0] = '\0';
             owns_mem = true;
         }
