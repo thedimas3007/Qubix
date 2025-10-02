@@ -7,6 +7,8 @@
 
 #include <Adafruit_GFX.h>
 
+#include "configuration.h"
+
 #ifndef TERRACOTTA_UI_CORE_H
 #define TERRACOTTA_UI_CORE_H
 
@@ -18,9 +20,14 @@ enum class ElementType {
 
 class UIElement {
 public:
+    char icon = 0x00;
+    String title{};
+
+    String getLabel() { return icon && settings.data.display_icons ? (String(icon) + title) : title; }
+
     virtual ~UIElement() = default;
-    virtual void render(Adafruit_GFX &display, bool minimalized) = 0;
-    virtual bool update(char key);
+    virtual void render(Adafruit_GFX& display, bool minimalized) = 0;
+    virtual bool update(char key) { return false; };
 
     [[nodiscard]] virtual ElementType getType() const { return ElementType::BASIC; };
 };
@@ -28,13 +35,13 @@ public:
 class UIInline : public UIElement {
 public:
     [[nodiscard]] ElementType getType() const override { return ElementType::INLINE; };
-    virtual void renderInline(Adafruit_GFX &display) = 0;
+    virtual void renderInline(Adafruit_GFX& display) = 0;
 };
 
 class UIClickable : public UIElement {
 public:
     [[nodiscard]] ElementType getType() const override { return ElementType::CLICKABLE; };
-    virtual void activate(Adafruit_GFX &display) = 0;
+    virtual void activate(Adafruit_GFX& display) = 0;
 };
 
 #pragma endregion
@@ -66,13 +73,10 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
-
     explicit Stack(const Config& cfg)
-        : children(cfg.children), icon(cfg.icon), title(cfg.title) {}
+        : children(cfg.children) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
     bool update(char key) override;
 };
 
@@ -90,7 +94,6 @@ class MenuView : public UIElement {
     int16_t cursor = 0;
     int16_t window_size = 6;
 
-    void checkPointer();
     std::function<void()> on_exit;
 
 public:
@@ -121,17 +124,13 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
-
     explicit MenuView(const Config& cfg)
         : children(cfg.children),
           fill_mode(cfg.fill_mode),
           window_size(cfg.window_size),
-          on_exit(cfg.on_exit),
-          icon(cfg.icon), title(cfg.title) {}
+          on_exit(cfg.on_exit) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
     bool update(char key) override;
 };
 
@@ -142,12 +141,14 @@ public:
 class Label : public UIElement {
 public:
     struct Config {
+        char icon = 0x00;
         String title = "";
     };
 
     class Builder {
         Config c_;
     public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
         [[nodiscard]] Label build() const { return Label(c_); }
         [[nodiscard]] Label* buildPtr() const { return new Label(c_); }
@@ -155,15 +156,9 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    String title;
+    explicit Label(const Config& cfg) { icon = cfg.icon; title = cfg.title; }
 
-    explicit Label(const Config& cfg)
-        : title(cfg.title) {}
-
-    explicit Label(String title)
-        : title(std::move(title)) {}
-
-    void render(Adafruit_GFX &display, bool minimalized) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
 };
 
 template<class T>
@@ -197,13 +192,10 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
-
     explicit Property(const Config& cfg)
-        : ptr(cfg.ptr), format(cfg.format), values(cfg.values), with_values(cfg.with_values), icon(cfg.icon), title(cfg.title) {}
+        : ptr(cfg.ptr), format(cfg.format), values(cfg.values), with_values(cfg.with_values) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
 };
 template class Property<uint8_t>;
 template class Property<int8_t>;
@@ -232,13 +224,10 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
-
     explicit StringProperty(const Config& cfg)
-        : ptr(cfg.ptr), icon(cfg.icon), title(cfg.title) {}
+        : ptr(cfg.ptr) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
 };
 
 #pragma endregion
@@ -288,20 +277,18 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
     String suffix;
 
     explicit NumberPicker(const Config& cfg)
         : number(cfg.number), cursor(cfg.cursor), minimum(cfg.min),
           maximum(cfg.max), precision(cfg.precision),
-          icon(cfg.icon), title(cfg.title), suffix(cfg.suffix) {}
+          suffix(cfg.suffix) { icon = cfg.icon; title = cfg.title; }
 
     [[nodiscard]] T getAbsoluteValue() const;
     [[nodiscard]] T getValue() const;
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
-    void renderInline(Adafruit_GFX &display) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
+    void renderInline(Adafruit_GFX& display) override;
     bool update(char key) override;
 };
 template class NumberPicker<uint8_t>;
@@ -337,14 +324,11 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
-
     explicit Selector(const Config& cfg)
-        : selection(cfg.selection), items(cfg.items), icon(cfg.icon), title(cfg.title) {}
+        : selection(cfg.selection), items(cfg.items) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
-    void renderInline(Adafruit_GFX &display) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
+    void renderInline(Adafruit_GFX& display) override;
     bool update(char key) override;
 };
 
@@ -372,14 +356,11 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
-
     explicit Toggle(const Config& cfg)
-        : ptr(cfg.pointer), icon(cfg.icon), title(cfg.title) {}
+        : ptr(cfg.pointer) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
-    void activate(Adafruit_GFX &display) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
+    void activate(Adafruit_GFX& display) override;
 };
 
 
@@ -421,15 +402,13 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    char icon;
-    String title;
     bool spacer;
 
     explicit TextField(const Config& cfg)
         : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length),
           window_size(cfg.window_size ? std::min<uint8_t>(cfg.max_length, cfg.window_size) : cfg.max_length),
-          on_submit(cfg.on_submit), submittable(cfg.submittable),
-          icon(cfg.icon), title(cfg.title), spacer(cfg.spacer) {
+          on_submit(cfg.on_submit), submittable(cfg.submittable), spacer(cfg.spacer) {
+        icon = cfg.icon; title = cfg.title;
         if (!ptr) {
             ptr = new char[window_size];
             ptr[0] = '\0';
@@ -437,14 +416,14 @@ public:
         }
     }
 
-    ~TextField() {
+    ~TextField() override {
         if (owns_mem) {
             delete[] ptr;
         }
     }
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
-    void renderInline(Adafruit_GFX &display) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
+    void renderInline(Adafruit_GFX& display) override;
     bool update(char key) override;
 };
 
@@ -471,9 +450,9 @@ public:
 
     static Builder make() { return Builder{}; }
 
-    explicit CharTable(const Config& cfg) : max_lines(cfg.max_lines) {};
+    explicit CharTable(const Config& cfg) : max_lines(cfg.max_lines) { icon = 0x00; title = "Characters"; };
 
-    void render(Adafruit_GFX &display, bool minimalized) override;
+    void render(Adafruit_GFX& display, bool minimalized) override;
     bool update(char key) override;
 };
 

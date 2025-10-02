@@ -1,5 +1,5 @@
-// settings.h
 #pragma once
+
 #ifndef TERRACOTTA_SETTINGS_H
 #define TERRACOTTA_SETTINGS_H
 
@@ -7,7 +7,7 @@
 #include "Adafruit_GFX.h"
 
 #define EEPROM_SIZE     1024
-#define CFG_VERSION     0x01
+#define CFG_VERSION     0x02
 
 struct SettingsData {
     float   radio_frequency =   868.000f;
@@ -22,6 +22,8 @@ struct SettingsData {
     uint8_t display_backlight = 128;
     bool    display_inverted =  false;
     bool    display_flipped =   false;
+    bool    display_icons =     true;
+
     char    device_name[16] =  "mein_radio";
 
     uint16_t crc = 0;

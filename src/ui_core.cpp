@@ -14,20 +14,11 @@ static int64_t pow10i(uint8_t n) {
     return p;
 }
 
-#pragma region UIElement
-
-bool UIElement::update(char /*key*/) {
-    return false;
-}
-
-#pragma endregion
-
-
 #pragma region Stack
 
 void Stack::render(Adafruit_GFX& display, bool minimalized) {
     if (minimalized) {
-        display.println(icon ? (String(icon) + title) : title);
+        display.println(getLabel());
     } else {
         if (title != "") display.println(title);
         for (auto& i : children) {
@@ -38,7 +29,7 @@ void Stack::render(Adafruit_GFX& display, bool minimalized) {
 
 bool Stack::update(char key) {
     bool updated = false;
-    for (auto &i : children) {
+    for (auto& i : children) {
         if (i->update(key)) updated = true;
     }
     return updated;
@@ -49,27 +40,13 @@ bool Stack::update(char key) {
 
 #pragma region MenuView
 
-void MenuView::checkPointer() {
-    const int16_t n = children.size();
-    const int16_t last_start = std::max<int16_t>(0, n - window_size);
-
-    if (cursor < slice_at) {
-        slice_at = cursor;
-    } else if (cursor >= slice_at + window_size) {
-        slice_at = cursor - (window_size - 1);
-    }
-
-    if (slice_at < 0) slice_at = 0;
-    if (slice_at > last_start) slice_at = last_start;
-}
-
 void MenuView::render(Adafruit_GFX& display, bool minimalized) {
     const int16_t n = children.size();
     const int16_t last = std::min<int16_t>(slice_at + window_size, n);
 
     if (selected == nullptr) {
         if (minimalized) {
-            display.println(String(icon) + title);
+            display.println(getLabel());
         } else {
             display.println(title);
             if (fill_mode == FillMode::TOP && n < window_size) {
@@ -160,7 +137,7 @@ bool MenuView::update(char key) {
 #pragma region Label
 
 void Label::render(Adafruit_GFX& display, bool /*minimalized*/) {
-    display.println(title);
+    display.println(getLabel());
 }
 
 #pragma endregion
@@ -185,7 +162,7 @@ void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
         data = String(buf);
     }
 
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                      ? (20 - (prefix.length() + data.length()))
                      : 0;
@@ -201,7 +178,7 @@ void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
 #pragma region StringProperty
 
 void StringProperty::render(Adafruit_GFX& display, bool minimalized) {
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                      ? (20 - (prefix.length() + data.length()))
@@ -246,7 +223,7 @@ void NumberPicker<T>::roundToPrecision() {
 
 template<class T>
 void NumberPicker<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     T v = getValue();
     const uint8_t total = getDigits();
     const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
@@ -271,7 +248,7 @@ void NumberPicker<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
 
 template<class T>
 void NumberPicker<T>::renderInline(Adafruit_GFX& display) {
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     T v = getValue();
     const uint8_t total = getDigits();
     const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
@@ -354,7 +331,7 @@ bool NumberPicker<T>::update(char key) {
 #pragma region Selector
 
 void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     const String& current = items.at(cursor);
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? (20 - (prefix.length() + current.length()))
@@ -366,7 +343,7 @@ void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
 }
 
 void Selector::renderInline(Adafruit_GFX& display) {
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     const String& current = items.at(cursor);
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? (20 - (prefix.length() + current.length()))
@@ -404,7 +381,7 @@ bool Selector::update(char key) {
 #pragma region Toggle
 
 void Toggle::render(Adafruit_GFX& display, bool minimalized) {
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     uint8_t spaces = (20 > (prefix.length() + 3))
                      ? (20 - (prefix.length() + 3))
                      : 0;
@@ -429,7 +406,7 @@ void TextField::render(Adafruit_GFX& display, bool minimalized) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     String data = ptr;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                      ? (20 - (prefix.length() + data.length()))
@@ -452,7 +429,7 @@ void TextField::renderInline(Adafruit_GFX& display) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
-    String prefix = icon ? (String(icon) + title) : title;
+    String prefix = getLabel();
     String data = ptr;
     uint8_t size = data.length();
     bool has_cursor = data.length() < max_length && cursor == data.length();

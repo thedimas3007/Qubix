@@ -2,6 +2,8 @@
 #ifndef TERRACOTTA_CONFIGURATION_H
 #define TERRACOTTA_CONFIGURATION_H
 
+#include "settings.h"
+
 #define EXT_I2C_SDA         6
 #define EXT_I2C_SCL         7
 
@@ -26,6 +28,8 @@
 #define DISPLAY_ADDRESS     0x3C
 
 #define KEYBOARD_ADDRESS    0x5F
+
+extern Settings settings;
 
 // Display type (automatically configured)
 #ifdef TARGET_SH1106

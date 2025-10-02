@@ -80,7 +80,8 @@ Stack root = Stack::make().children({
                 NumberPicker<uint8_t>::make().title("Backlight").pointer(&settings.data.display_backlight).buildPtr(),
 #endif
                 Toggle::make().title("Flipped").pointer(&settings.data.display_flipped).buildPtr(),
-                Toggle::make().title("Inverted").pointer(&settings.data.display_inverted).buildPtr()
+                Toggle::make().title("Inverted").pointer(&settings.data.display_inverted).buildPtr(),
+                Toggle::make().title("Icons").pointer(&settings.data.display_icons).buildPtr()
             }).onExit([] {
                 settings.save();
                 settings.applyDisplay(display);
