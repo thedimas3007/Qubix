@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "Adafruit_GFX.h"
+#include <Adafruit_GFX.h>
 
 #ifndef TERRACOTTA_UI_CORE_H
 #define TERRACOTTA_UI_CORE_H
@@ -77,9 +77,14 @@ public:
 };
 
 
+enum class FillMode {
+    NONE, BOTTOM, TOP
+};
+
 class MenuView : public UIElement {
     UIElement* selected = nullptr;
     std::vector<UIElement*> children;
+    FillMode fill_mode;
 
     int16_t slice_at = 0;
     int16_t cursor = 0;
@@ -93,7 +98,8 @@ public:
         char icon = 0x00;
         String title = "";
         std::vector<UIElement*> children{};
-        uint8_t max_elements = 6;
+        FillMode fill_mode = FillMode::NONE;
+        uint8_t window_size = 6;
         std::function<void()> on_exit = [] {};
     };
 
@@ -105,7 +111,8 @@ public:
         Builder& children(const std::vector<UIElement*>& v) { c_.children = v; return *this; }
         Builder& children(const std::initializer_list<UIElement*>& v) { c_.children = v; return *this; }
         Builder& addChild(UIElement* e) { c_.children.push_back(e); return *this; }
-        Builder& maxElements(uint8_t m) { c_.max_elements = m; return *this; }
+        Builder& fill(FillMode m) { c_.fill_mode = m; return *this; }
+        Builder& windowSize(uint8_t s) { c_.window_size = s; return *this; }
         Builder& onExit(std::function<void()> f) { c_.on_exit = std::move(f); return *this; }
 
         [[nodiscard]] MenuView build() const { return MenuView(c_); }
@@ -118,14 +125,11 @@ public:
     String title;
 
     explicit MenuView(const Config& cfg)
-        : selected(nullptr),
-          children(cfg.children),
-          slice_at(0),
-          cursor(0),
-          window_size(static_cast<int16_t>(std::min<int>(cfg.max_elements, static_cast<int>(cfg.children.size())))),
+        : children(cfg.children),
+          fill_mode(cfg.fill_mode),
+          window_size(cfg.window_size),
           on_exit(cfg.on_exit),
-          icon(cfg.icon),
-          title(cfg.title) {}
+          icon(cfg.icon), title(cfg.title) {}
 
     void render(Adafruit_GFX &display, bool minimalized) override;
     bool update(char key) override;

@@ -97,7 +97,7 @@ Stack root = Stack::make().children({
 
         MenuView::make().icon('\x91').title("Debug").children({
             CharTable::make().buildPtr(),
-            MenuView::make().title("Settings").maxElements(6).children({
+            MenuView::make().title("Settings").windowSize(6).children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
                 Property<float>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).fmt("%.2fkHz").buildPtr(),
                 Property<uint8_t>::make().title("SF").pointer(&settings.data.radio_sf).fmt("%d").buildPtr(),

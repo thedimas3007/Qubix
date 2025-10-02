@@ -72,9 +72,17 @@ void MenuView::render(Adafruit_GFX& display, bool minimalized) {
             display.println(String(icon) + title);
         } else {
             display.println(title);
+            if (fill_mode == FillMode::TOP && n < window_size) {
+                for (int16_t i = 0; i < window_size-n; i++) display.println();
+            }
+
             for (int16_t i = slice_at; i < last; ++i) {
                 display.print(i == cursor ? "\x1A" : " ");
                 children[i]->render(display, true);
+            }
+
+            if (fill_mode == FillMode::BOTTOM && n < window_size) {
+                for (uint16_t i = 0; i < window_size-n; i++) display.println();
             }
         }
     } else {
@@ -424,8 +432,8 @@ void TextField::render(Adafruit_GFX& display, bool minimalized) {
     String prefix = icon ? (String(icon) + title) : title;
     String data = ptr;
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                         ? (20 - (prefix.length() + data.length()))
-                         : 0;
+                     ? (20 - (prefix.length() + data.length()))
+                     : 0;
     if (prefix.length() == 0 || !spacer) spaces = 0;
 
     display.print(prefix);
@@ -458,8 +466,8 @@ void TextField::renderInline(Adafruit_GFX& display) {
     if (slice_at+window_size < size) data.setCharAt(data.length()-1, '\x96'); // right trim
 
     uint8_t spaces = (20 > (prefix.length() + data.length()))
-                 ? (20 - (prefix.length() + data.length() + has_cursor))
-                 : 0;
+                     ? (20 - (prefix.length() + data.length() + has_cursor))
+                     : 0;
 
     if (prefix.length() == 0 || !spacer) spaces = 0;
 
