@@ -35,10 +35,11 @@ class Settings {
 public:
     SettingsData data{};
 
-    void begin();
+    bool begin();
     void end();
-    void load();
+    bool load();
     void save() const;
+    void wipe();
 
     void applyDisplay(Adafruit_GFX& gfx) const;
 };

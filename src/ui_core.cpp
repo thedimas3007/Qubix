@@ -448,6 +448,20 @@ void Toggle::activate(Adafruit_GFX& /* display */) {
 #pragma endregion
 
 
+#pragma region Button
+
+void Button::render(Adafruit_GFX& display, bool minimalized) {
+    display.println("[" + getLabel() + "]");
+}
+
+void Button::activate(Adafruit_GFX& display) {
+    on_click();
+}
+
+
+#pragma endregion
+
+
 #pragma region TextField
 
 void TextField::render(Adafruit_GFX& display, bool minimalized) {

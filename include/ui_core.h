@@ -394,7 +394,6 @@ public:
         char icon = 0x00;
         String title = "";
         bool* pointer = nullptr;
-        std::vector<String> items{};
     };
 
     class Builder {
@@ -412,6 +411,37 @@ public:
 
     explicit Toggle(const Config& cfg)
         : ptr(cfg.pointer) { icon = cfg.icon; title = cfg.title; }
+
+    void render(Adafruit_GFX& display, bool minimalized) override;
+    void activate(Adafruit_GFX& display) override;
+};
+
+
+class Button : public UIClickable {
+    bool* ptr;
+    std::function<void()> on_click;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        std::function<void()> on_click = []{};
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& onClick(std::function<void()> f) { c_.on_click = std::move(f); return *this; }
+
+        [[nodiscard]] Button build() const { return Button(c_); }
+        [[nodiscard]] Button* buildPtr() const { return new Button(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit Button(const Config& cfg)
+        : on_click(cfg.on_click) { icon = cfg.icon; title = cfg.title; }
 
     void render(Adafruit_GFX& display, bool minimalized) override;
     void activate(Adafruit_GFX& display) override;

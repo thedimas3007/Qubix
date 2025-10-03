@@ -15,35 +15,39 @@ void Settings::setDefaults() {
     data = SettingsData{};
 }
 
-void Settings::begin() {
+bool Settings::begin() {
     EEPROM.begin(EEPROM_SIZE);
 
     const uint8_t ver = EEPROM.read(0);
     if (ver != CFG_VERSION) {
         setDefaults();
         save();
-        return;
+        return true;
     }
 
-    load();
+    return load();
 }
 
 void Settings::end() {
     EEPROM.end();
 }
 
-void Settings::load() {
+bool Settings::load() {
     SettingsData tmp;
     EEPROM.get(1, tmp);
 
+    const uint16_t old_crc = tmp.crc;
+    tmp.crc = 0;
     const size_t n = sizeof(SettingsData) - sizeof(tmp.crc);
     const uint16_t want = crc16(reinterpret_cast<const uint8_t*>(&tmp), n);
 
-    if (tmp.crc != want) {
+    if (old_crc != want) {
         setDefaults();
         save();
+        return true;
     } else {
         data = tmp;
+        return false;
     }
 }
 
@@ -55,6 +59,14 @@ void Settings::save() const {
     EEPROM.write(0, CFG_VERSION);
     EEPROM.put(1, tmp);
     EEPROM.commit();
+}
+
+void Settings::wipe() {
+    for (int i = 0; i < EEPROM.length(); ++i) {
+        EEPROM.write(i, 0);
+    }
+    setDefaults();
+    save();
 }
 
 void Settings::applyDisplay(Adafruit_GFX& gfx) const {

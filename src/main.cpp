@@ -71,7 +71,6 @@ Stack root = Stack::make().children({
         MenuView::make().icon('\x8D').title("Settings").children({
             MenuView::make().icon('\xAD').title("Radio").children({
                 NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.data.radio_frequency).min(868.000).max(915.000).precision(3).cursor(3).buildPtr(),
-                // Allowed values are 7.8, 10.4, 15.6, 20.8, 31.25, 41.7, 62.5, 125.0, 250.0 and 500.0 kHz.
                 Selector::make().icon('\x1D').title("Bandw").pointer(&settings.data.radio_bandwidth).items(bandwidths).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\x12').title("SF").pointer(&settings.data.radio_sf).min(5).max(12).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\xAF').title("CR").pointer(&settings.data.radio_cr).min(5).max(8).buildPtr(),
@@ -129,6 +128,9 @@ Stack root = Stack::make().children({
                 Property<bool>::make().title("Inverted").pointer(&settings.data.display_inverted).fmt("%d").buildPtr(),
                 Label::make().title("====").buildPtr(),
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
+            }).buildPtr(),
+            Button::make().title("Wipe EEPROM").onClick([] {
+                settings.wipe();
             }).buildPtr()
         }).buildPtr(),
 
@@ -165,7 +167,7 @@ void setup() {
     SPI.begin();
     SPI1.begin();
 
-    settings.begin();
+    bool settings_reset = settings.begin();
 
 #ifdef TARGET_SH1106
     display.begin(DISPLAY_ADDRESS, true);
@@ -180,6 +182,7 @@ void setup() {
     settings.applyDisplay(display);
     display.clearDisplay();
     display.setCursor(0, 0);
+    if (settings_reset) display.println("Settings reset...");
     display.println("Loading radio...");
     display.display();
 
@@ -237,66 +240,4 @@ void loop() {
     display.setCursor(0, 0);
     root.render(display, false);
     display.display();
-}
-
-// Old code for radio
-String buffer = "";
-void loop_old() {
-#ifndef RADIO_SLAVE
-    Wire1.requestFrom(KEYBOARD_ADDRESS, 1);
-    while (Wire1.available()) {
-        char c = Wire1.read();
-
-        if (c == 0x0D) { // Enter
-            if (buffer.length() > 0) {
-                int state = radio.transmit(buffer);
-                buffer = "";
-                display.clearDisplay();
-                display.setCursor(0, 0);
-                display.print("[STATE ");
-                display.print(state);
-                display.print("]");
-                display.display();
-                delay(750);
-            }
-        } else if (c == 0x08) { // Backspace
-            if (buffer.length() > 0) buffer.remove(buffer.length() - 1);
-        } else if (c != 0) {
-            buffer += c;
-        }
-
-        if (c != 0) {
-            printf("%c\t0x%02x\n", c, c);
-        }
-        display.clearDisplay();
-        display.setCursor(0, 0);
-        display.print(buffer);
-        if ((millis() / 500) % 2) display.print("_");
-        display.display();
-    }
-#else
-    if (receivedFlag) {
-        enableInterrupt = false;
-        receivedFlag = false;
-
-        String str;
-        int state = radio.readData(str);
-
-        display.clearDisplay();
-        display.setCursor(0, 0);
-        if (state == RADIOLIB_ERR_NONE) {
-            display.println(str);
-        } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
-            display.println("[TIMEOUT]");
-        } else {
-            display.print("[ERROR ");
-            display.print(state);
-            display.print("]");
-        }
-        display.display();
-        radio.startReceive();
-
-        enableInterrupt = true;
-    }
-#endif
 }
