@@ -48,6 +48,9 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, 
 Settings settings;
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
 
+std::vector<float> bandwidths_float = {31.25, 41.7, 62.5, 125.0, 250.0, 500.0 };
+std::vector<String> bandwidths = { "31.25kHz", "41.7kHz", "62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
+
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
 Stack root = Stack::make().children({
@@ -69,14 +72,15 @@ Stack root = Stack::make().children({
             MenuView::make().icon('\xAD').title("Radio").children({
                 NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.data.radio_frequency).min(868.000).max(915.000).precision(3).cursor(3).buildPtr(),
                 // Allowed values are 7.8, 10.4, 15.6, 20.8, 31.25, 41.7, 62.5, 125.0, 250.0 and 500.0 kHz.
-                NumberPicker<float>::make().icon('\x1D').title("Bandw").suffix("kHz").pointer(&settings.data.radio_bandwidth).min(31.25).max(500.00).precision(2).cursor(2).buildPtr(),
+                Selector::make().icon('\x1D').title("Bandw").pointer(&settings.data.radio_bandwidth).items(bandwidths).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\x12').title("SF").pointer(&settings.data.radio_sf).min(5).max(12).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\xAF').title("CR").pointer(&settings.data.radio_cr).min(5).max(8).buildPtr(),
                 NumberPicker<int8_t>::make().icon('\x8C').title("Power").suffix("dBm").pointer(&settings.data.radio_power).min(-9).max(22).buildPtr(),
                 Selector::make().icon('x').title("Band").pointer(&settings.data.radio_band).items(bands).buildPtr()
             }).onExit([] {
+                settings.save();
                 radio.setFrequency(settings.data.radio_frequency);
-                radio.setBandwidth(settings.data.radio_bandwidth);
+                radio.setBandwidth(bandwidths_float[settings.data.radio_bandwidth]);
                 radio.setSpreadingFactor(settings.data.radio_sf);
                 radio.setCodingRate(settings.data.radio_cr);
                 radio.setOutputPower(settings.data.radio_power);
@@ -109,7 +113,7 @@ Stack root = Stack::make().children({
             CharTable::make().buildPtr(),
             MenuView::make().title("Settings").windowSize(6).children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
-                Property<float>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).fmt("%.2fkHz").buildPtr(),
+                Property<uint8_t>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).values(bandwidths).buildPtr(),
                 Property<uint8_t>::make().title("SF").pointer(&settings.data.radio_sf).fmt("%d").buildPtr(),
                 Property<uint8_t>::make().title("CR").pointer(&settings.data.radio_cr).fmt("%d").buildPtr(),
                 Property<int8_t>::make().title("Power").pointer(&settings.data.radio_power).fmt("%ddBm").buildPtr(),

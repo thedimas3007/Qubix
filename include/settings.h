@@ -7,11 +7,11 @@
 #include "Adafruit_GFX.h"
 
 #define EEPROM_SIZE     1024
-#define CFG_VERSION     0x02
+#define CFG_VERSION     0x03
 
 struct SettingsData {
     float   radio_frequency =   868.000f;
-    float   radio_bandwidth =   125.000f;
+    uint8_t radio_bandwidth =   3; // 125.0kHz default
     uint8_t radio_sf =          9;
     uint8_t radio_cr =          7;
     int8_t  radio_power =       10;

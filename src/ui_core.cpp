@@ -43,7 +43,7 @@ bool Stack::update(char key) {
 void MenuView::addChild(UIElement* e) {
     children.push_back(e);
     cursor = children.size() - 1;
-    if (cursor > window_size+slice_at) slice_at++;
+    if (cursor > window_size+slice_at-1) slice_at++;
 }
 
 void MenuView::render(Adafruit_GFX& display, bool minimalized) {
@@ -380,7 +380,7 @@ bool NumberPicker<T>::update(char key) {
 
 void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
     String prefix = getLabel();
-    const String& current = items.at(cursor);
+    String current = items.at(cursor) + suffix;
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? (20 - (prefix.length() + current.length()))
                      : 0;
@@ -392,7 +392,7 @@ void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
 
 void Selector::renderInline(Adafruit_GFX& display) {
     String prefix = getLabel();
-    const String& current = items.at(cursor);
+    String current = items.at(cursor) + suffix;
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? (20 - (prefix.length() + current.length()))
                      : 0;

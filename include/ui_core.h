@@ -355,6 +355,7 @@ public:
         char icon = 0x00;
         String title = "";
         uint8_t* selection = nullptr;
+        String suffix = "";
         std::vector<String> items{};
     };
 
@@ -364,6 +365,7 @@ public:
         Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
         Builder& pointer(uint8_t* s) { c_.selection = s; return *this; }
+        Builder& suffix(const String& s) { c_.suffix = s; return *this; }
         Builder& items(const std::vector<String>& v) { c_.items = v; return *this; }
         Builder& items(const std::initializer_list<String>& v) { c_.items = v; return *this; }
         Builder& addItem(const String& s) { c_.items.push_back(s); return *this; }
@@ -374,8 +376,10 @@ public:
 
     static Builder make() { return Builder{}; }
 
+    String suffix;
+
     explicit Selector(const Config& cfg)
-        : selection(cfg.selection), items(cfg.items) { icon = cfg.icon; title = cfg.title; }
+        : selection(cfg.selection), cursor(cfg.selection != nullptr ? *cfg.selection : 0), items(cfg.items), suffix(cfg.suffix) { icon = cfg.icon; title = cfg.title; }
 
     void render(Adafruit_GFX& display, bool minimalized) override;
     void renderInline(Adafruit_GFX& display) override;
