@@ -55,9 +55,13 @@ Stack root = Stack::make().children({
 
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
-            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
+            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).maxLength(63).windowSize(20).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
                 message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
+                enableInterrupt = false;
+                radio.transmit(buf);
+                enableInterrupt = true;
+                radio.startReceive();
             }).buildPtr(),
             message_menu
         }).buildPtr(),
@@ -202,6 +206,27 @@ void loop() {
         char c = Wire1.read();
         if (c == 0) continue;
         root.update(c);
+    }
+
+    if (receivedFlag) {
+        enableInterrupt = false;
+        receivedFlag = false;
+
+        String str;
+        int state = radio.readData(str);
+        if (state == RADIOLIB_ERR_NONE) {
+            message_menu->addChild(Label::make().icon('\xBF').title(str).maxLength(20).buildPtr());
+
+        } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
+            display.println("[TIMEOUT]");
+        } else {
+            display.print("[ERROR ");
+            display.print(state);
+            display.print("]");
+        }
+        radio.startReceive();
+
+        enableInterrupt = true;
     }
 
     display.clearDisplay();
