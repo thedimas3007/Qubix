@@ -53,9 +53,7 @@ std::vector<String> bandwidths = { "31.25kHz", "41.7kHz", "62.5kHz", "125.0kHz",
 
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
-Stack root = Stack::make().children({
-    Label::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").buildPtr(),
-
+UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).maxLength(63).windowSize(20).onSubmit([](char* buf) {
@@ -107,7 +105,6 @@ Stack root = Stack::make().children({
         }).buildPtr(),
 
         MenuView::make().icon('*').title("Tools").buildPtr(),
-
         MenuView::make().icon('\x91').title("Debug").children({
             CharTable::make().buildPtr(),
             MenuView::make().title("Settings").windowSize(6).children({
@@ -149,7 +146,7 @@ Stack root = Stack::make().children({
             }).buildPtr()
         }).buildPtr()
     }).buildPtr()
-}).build();
+).build();
 
 void setup() {
     Wire1.setSCL(EXT_I2C_SCL);

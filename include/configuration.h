@@ -1,4 +1,5 @@
 #pragma once
+
 #ifndef QUBIX_CONFIGURATION_H
 #define QUBIX_CONFIGURATION_H
 

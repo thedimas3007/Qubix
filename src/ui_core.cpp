@@ -14,25 +14,14 @@ static int64_t pow10i(uint8_t n) {
     return p;
 }
 
-#pragma region Stack
+#pragma region UIApp
 
-void Stack::render(Adafruit_GFX& display, bool minimalized) {
-    if (minimalized) {
-        display.println(getLabel());
-    } else {
-        if (title != "") display.println(title);
-        for (auto& i : children) {
-            i->render(display, false);
-        }
-    }
+void UIApp::render(Adafruit_GFX& display) const {
+    root->render(display, false);
 }
 
-bool Stack::update(char key) {
-    bool updated = false;
-    for (auto& i : children) {
-        if (i->update(key)) updated = true;
-    }
-    return updated;
+bool UIApp::update(char key) const {
+    return root->update(key);
 }
 
 #pragma endregion

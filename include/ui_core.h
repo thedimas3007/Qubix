@@ -57,36 +57,41 @@ public:
 
 #pragma region Stackers
 
-class Stack : public UIElement {
-    std::vector<UIElement*> children;
+class UIApp {
+    UIElement* root;
 
 public:
     struct Config {
-        char icon = 0x00;
         String title = "";
-        std::vector<UIElement*> children{};
+        UIElement* root = nullptr;
     };
 
     class Builder {
         Config c_;
     public:
-        Builder& icon(char i) { c_.icon = i; return *this; }
         Builder& title(const String& t) { c_.title = t; return *this; }
-        Builder& children(const std::vector<UIElement*>& v) { c_.children = v; return *this; }
-        Builder& children(const std::initializer_list<UIElement*>& v) { c_.children = v; return *this; }
-        Builder& addChild(UIElement* e) { c_.children.push_back(e); return *this; }
+        Builder& root(UIElement* root) { c_.root = root; return *this; }
 
-        [[nodiscard]] Stack build() const { return Stack(c_); }
-        [[nodiscard]] Stack* buildPtr() const { return new Stack(c_); }
+        [[nodiscard]] UIApp build() const {
+            assert(c_.root != nullptr && "Root cannot be nullptr");
+            return UIApp(c_);
+        }
+
+        [[nodiscard]] UIApp* buildPtr() const {
+            assert(c_.root != nullptr && "Root cannot be nullptr");
+            return new UIApp(c_);
+        }
     };
+
+    String title;
 
     static Builder make() { return Builder{}; }
 
-    explicit Stack(const Config& cfg)
-        : children(cfg.children) { icon = cfg.icon; title = cfg.title; }
+    explicit UIApp(const Config& cfg)
+        : root(cfg.root) { title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    bool update(char key) override;
+    void render(Adafruit_GFX& display) const;
+    bool update(char key) const;
 };
 
 
