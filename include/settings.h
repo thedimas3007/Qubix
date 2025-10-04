@@ -7,7 +7,7 @@
 #include "Adafruit_GFX.h"
 
 #define EEPROM_SIZE     1024
-#define CFG_VERSION     0x03
+#define CFG_VERSION     0x04
 
 struct SettingsData {
     float   radio_frequency =   868.000f;
@@ -23,6 +23,7 @@ struct SettingsData {
     bool    display_inverted =  false;
     bool    display_flipped =   false;
     bool    display_icons =     true;
+    bool    display_inv_alert = false;
 
     char    device_name[16] =  "mein_radio";
 

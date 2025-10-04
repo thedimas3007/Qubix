@@ -55,7 +55,10 @@ auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr(
 
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
-        TabSelector::make().icon('\x8C').title("Broadcast").children({
+            Button::make().title("Alert").onClick([] {
+                root.addModal(Alert::make().message("Hello!").buildPtr());
+            }).buildPtr(),
+            TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).maxLength(63).windowSize(20).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
                 message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
@@ -91,7 +94,8 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 #endif
                 Toggle::make().title("Flipped").pointer(&settings.data.display_flipped).buildPtr(),
                 Toggle::make().title("Inverted").pointer(&settings.data.display_inverted).buildPtr(),
-                Toggle::make().title("Icons").pointer(&settings.data.display_icons).buildPtr()
+                Toggle::make().title("Icons").pointer(&settings.data.display_icons).buildPtr(),
+                Toggle::make().title("Alert inv").pointer(&settings.data.display_inv_alert).buildPtr()
             }).onExit([] {
                 settings.save();
                 settings.applyDisplay(display);
@@ -236,6 +240,6 @@ void loop() {
 
     display.clearDisplay();
     display.setCursor(0, 0);
-    root.render(display, false);
+    root.render(display);
     display.display();
 }

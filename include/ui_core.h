@@ -26,11 +26,13 @@ public:
     String getLabel() { return icon && settings.data.display_icons ? (String(icon) + title) : title; }
 
     virtual ~UIElement() = default;
+
     virtual void render(Adafruit_GFX& display, bool minimalized) = 0;
-    virtual bool update(char key) { return false; };
+    virtual bool update(char key) { return false; }; // true when character processed; false otherwise
 
     [[nodiscard]] virtual ElementType getType() const { return ElementType::BASIC; };
 };
+
 
 class UIInline : public UIElement {
 public:
@@ -52,14 +54,19 @@ public:
     void setActive(bool a) { active = a; }
 };
 
-#pragma endregion
+class UIModal {
+public:
+    virtual ~UIModal() = default;
 
-
-#pragma region Stackers
+    virtual void render(Adafruit_GFX& display);
+    virtual bool update(char key) { return false; }; // whether it can be closed
+};
 
 class UIApp {
     UIElement* root;
+    std::vector<UIModal*> modals{};
 
+    UIModal* eraseFirstModal();
 public:
     struct Config {
         String title = "";
@@ -90,10 +97,16 @@ public:
     explicit UIApp(const Config& cfg)
         : root(cfg.root) { title = cfg.title; }
 
+    void addModal(UIModal* modal) { modals.push_back(modal); }
+    bool hasModals() const { return !modals.empty(); }
+
     void render(Adafruit_GFX& display) const;
-    bool update(char key) const;
+    bool update(char key);
 };
 
+#pragma endregion
+
+#pragma region Stackers
 
 enum class FillMode {
     NONE, BOTTOM, TOP
@@ -513,6 +526,36 @@ public:
 
     void render(Adafruit_GFX& display, bool minimalized) override;
     void renderInline(Adafruit_GFX& display) override;
+    bool update(char key) override;
+};
+
+#pragma endregion
+
+#pragma region Modals
+
+class Alert : public UIModal {
+public:
+    struct Config {
+        String message = "";
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& message(const String& m) { c_.message = m; return *this; }
+
+        [[nodiscard]] Alert build() const { return Alert(c_); };
+        [[nodiscard]] Alert* buildPtr() const { return new Alert(c_); };
+    };
+
+    String message;
+
+    static Builder make() { return Builder{}; }
+
+    explicit Alert(const Config& cfg)
+        : message(cfg.message) {}
+
+    void render(Adafruit_GFX& display) override;
     bool update(char key) override;
 };
 

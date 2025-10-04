@@ -16,11 +16,40 @@ static int64_t pow10i(uint8_t n) {
 
 #pragma region UIApp
 
-void UIApp::render(Adafruit_GFX& display) const {
-    root->render(display, false);
+UIModal* UIApp::eraseFirstModal() {
+    if (modals.empty()) {
+        return nullptr;
+    }
+
+    UIModal* m = modals.front();
+    modals.erase(modals.begin());
+    return m;
 }
 
-bool UIApp::update(char key) const {
+void UIApp::render(Adafruit_GFX& display) const {
+    if (title) display.print(title);
+    root->render(display, false);
+
+    if (hasModals()) {
+        for (int16_t y = 0; y < display.height(); y++) {
+            for (int16_t x = 0; x < display.width(); x++) {
+                if ((x + y) % 2) display.writePixel(x, y, settings.data.display_inv_alert ? DISPLAY_FG : DISPLAY_BG);
+            }
+        }
+        display.setCursor(0, 0);
+        modals.front()->render(display);
+    }
+}
+
+bool UIApp::update(char key) {
+    if (hasModals()) {
+        bool result = modals[0]->update(key);
+        if (!result) return false;
+
+        delete eraseFirstModal();
+        return true;
+    }
+
     return root->update(key);
 }
 
@@ -580,6 +609,35 @@ bool TextField::update(char key) {
     return true;
 }
 
+#pragma endregion
+
+
+#pragma region Alert
+
+void Alert::render(Adafruit_GFX& display) {
+    // TODO: move to a separate method
+
+    int16_t bx, by; uint16_t bw, bh;
+    display.getTextBounds(message, 0, 0, &bx, &by, &bw, &bh);
+    const int pad_x = 3;
+    const int pad_y = 2;
+    uint16_t box_w = bw + pad_x*2;
+    uint16_t box_h = bh + pad_y*2 + 2;
+
+    int16_t x = (display.width()  - box_w) / 2;
+    int16_t y = (display.height() - box_h) / 2;
+
+    display.fillRect(x, y, box_w-1, box_h-1, DISPLAY_BG);
+    display.drawRect(x-1, y-1, box_w, box_h, DISPLAY_FG);
+
+    display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+    display.setCursor(x + pad_x, y + pad_y);
+    display.print(message);
+}
+
+bool Alert::update(char key) {
+    return key == KEY_ENTER || key == KEY_ESC;
+}
 
 #pragma endregion
 
