@@ -131,6 +131,7 @@ Stack root = Stack::make().children({
             }).buildPtr(),
             Button::make().title("Wipe EEPROM").onClick([] {
                 settings.wipe();
+                reboot();
             }).buildPtr()
         }).buildPtr(),
 

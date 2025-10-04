@@ -29,6 +29,8 @@
 
 #define KEYBOARD_ADDRESS    0x5F
 
+#define MESSAGE_LENGTH 128
+
 extern Settings settings;
 
 // Display type (automatically configured)
@@ -59,6 +61,12 @@ inline void setBacklight(uint8_t brightness) { analogWrite(DISPLAY_BL, brightnes
 #define DISPLAY_BG WHITE
 #endif
 
-#define MESSAGE_LENGTH 128
+// Reboot functions
+#if defined(ARDUINO_ARCH_RP2040)
+inline void reboot() {
+    watchdog_enable(1, true);
+    while (1);
+}
+#endif
 
 #endif

@@ -61,12 +61,16 @@ void Settings::save() const {
     EEPROM.commit();
 }
 
-void Settings::wipe() {
+void Settings::wipe(bool write) {
     for (int i = 0; i < EEPROM.length(); ++i) {
         EEPROM.write(i, 0);
     }
-    setDefaults();
-    save();
+    EEPROM.commit();
+
+    if (write) {
+        setDefaults();
+        save();
+    }
 }
 
 void Settings::applyDisplay(Adafruit_GFX& gfx) const {

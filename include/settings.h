@@ -39,7 +39,7 @@ public:
     void end();
     bool load();
     void save() const;
-    void wipe();
+    void wipe(bool write = false);
 
     void applyDisplay(Adafruit_GFX& gfx) const;
 };
