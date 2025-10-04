@@ -1,6 +1,6 @@
 #pragma once
-#ifndef TERRACOTTA_CONFIGURATION_H
-#define TERRACOTTA_CONFIGURATION_H
+#ifndef QUBIX_CONFIGURATION_H
+#define QUBIX_CONFIGURATION_H
 
 #include "settings.h"
 

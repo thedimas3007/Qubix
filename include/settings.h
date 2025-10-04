@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef TERRACOTTA_SETTINGS_H
-#define TERRACOTTA_SETTINGS_H
+#ifndef QUBIX_SETTINGS_H
+#define QUBIX_SETTINGS_H
 
 #include <EEPROM.h>
 #include "Adafruit_GFX.h"
@@ -44,4 +44,4 @@ public:
     void applyDisplay(Adafruit_GFX& gfx) const;
 };
 
-#endif // TERRACOTTA_SETTINGS_H
+#endif

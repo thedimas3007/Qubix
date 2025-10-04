@@ -9,8 +9,8 @@
 
 #include "configuration.h"
 
-#ifndef TERRACOTTA_UI_CORE_H
-#define TERRACOTTA_UI_CORE_H
+#ifndef QUBIX_UI_CORE_H
+#define QUBIX_UI_CORE_H
 
 #pragma region Base
 

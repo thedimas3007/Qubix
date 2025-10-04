@@ -1,5 +1,5 @@
-#ifndef TERRACOTTA_KEYCODES_H
-#define TERRACOTTA_KEYCODES_H
+#ifndef QUBIX_KEYCODES_H
+#define QUBIX_KEYCODES_H
 
 #define KEY_NULL        0x00
 
