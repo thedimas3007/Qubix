@@ -6,7 +6,13 @@
 
 #include "configuration.h"
 #include "settings.h"
-#include "ui_core.h"
+
+#include "ui/base.h"
+#include "ui/extra.h"
+#include "ui/inputs.h"
+#include "ui/modals.h"
+#include "ui/stackers.h"
+#include "ui/static.h"
 
 #if     defined(TARGET_SH1106)
 Adafruit_SH1106G display(128, 64, &Wire1, -1);
@@ -18,12 +24,12 @@ ST7567 display(128, 64, &SPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, SPI);
 
-volatile bool receivedFlag = false;
-volatile bool enableInterrupt = true;
+volatile bool received_flag = false;
+volatile bool enable_interrupt = true;
 
 void setFlag() {
-    if (!enableInterrupt) return;
-    receivedFlag = true;
+    if (!enable_interrupt) return;
+    received_flag = true;
 }
 
 String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, uint16_t per_kilo = 1000) {
@@ -62,9 +68,9 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).maxLength(63).windowSize(20).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
                 message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
-                enableInterrupt = false;
+                enable_interrupt = false;
                 radio.transmit(buf);
-                enableInterrupt = true;
+                enable_interrupt = true;
                 radio.startReceive();
             }).buildPtr(),
             message_menu
@@ -217,9 +223,9 @@ void loop() {
         root.update(c);
     }
 
-    if (receivedFlag) {
-        enableInterrupt = false;
-        receivedFlag = false;
+    if (received_flag) {
+        enable_interrupt = false;
+        received_flag = false;
 
         String str;
         int state = radio.readData(str);
@@ -235,7 +241,7 @@ void loop() {
         }
         radio.startReceive();
 
-        enableInterrupt = true;
+        enable_interrupt = true;
     }
 
     display.clearDisplay();

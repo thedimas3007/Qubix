@@ -1,11 +1,5 @@
-#include <type_traits>
-#include <cmath>
-#include <cstdio>
-#include <limits>
-#include <algorithm>
+#include "ui/inputs.h"
 
-#include "ui_core.h"
-#include "configuration.h"
 #include "keycodes.h"
 
 static int64_t pow10i(uint8_t n) {
@@ -14,251 +8,9 @@ static int64_t pow10i(uint8_t n) {
     return p;
 }
 
-#pragma region UIApp
-
-UIModal* UIApp::eraseFirstModal() {
-    if (modals.empty()) {
-        return nullptr;
-    }
-
-    UIModal* m = modals.front();
-    modals.erase(modals.begin());
-    return m;
-}
-
-void UIApp::render(Adafruit_GFX& display) const {
-    if (title) display.print(title);
-    root->render(display, false);
-
-    if (hasModals()) {
-        for (int16_t y = 0; y < display.height(); y++) {
-            for (int16_t x = 0; x < display.width(); x++) {
-                if ((x + y) % 2) display.writePixel(x, y, settings.data.display_inv_alert ? DISPLAY_FG : DISPLAY_BG);
-            }
-        }
-        display.setCursor(0, 0);
-        modals.front()->render(display);
-    }
-}
-
-bool UIApp::update(char key) {
-    if (hasModals()) {
-        bool result = modals[0]->update(key);
-        if (!result) return false;
-
-        delete eraseFirstModal();
-        return true;
-    }
-
-    return root->update(key);
-}
-
-#pragma endregion
-
-
-#pragma region MenuView
-
-void MenuView::addChild(UIElement* e) {
-    children.push_back(e);
-    cursor = children.size() - 1;
-    if (cursor > window_size+slice_at-1) slice_at++;
-}
-
-void MenuView::render(Adafruit_GFX& display, bool minimalized) {
-    const int16_t n = children.size();
-    const int16_t last = std::min<int16_t>(slice_at + window_size, n);
-
-    if (selected == nullptr) {
-        if (minimalized) {
-            display.println(getLabel());
-        } else {
-            if (title.length()) display.println(title);
-            if (fill_mode == FillMode::TOP && n < window_size) {
-                for (int16_t i = 0; i < window_size-n; i++) display.println();
-            }
-
-            for (int16_t i = slice_at; i < last; ++i) {
-                display.print(i == cursor && active ? "\x1A" : " ");
-                children[i]->render(display, true);
-            }
-
-            if (fill_mode == FillMode::BOTTOM && n < window_size) {
-                for (uint16_t i = 0; i < window_size-n; i++) display.println();
-            }
-        }
-    } else {
-        if (selected->getType() == ElementType::INLINE) {
-            display.println(title);
-            for (int16_t i = slice_at; i < last; ++i) {
-                display.print(i == cursor && active ? "\x1A" : " ");
-                if (children[i] == selected) {
-                    static_cast<UIInline*>(children[i])->renderInline(display);
-                } else {
-                    children[i]->render(display, true);
-                }
-            }
-        } else {
-            // NOTE: Clickable can't be normally selected
-            selected->render(display, false);
-        }
-    }
-}
-
-bool MenuView::update(char key) {
-    if (selected == nullptr) {
-        const int16_t n = children.size();
-        if (key == 0 || n <= 0) return false;
-
-        if (key == KEY_UP) {
-            if (cursor > 0) {
-                cursor--;
-                if (cursor < slice_at+1 && cursor > 0) slice_at--;
-            } else {
-                cursor = n-1;
-                slice_at = (n > window_size) ? (n - window_size) : 0;
-            }
-            return true;
-        }
-        if (key == KEY_DOWN) {
-            if (cursor < n-1) {
-                cursor++;
-                if ((cursor > slice_at+window_size-2 && cursor < n-1 ||
-                    cursor > slice_at+window_size-1) &&
-                    cursor < n) slice_at++;
-            } else {
-                cursor = 0;
-                slice_at = 0;
-            }
-            return true;
-        }
-        if (key == KEY_RIGHT || key == KEY_ENTER) {
-            auto element = children[cursor];
-            if (element->getType() == ElementType::CLICKABLE) {
-                static_cast<UIClickable*>(element)->activate(display);
-                on_exit();
-            } else {
-                selected = children[cursor];
-            }
-            // checkPointer();
-            return true;
-        }
-    } else {
-        if (selected->update(key)) return true;
-
-        if (key == KEY_LEFT || key == KEY_ESC) {
-            selected = nullptr;
-            on_exit();
-            return true;
-        }
-    }
-
-    return false;
-}
-
-#pragma endregion
-
-
-#pragma region TabSelector
-
-void TabSelector::render(Adafruit_GFX& display, bool minimalized) {
-    if (minimalized) {
-        display.println(getLabel());
-    } else {
-        for (int i = 0; i < children.size(); ++i) {
-            auto& element = children[i];
-
-            if (element->getType() == ElementType::ACTIVE) {
-                static_cast<UIActive*>(element)->setActive(i==cursor);
-            }
-
-            if (element->getType() == ElementType::INLINE && i == cursor) {
-                static_cast<UIInline*>(element)->renderInline(display);
-            } else {
-                element->render(display, false);
-            }
-        }
-    }
-}
-
-bool TabSelector::update(char key) {
-    if (key == KEY_TAB) {
-        cursor = (cursor + 1) % children.size();
-        return true;
-    }
-
-    return children[cursor]->update(key);
-}
-
-
-#pragma endregion
-
-
-#pragma region Label
-
-void Label::render(Adafruit_GFX& display, bool minimalized) {
-    String data = getLabel();
-    if (max_length && data.length() > max_length && minimalized) {
-        display.println(data.substring(0, max_length-1) + '\x96');
-    } else if (minimalized) {
-        display.println(data);
-    } else {
-        display.println(title);
-    }
-}
-
-#pragma endregion
-
-
-#pragma region Property
-
-template <class T>
-void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
-    String data = "";
-    if (with_values && std::is_integral_v<T>) {
-        if (*ptr < 0) {
-            data = values.empty() ? "<null>" : values.front();
-        } else if (*ptr >= values.size()) {
-            data = values.back();
-        } else {
-            data = values[*ptr];
-        }
-    } else {
-        char buf[16];
-        std::snprintf(buf, sizeof(buf), format, *ptr);
-        data = String(buf);
-    }
-
-    String prefix = getLabel();
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? (20 - (prefix.length() + data.length()))
-                     : 0;
-
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.println(data);
-}
-
-#pragma endregion
-
-
-#pragma region StringProperty
-
-void StringProperty::render(Adafruit_GFX& display, bool minimalized) {
-    String prefix = getLabel();
-    String data = ptr != nullptr ? String(ptr) : "<null>";
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? (20 - (prefix.length() + data.length()))
-                     : 0;
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.println(data);
-}
-
-#pragma endregion
-
-
-#pragma region NumberPicker
-
+/**********************/
+/**** NumberPicker ****/
+/**********************/
 template<class T>
 uint8_t NumberPicker<T>::getDigits() const {
     T v = getAbsoluteValue();
@@ -391,11 +143,10 @@ bool NumberPicker<T>::update(char key) {
     return true;
 }
 
-#pragma endregion
 
-
-#pragma region Selector
-
+/******************/
+/**** Selector ****/
+/******************/
 void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
     String prefix = getLabel();
     String current = items.at(cursor) + suffix;
@@ -441,11 +192,10 @@ bool Selector::update(char key) {
     return true;
 }
 
-#pragma endregion
 
-
-#pragma region Toggle
-
+/****************/
+/**** Toggle ****/
+/****************/
 void Toggle::render(Adafruit_GFX& display, bool minimalized) {
     String prefix = getLabel();
     uint8_t spaces = (20 > (prefix.length() + 3))
@@ -463,11 +213,10 @@ void Toggle::activate(Adafruit_GFX& /* display */) {
     *ptr = !*ptr;
 }
 
-#pragma endregion
 
-
-#pragma region Button
-
+/****************/
+/**** Button ****/
+/****************/
 void Button::render(Adafruit_GFX& display, bool minimalized) {
     display.println("[" + getLabel() + "]");
 }
@@ -477,11 +226,9 @@ void Button::activate(Adafruit_GFX& display) {
 }
 
 
-#pragma endregion
-
-
-#pragma region TextField
-
+/*******************/
+/**** TextField ****/
+/*******************/
 void TextField::render(Adafruit_GFX& display, bool minimalized) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
@@ -608,79 +355,3 @@ bool TextField::update(char key) {
     strcpy(ptr, buf.c_str());
     return true;
 }
-
-#pragma endregion
-
-
-#pragma region Alert
-
-void Alert::render(Adafruit_GFX& display) {
-    // TODO: move to a separate method
-
-    int16_t bx, by; uint16_t bw, bh;
-    display.getTextBounds(message, 0, 0, &bx, &by, &bw, &bh);
-    const int pad_x = 3;
-    const int pad_y = 2;
-    uint16_t box_w = bw + pad_x*2;
-    uint16_t box_h = bh + pad_y*2 + 2;
-
-    int16_t x = (display.width()  - box_w) / 2;
-    int16_t y = (display.height() - box_h) / 2;
-
-    display.fillRect(x, y, box_w-1, box_h-1, DISPLAY_BG);
-    display.drawRect(x-1, y-1, box_w, box_h, DISPLAY_FG);
-
-    display.setTextColor(DISPLAY_FG, DISPLAY_BG);
-    display.setCursor(x + pad_x, y + pad_y);
-    display.print(message);
-}
-
-bool Alert::update(char key) {
-    return key == KEY_ENTER || key == KEY_ESC;
-}
-
-#pragma endregion
-
-
-#pragma region CharTable
-
-void CharTable::render(Adafruit_GFX& display, bool minimalized) {
-    if (minimalized) {
-        display.println("Characters");
-    } else {
-        display.println("  |0123456789ABCDEF| ");
-        display.println(" -+----------------+-");
-        for (uint8_t y = start; y < start + max_lines; y++) {
-            if (y == 0x10) {
-                display.println(" -+----------------+-");
-            } else {
-                display.print(' ');
-                display.print(y, HEX);
-                display.print("|");
-                for (uint8_t x = 0; x < 16; x++) {
-                    char c = static_cast<char>(x + y * 16);
-                    if (c == 0x0A || c == 0x0D || c == '\n' || c == '\t') c = ' ';
-                    display.print(c);
-                }
-                display.print("|");
-                display.println(y, HEX);
-            }
-        }
-    }
-}
-
-bool CharTable::update(char key) {
-    if (key == KEY_UP) {
-        start--;
-        if (start < 0) start++;
-    } else if (key == KEY_DOWN) {
-        start++;
-        if (start > 16 - static_cast<int>(max_lines) + 1) start--;
-    } else {
-        return false;
-    }
-
-    return true;
-}
-
-#pragma endregion

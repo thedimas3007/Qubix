@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef QUBIX_CONFIGURATION_H
-#define QUBIX_CONFIGURATION_H
-
 #include "settings.h"
 
 #define EXT_I2C_SDA         6
@@ -68,6 +65,4 @@ inline void reboot() {
     watchdog_enable(1, true);
     while (1);
 }
-#endif
-
 #endif

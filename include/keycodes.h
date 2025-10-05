@@ -1,9 +1,10 @@
-#ifndef QUBIX_KEYCODES_H
-#define QUBIX_KEYCODES_H
+#pragma once
 
 #define KEY_NULL        0x00
 
-/* Basic symbols */
+/***********************/
+/**** Basic symbols ****/
+/***********************/
 #define KEY_0           0x30
 #define KEY_1           0x31
 #define KEY_2           0x32
@@ -42,7 +43,9 @@
 #define KEY_Y           0x79
 #define KEY_Z           0x7A
 
-/* Shift symbols */
+/***********************/
+/**** Shift symbols ****/
+/***********************/
 #define KEY_SHIFT_0     KEY_0
 #define KEY_SHIFT_1     KEY_1
 #define KEY_SHIFT_2     KEY_2
@@ -81,7 +84,9 @@
 #define KEY_SHIFT_Y     0x59
 #define KEY_SHIFT_Z     0x5A
 
-/* Symbols */
+/*****************/
+/**** Symbols ****/
+/*****************/
 #define KEY_SYM_1       0x21 /* ! */
 #define KEY_SYM_2       0x40 /* @ */
 #define KEY_SYM_3       0x23 /* # */
@@ -120,7 +125,9 @@
 #define KEY_SYM_Y       0x5C /* \ */
 #define KEY_SYM_Z       KEY_NULL
 
-/* FN buttons */
+/********************/
+/**** FN buttons ****/
+/********************/
 #define KEY_FN_0        0x8A
 #define KEY_FN_1        0x81
 #define KEY_FN_2        0x82
@@ -159,7 +166,9 @@
 #define KEY_FN_Y        0x92
 #define KEY_FN_Z        0xA6
 
-/* Controls */
+/******************/
+/**** Controls ****/
+/******************/
 #define KEY_ESC         0x1B
 #define KEY_TAB         0x09
 #define KEY_BACK        0x08
@@ -182,5 +191,3 @@
 #define KEY_FN_UP       0x99
 #define KEY_FN_DOWN     0xA4
 #define KEY_FN_RIGHT    0xA5
-
-#endif
