@@ -65,7 +65,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 root.addModal(Alert::make().message("Hello!").buildPtr());
             }).buildPtr(),
             TabSelector::make().icon('\x8C').title("Broadcast").children({
-            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).maxLength(63).windowSize(20).onSubmit([](char* buf) {
+            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
                 message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
                 enable_interrupt = false;

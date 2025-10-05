@@ -23,8 +23,8 @@
 #define DISPLAY_CS          9
 #define DISPLAY_DC          13
 #define DISPLAY_BL          8
-#define DISPLAY_ADDRESS     0x3C
 
+#define DISPLAY_ADDRESS     0x3C
 #define KEYBOARD_ADDRESS    0x5F
 
 #define MESSAGE_LENGTH 128
