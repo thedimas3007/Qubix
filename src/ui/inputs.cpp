@@ -43,11 +43,9 @@ template<class T>
 void NumberPicker<T>::render(UIContext& ctx, bool /*minimalized*/) {
     String prefix = getLabel();
     T v = getValue();
-    const uint8_t total = getDigits();
-    const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
-                           ? (20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
-                           : 0;
-    const int64_t scale = pow10i(precision);
+    uint8_t total = getDigits();
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + total + (precision > 0) + suffix.length() + (v < 0));
+    int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
 
     ctx.print(prefix);
@@ -68,11 +66,9 @@ template<class T>
 void NumberPicker<T>::renderInline(UIContext& ctx) {
     String prefix = getLabel();
     T v = getValue();
-    const uint8_t total = getDigits();
-    const uint8_t spaces = (20 > (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
-                           ? (20 - (prefix.length() + total + (precision > 0) + suffix.length() + (v < 0)))
-                           : 0;
-    const int64_t scale = pow10i(precision);
+    uint8_t total = getDigits();
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + total + (precision > 0) + suffix.length() + (v < 0));
+    int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
 
     ctx.print(prefix);
@@ -150,10 +146,7 @@ bool NumberPicker<T>::update(UIContext& ctx, char key) {
 void Selector::render(UIContext& ctx, bool /* minimalized */) {
     String prefix = getLabel();
     String current = items.at(cursor) + suffix;
-    uint8_t spaces = (20 > (prefix.length() + current.length()))
-                     ? (20 - (prefix.length() + current.length()))
-                     : 0;
-
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + current.length());
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
     ctx.println(current);
@@ -162,10 +155,7 @@ void Selector::render(UIContext& ctx, bool /* minimalized */) {
 void Selector::renderInline(UIContext& ctx) {
     String prefix = getLabel();
     String current = items.at(cursor) + suffix;
-    uint8_t spaces = (20 > (prefix.length() + current.length()))
-                     ? (20 - (prefix.length() + current.length()))
-                     : 0;
-
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + current.length());
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
 
@@ -198,10 +188,7 @@ bool Selector::update(UIContext& ctx, char key) {
 /****************/
 void Toggle::render(UIContext& ctx, bool minimalized) {
     String prefix = getLabel();
-    uint8_t spaces = (20 > (prefix.length() + 3))
-                     ? (20 - (prefix.length() + 3))
-                     : 0;
-
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 3);
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
     ctx.print('[');
@@ -209,7 +196,7 @@ void Toggle::render(UIContext& ctx, bool minimalized) {
     ctx.println(']');
 }
 
-void Toggle::activate(UIContext& /* display */) {
+void Toggle::activate(UIContext& /* ctx */) {
     *ptr = !*ptr;
 }
 
@@ -235,9 +222,8 @@ void TextField::render(UIContext& ctx, bool minimalized) {
 
     String prefix = getLabel();
     String data = ptr;
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? (20 - (prefix.length() + data.length()))
-                     : 0;
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
+
     if (prefix.length() == 0 || !spacer) spaces = 0;
 
     ctx.print(prefix);
@@ -269,9 +255,7 @@ void TextField::renderInline(UIContext& ctx) {
     if (slice_at || (has_cursor && size > window_size-1)) data.setCharAt(0, '\x96'); // left trim
     if (slice_at+window_size < size) data.setCharAt(data.length()-1, '\x96'); // right trim
 
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? (20 - (prefix.length() + data.length() + has_cursor))
-                     : 0;
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
 
     if (prefix.length() == 0 || !spacer) spaces = 0;
 

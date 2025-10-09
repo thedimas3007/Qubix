@@ -47,6 +47,10 @@ void UIContext::printf(const char* format, ...) {
     print(String(buffer));
 }
 
+uint8_t UIContext::availableSpaces(uint8_t chars) const {
+    return availableCharsX() > chars ? availableCharsX() - chars : 0;
+}
+
 void UIContext::sync() {
     x = display.getCursorX();
     y = display.getCursorY();

@@ -33,6 +33,9 @@ public:
     [[nodiscard]] uint8_t maxCharsX() const       { return width / charWidth(); }
     [[nodiscard]] uint8_t maxCharsY() const       { return height / charHeight(); }
     [[nodiscard]] uint8_t availableCharsX() const { return (width - x) / charWidth(); }
+    [[nodiscard]] uint8_t availableCharsY() const { return (height - y) / charHeight(); }
+
+    [[nodiscard]] uint8_t availableSpaces(uint8_t chars) const;
 
     void sync();
     void reset();

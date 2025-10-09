@@ -37,9 +37,7 @@ void Property<T>::render(UIContext& ctx, bool /*minimalized*/) {
     }
 
     String prefix = getLabel();
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? (20 - (prefix.length() + data.length()))
-                     : 0;
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
 
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
@@ -52,9 +50,7 @@ void Property<T>::render(UIContext& ctx, bool /*minimalized*/) {
 void StringProperty::render(UIContext& ctx, bool minimalized) {
     String prefix = getLabel();
     String data = ptr != nullptr ? String(ptr) : "<null>";
-    uint8_t spaces = (20 > (prefix.length() + data.length()))
-                     ? (20 - (prefix.length() + data.length()))
-                     : 0;
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
     ctx.println(data);
