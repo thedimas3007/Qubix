@@ -56,7 +56,7 @@ void NumberPicker<T>::render(UIContext& ctx, bool /*minimalized*/) {
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
         if (i == precision) ctx.print(".");
-        ctx.print(digit);
+        ctx.printf("%d", digit);
     }
 
     ctx.println(suffix);
@@ -84,7 +84,7 @@ void NumberPicker<T>::renderInline(UIContext& ctx) {
         if (i == cursor + 1)    ctx.invertColors();
         else                    ctx.resetColors();
 
-        ctx.print(digit);
+        ctx.printf("%d", digit);
         ctx.resetColors();
     }
 
