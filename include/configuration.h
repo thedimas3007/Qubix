@@ -33,35 +33,19 @@ extern Settings settings;
 
 // Display type (automatically configured)
 #ifdef TARGET_SH1106
-#include <Adafruit_SH110X.h>
-extern Adafruit_SH1106G display;
-#define HAS_CONTRAST
-inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
-#define DISPLAY_FG SH110X_WHITE
-#define DISPLAY_BG SH110X_BLACK
+#include "displays/display_sh1106.h"
 
 #elif defined(TARGET_SSD1306)
-#include <Adafruit_SSD1306.h>
-extern Adafruit_SSD1306 display;
-#define HAS_CONTRAST
-inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
-#define DISPLAY_FG SSD1306_WHITE
-#define DISPLAY_BG SSD1306_BLACK
+#include "displays/display_ssd1306.h"
 
 #elif defined(TARGET_ST7567)
-#include <ST7567.h>
-extern ST7567 display;
-#define HAS_CONTRAST
-inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
-#define HAS_BACKLIGHT // comment if backlight isn't connected
-inline void setBacklight(uint8_t brightness) { analogWrite(DISPLAY_BL, brightness); }
-#define DISPLAY_FG BLACK
-#define DISPLAY_BG WHITE
+#include "displays/display_st7567.h"
+
 #endif
 
 // Reboot functions
 #if defined(ARDUINO_ARCH_RP2040)
-inline void reboot() {
+inline void resetMCU() {
     watchdog_enable(1, true);
     while (1);
 }

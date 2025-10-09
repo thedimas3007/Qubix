@@ -141,7 +141,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             }).buildPtr(),
             Button::make().title("Wipe EEPROM").onClick([] {
                 settings.wipe();
-                reboot();
+                resetMCU();
             }).buildPtr()
         }).buildPtr(),
 
@@ -188,13 +188,11 @@ void setup() {
     display.begin();
 #endif
 
-    display.cp437();
-    display.setTextColor(DISPLAY_FG);
+    ui_context.display.cp437();
     settings.applyDisplay(display);
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    if (settings_reset) display.println("Settings reset...");
-    display.println("Loading radio...");
+    ui_context.reset();
+    if (settings_reset) ui_context.println("Settings reset...");
+    ui_context.println("Loading radio...");
     display.display();
 
     int state = radio.begin(868.0, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 1.6, false);
@@ -223,7 +221,7 @@ void loop() {
     while (Wire1.available()) {
         char c = Wire1.read();
         if (c == 0) continue;
-        if (c == KEY_FN_C) reboot();
+        if (c == KEY_FN_C) resetMCU();
         root.update(ui_context, c);
     }
 

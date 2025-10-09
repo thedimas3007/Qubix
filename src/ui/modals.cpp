@@ -15,10 +15,10 @@ void Alert::render(UIContext& ctx) {
     int16_t x = (ctx.width  - box_w) / 2;
     int16_t y = (ctx.height - box_h) / 2;
 
-    ctx.display.fillRect(x, y, box_w-1, box_h-1, DISPLAY_BG);
-    ctx.display.drawRect(x-1, y-1, box_w, box_h, DISPLAY_FG);
+    ctx.display.fillRect(x, y, box_w-1, box_h-1, ctx.theme.bg);
+    ctx.display.drawRect(x-1, y-1, box_w, box_h, ctx.theme.fg);
 
-    ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+    ctx.resetColors();
     ctx.setCursor(x + pad_x, y + pad_y);
     ctx.print(message);
 }

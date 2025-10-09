@@ -85,11 +85,11 @@ void NumberPicker<T>::renderInline(UIContext& ctx) {
 
         if (i == precision) ctx.print(".");
 
-        if (i == cursor + 1)    ctx.display.setTextColor(DISPLAY_BG, DISPLAY_FG);
-        else                    ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+        if (i == cursor + 1)    ctx.invertColors();
+        else                    ctx.resetColors();
 
         ctx.print(digit);
-        ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+        ctx.resetColors();
     }
 
     ctx.println(suffix);
@@ -169,9 +169,9 @@ void Selector::renderInline(UIContext& ctx) {
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
 
-    ctx.display.setTextColor(DISPLAY_BG, DISPLAY_FG);
+    ctx.invertColors();
     ctx.print(current);
-    ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+    ctx.invertColors();
 }
 
 bool Selector::update(UIContext& ctx, char key) {
@@ -280,13 +280,9 @@ void TextField::renderInline(UIContext& ctx) {
 
     for (uint8_t i = 0; i < data.length(); i++) {
         if (i == cursor-slice_at) {
-            uint16_t fg = DISPLAY_FG;
-            uint16_t bg = DISPLAY_BG;
-            if (millis() / 500 % 2) fg = DISPLAY_BG; bg = DISPLAY_FG;
-
-            ctx.display.setTextColor(fg, bg);
+            if (millis() / 500 % 2) ctx.invertColors();
             ctx.print(data.charAt(i));
-            ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+            ctx.resetColors();
             has_cursor = false;
         } else {
             ctx.print(data.charAt(i));

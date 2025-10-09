@@ -1,8 +1,3 @@
-#include <type_traits>
-#include <cmath>
-#include <cstdio>
-#include <algorithm>
-
 #include "ui/base.h"
 #include "configuration.h"
 
@@ -23,7 +18,7 @@ void UIApp::render(UIContext& ctx) const {
     if (hasModals()) {
         for (int16_t y = 0; y < ctx.height; y++) {
             for (int16_t x = 0; x < ctx.width; x++) {
-                if ((x + y) % 2) ctx.display.writePixel(x, y, settings.data.display_inv_alert ? DISPLAY_FG : DISPLAY_BG);
+                if ((x + y) % 2) ctx.display.writePixel(x, y, settings.data.display_inv_alert ? ctx.theme.foreground : ctx.theme.background);
             }
         }
         ctx.setCursor(0, 0);

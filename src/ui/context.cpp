@@ -18,6 +18,18 @@ void UIContext::setRotation(uint8_t r) {
     sync();
 }
 
+void UIContext::setTextColor(uint8_t c, uint8_t bg) {
+    display.setTextColor(c, bg);
+}
+
+void UIContext::invertColors() {
+    setTextColor(theme.background, theme.foreground);
+}
+
+void UIContext::resetColors() {
+    setTextColor(theme.foreground, theme.background);
+}
+
 void UIContext::print(const String& text) {
     display.setCursor(x, y);
     display.print(text);
@@ -43,7 +55,8 @@ void UIContext::sync() {
 }
 
 void UIContext::reset() {
-    display.fillScreen(DISPLAY_BG);
+    display.fillScreen(theme.background);
     setCursor(0, 0);
+    resetColors();
     sync();
 }

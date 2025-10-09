@@ -5,6 +5,7 @@
 
 #include "configuration.h"
 #include "context.h"
+#include "displays/display_sh1106.h"
 
 enum class ElementType {
     BASIC, INLINE, CLICKABLE, ACTIVE
@@ -14,7 +15,6 @@ class UIElement {
 public:
     char icon = 0x00;
     String title{};
-
     String getLabel() { return icon && settings.data.display_icons ? (String(icon) + title) : title; }
 
     virtual ~UIElement() = default;
