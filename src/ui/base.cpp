@@ -16,29 +16,29 @@ UIModal* UIApp::eraseFirstModal() {
     return m;
 }
 
-void UIApp::render(Adafruit_GFX& display) const {
-    if (title) display.print(title);
-    root->render(display, false);
+void UIApp::render(UIContext& ctx) const {
+    if (title) ctx.print(title);
+    root->render(ctx, false);
 
     if (hasModals()) {
-        for (int16_t y = 0; y < display.height(); y++) {
-            for (int16_t x = 0; x < display.width(); x++) {
-                if ((x + y) % 2) display.writePixel(x, y, settings.data.display_inv_alert ? DISPLAY_FG : DISPLAY_BG);
+        for (int16_t y = 0; y < ctx.height; y++) {
+            for (int16_t x = 0; x < ctx.width; x++) {
+                if ((x + y) % 2) ctx.display.writePixel(x, y, settings.data.display_inv_alert ? DISPLAY_FG : DISPLAY_BG);
             }
         }
-        display.setCursor(0, 0);
-        modals.front()->render(display);
+        ctx.setCursor(0, 0);
+        modals.front()->render(ctx);
     }
 }
 
-bool UIApp::update(char key) {
+bool UIApp::update(UIContext& ctx, char key) {
     if (hasModals()) {
-        bool result = modals[0]->update(key);
+        bool result = modals[0]->update(ctx, key);
         if (!result) return false;
 
         delete eraseFirstModal();
         return true;
     }
 
-    return root->update(key);
+    return root->update(ctx, key);
 }

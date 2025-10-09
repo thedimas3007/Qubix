@@ -4,6 +4,7 @@
 #include <Adafruit_GFX.h>
 
 #include "configuration.h"
+#include "context.h"
 
 enum class ElementType {
     BASIC, INLINE, CLICKABLE, ACTIVE
@@ -18,8 +19,8 @@ public:
 
     virtual ~UIElement() = default;
 
-    virtual void render(Adafruit_GFX& display, bool minimalized) = 0;
-    virtual bool update(char key) { return false; }; // true when character processed; false otherwise
+    virtual void render(UIContext& ctx, bool minimalized) = 0;
+    virtual bool update(UIContext& ctx, char key) { return false; }; // true when character processed; false otherwise
 
     [[nodiscard]] virtual ElementType getType() const { return ElementType::BASIC; };
 };
@@ -28,13 +29,13 @@ public:
 class UIInline : public UIElement {
 public:
     [[nodiscard]] ElementType getType() const override { return ElementType::INLINE; };
-    virtual void renderInline(Adafruit_GFX& display) = 0;
+    virtual void renderInline(UIContext& ctx) = 0;
 };
 
 class UIClickable : public UIElement {
 public:
     [[nodiscard]] ElementType getType() const override { return ElementType::CLICKABLE; };
-    virtual void activate(Adafruit_GFX& display) = 0;
+    virtual void activate(UIContext& ctx) = 0;
 };
 
 class UIActive : public UIElement {
@@ -49,8 +50,9 @@ class UIModal {
 public:
     virtual ~UIModal() = default;
 
-    virtual void render(Adafruit_GFX& display);
-    virtual bool update(char key) { return false; }; // whether it can be closed
+    virtual void render(UIContext& ctx) {}
+
+    virtual bool update(UIContext& ctx, char key) { return false; }; // whether it can be closed
 };
 
 class UIApp {
@@ -91,6 +93,6 @@ public:
     void addModal(UIModal* modal) { modals.push_back(modal); }
     bool hasModals() const { return !modals.empty(); }
 
-    void render(Adafruit_GFX& display) const;
-    bool update(char key);
+    void render(UIContext& ctx) const;
+    bool update(UIContext& ctx, char key);
 };

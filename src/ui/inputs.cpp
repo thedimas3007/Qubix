@@ -40,7 +40,7 @@ void NumberPicker<T>::roundToPrecision() {
 }
 
 template<class T>
-void NumberPicker<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
+void NumberPicker<T>::render(UIContext& ctx, bool /*minimalized*/) {
     String prefix = getLabel();
     T v = getValue();
     const uint8_t total = getDigits();
@@ -50,22 +50,22 @@ void NumberPicker<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
     const int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; ++i) display.print(' ');
-    if (v < 0) display.print("-");
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    if (v < 0) ctx.print("-");
 
     for (int i = total; i >= 1; --i) {
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
-        if (i == precision) display.print(".");
-        display.print(digit);
+        if (i == precision) ctx.print(".");
+        ctx.print(digit);
     }
 
-    display.println(suffix);
+    ctx.println(suffix);
 }
 
 template<class T>
-void NumberPicker<T>::renderInline(Adafruit_GFX& display) {
+void NumberPicker<T>::renderInline(UIContext& ctx) {
     String prefix = getLabel();
     T v = getValue();
     const uint8_t total = getDigits();
@@ -75,28 +75,28 @@ void NumberPicker<T>::renderInline(Adafruit_GFX& display) {
     const int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; ++i) display.print(' ');
-    if (v < 0) display.print("-");
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    if (v < 0) ctx.print("-");
 
     for (int i = total; i >= 1; --i) {
         int64_t div = pow10i(i - 1);
         int digit = static_cast<int>((scaled / div) % 10);
 
-        if (i == precision) display.print(".");
+        if (i == precision) ctx.print(".");
 
-        if (i == cursor + 1)    display.setTextColor(DISPLAY_BG, DISPLAY_FG);
-        else                    display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+        if (i == cursor + 1)    ctx.display.setTextColor(DISPLAY_BG, DISPLAY_FG);
+        else                    ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
 
-        display.print(digit);
-        display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+        ctx.print(digit);
+        ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
     }
 
-    display.println(suffix);
+    ctx.println(suffix);
 }
 
 template<class T>
-bool NumberPicker<T>::update(char key) {
+bool NumberPicker<T>::update(UIContext& ctx, char key) {
     const uint8_t total = getDigits();
 
     if (key == KEY_UP) {
@@ -147,34 +147,34 @@ bool NumberPicker<T>::update(char key) {
 /******************/
 /**** Selector ****/
 /******************/
-void Selector::render(Adafruit_GFX& display, bool /* minimalized */) {
+void Selector::render(UIContext& ctx, bool /* minimalized */) {
     String prefix = getLabel();
     String current = items.at(cursor) + suffix;
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? (20 - (prefix.length() + current.length()))
                      : 0;
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.println(current);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
+    ctx.println(current);
 }
 
-void Selector::renderInline(Adafruit_GFX& display) {
+void Selector::renderInline(UIContext& ctx) {
     String prefix = getLabel();
     String current = items.at(cursor) + suffix;
     uint8_t spaces = (20 > (prefix.length() + current.length()))
                      ? (20 - (prefix.length() + current.length()))
                      : 0;
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
 
-    display.setTextColor(DISPLAY_BG, DISPLAY_FG);
-    display.print(current);
-    display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+    ctx.display.setTextColor(DISPLAY_BG, DISPLAY_FG);
+    ctx.print(current);
+    ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
 }
 
-bool Selector::update(char key) {
+bool Selector::update(UIContext& ctx, char key) {
     if (key == KEY_LEFT) {
         cursor--;
         if (cursor < 0) cursor = items.size() - 1;
@@ -196,20 +196,20 @@ bool Selector::update(char key) {
 /****************/
 /**** Toggle ****/
 /****************/
-void Toggle::render(Adafruit_GFX& display, bool minimalized) {
+void Toggle::render(UIContext& ctx, bool minimalized) {
     String prefix = getLabel();
     uint8_t spaces = (20 > (prefix.length() + 3))
                      ? (20 - (prefix.length() + 3))
                      : 0;
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.print('[');
-    display.print(*ptr ? 'x' : ' ');
-    display.println(']');
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
+    ctx.print('[');
+    ctx.print(*ptr ? 'x' : ' ');
+    ctx.println(']');
 }
 
-void Toggle::activate(Adafruit_GFX& /* display */) {
+void Toggle::activate(UIContext& /* display */) {
     *ptr = !*ptr;
 }
 
@@ -217,11 +217,11 @@ void Toggle::activate(Adafruit_GFX& /* display */) {
 /****************/
 /**** Button ****/
 /****************/
-void Button::render(Adafruit_GFX& display, bool minimalized) {
-    display.println("[" + getLabel() + "]");
+void Button::render(UIContext& ctx, bool minimalized) {
+    ctx.println("[" + getLabel() + "]");
 }
 
-void Button::activate(Adafruit_GFX& display) {
+void Button::activate(UIContext& ctx) {
     on_click();
 }
 
@@ -229,7 +229,7 @@ void Button::activate(Adafruit_GFX& display) {
 /*******************/
 /**** TextField ****/
 /*******************/
-void TextField::render(Adafruit_GFX& display, bool minimalized) {
+void TextField::render(UIContext& ctx, bool minimalized) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
@@ -240,19 +240,19 @@ void TextField::render(Adafruit_GFX& display, bool minimalized) {
                      : 0;
     if (prefix.length() == 0 || !spacer) spaces = 0;
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < (spacer ? spaces : 0); i++) display.print(' ');
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < (spacer ? spaces : 0); i++) ctx.print(' ');
 
     if (data.length() <= window_size) {
-        display.println(data);
+        ctx.println(data);
     } else {
         data = data.substring(window_size-1);
-        display.println(data);
-        display.print('\x96');
+        ctx.println(data);
+        ctx.print('\x96');
     }
 }
 
-void TextField::renderInline(Adafruit_GFX& display) {
+void TextField::renderInline(UIContext& ctx) {
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
@@ -275,8 +275,8 @@ void TextField::renderInline(Adafruit_GFX& display) {
 
     if (prefix.length() == 0 || !spacer) spaces = 0;
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < (spacer ? spaces : 0); i++) display.print(' ');
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < (spacer ? spaces : 0); i++) ctx.print(' ');
 
     for (uint8_t i = 0; i < data.length(); i++) {
         if (i == cursor-slice_at) {
@@ -284,20 +284,20 @@ void TextField::renderInline(Adafruit_GFX& display) {
             uint16_t bg = DISPLAY_BG;
             if (millis() / 500 % 2) fg = DISPLAY_BG; bg = DISPLAY_FG;
 
-            display.setTextColor(fg, bg);
-            display.print(data.charAt(i));
-            display.setTextColor(DISPLAY_FG, DISPLAY_BG);
+            ctx.display.setTextColor(fg, bg);
+            ctx.print(data.charAt(i));
+            ctx.display.setTextColor(DISPLAY_FG, DISPLAY_BG);
             has_cursor = false;
         } else {
-            display.print(data.charAt(i));
+            ctx.print(data.charAt(i));
         }
     };
 
-    if (has_cursor) display.print((millis() / 500 % 2) ? '_' : ' ');
-    display.println();
+    if (has_cursor) ctx.print((millis() / 500 % 2) ? '_' : ' ');
+    ctx.println();
 }
 
-bool TextField::update(char key) {
+bool TextField::update(UIContext& ctx, char key) {
     if (ptr == nullptr) return false;
 
     String buf = ptr; // I know using Strings may be inefficient, but it is much more convenient

@@ -27,7 +27,7 @@ public:
     explicit Label(const Config& cfg)
         : max_length(cfg.max_length) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
+    void render(UIContext& ctx, bool minimalized) override;
 };
 
 
@@ -65,7 +65,7 @@ public:
     explicit Property(const Config& cfg)
         : ptr(cfg.ptr), format(cfg.format), values(cfg.values), with_values(cfg.with_values) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
+    void render(UIContext& ctx, bool minimalized) override;
 };
 template class Property<uint8_t>;
 template class Property<int8_t>;
@@ -98,5 +98,5 @@ public:
     explicit StringProperty(const Config& cfg)
         : ptr(cfg.ptr) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
+    void render(UIContext& ctx, bool minimalized) override;
 };

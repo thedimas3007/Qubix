@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "configuration.h"
+#include "keycodes.h"
 #include "settings.h"
 
 #include "ui/base.h"
@@ -21,6 +22,8 @@ Adafruit_SSD1306 display(128, 64, &Wire1, -1);
 #elif   defined(TARGET_ST7567)
 ST7567 display(128, 64, &SPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #endif
+
+UIContext ui_context(display);
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, SPI);
 
@@ -220,7 +223,8 @@ void loop() {
     while (Wire1.available()) {
         char c = Wire1.read();
         if (c == 0) continue;
-        root.update(c);
+        if (c == KEY_FN_C) reboot();
+        root.update(ui_context, c);
     }
 
     if (received_flag) {
@@ -244,8 +248,7 @@ void loop() {
         enable_interrupt = true;
     }
 
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    root.render(display);
+    ui_context.reset();
+    root.render(ui_context);
     display.display();
 }

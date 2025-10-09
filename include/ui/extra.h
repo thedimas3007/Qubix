@@ -23,6 +23,6 @@ public:
 
     explicit CharTable(const Config& cfg) : max_lines(cfg.max_lines) { icon = 0x00; title = "Characters"; };
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    bool update(char key) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    bool update(UIContext& ctx, char key) override;
 };

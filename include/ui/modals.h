@@ -24,6 +24,6 @@ public:
     explicit Alert(const Config& cfg)
         : message(cfg.message) {}
 
-    void render(Adafruit_GFX& display) override;
-    bool update(char key) override;
+    void render(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
 };

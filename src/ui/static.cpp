@@ -5,14 +5,14 @@
 /***************/
 /**** Label ****/
 /***************/
-void Label::render(Adafruit_GFX& display, bool minimalized) {
+void Label::render(UIContext& ctx, bool minimalized) {
     String data = getLabel();
     if (max_length && data.length() > max_length && minimalized) {
-        display.println(data.substring(0, max_length-1) + '\x96');
+        ctx.println(data.substring(0, max_length-1) + '\x96');
     } else if (minimalized) {
-        display.println(data);
+        ctx.println(data);
     } else {
-        display.println(title);
+        ctx.println(title);
     }
 }
 
@@ -20,7 +20,7 @@ void Label::render(Adafruit_GFX& display, bool minimalized) {
 /**** Property ****/
 /******************/
 template <class T>
-void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
+void Property<T>::render(UIContext& ctx, bool /*minimalized*/) {
     String data = "";
     if (with_values && std::is_integral_v<T>) {
         if (*ptr < 0) {
@@ -41,21 +41,21 @@ void Property<T>::render(Adafruit_GFX& display, bool /*minimalized*/) {
                      ? (20 - (prefix.length() + data.length()))
                      : 0;
 
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.println(data);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
+    ctx.println(data);
 }
 
 /************************/
 /**** StringProperty ****/
 /************************/
-void StringProperty::render(Adafruit_GFX& display, bool minimalized) {
+void StringProperty::render(UIContext& ctx, bool minimalized) {
     String prefix = getLabel();
     String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = (20 > (prefix.length() + data.length()))
                      ? (20 - (prefix.length() + data.length()))
                      : 0;
-    display.print(prefix);
-    for (uint8_t i = 0; i < spaces; i++) display.print(' ');
-    display.println(data);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
+    ctx.println(data);
 }

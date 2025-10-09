@@ -57,9 +57,9 @@ public:
     [[nodiscard]] T getAbsoluteValue() const;
     [[nodiscard]] T getValue() const;
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    void renderInline(Adafruit_GFX& display) override;
-    bool update(char key) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    void renderInline(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
 };
 template class NumberPicker<uint8_t>;
 template class NumberPicker<int8_t>;
@@ -101,9 +101,9 @@ public:
     explicit Selector(const Config& cfg)
         : selection(cfg.selection), cursor(cfg.selection != nullptr ? *cfg.selection : 0), items(cfg.items), suffix(cfg.suffix) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    void renderInline(Adafruit_GFX& display) override;
-    bool update(char key) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    void renderInline(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
 };
 
 
@@ -132,8 +132,8 @@ public:
     explicit Toggle(const Config& cfg)
         : ptr(cfg.pointer) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    void activate(Adafruit_GFX& display) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    void activate(UIContext& ctx) override;
 };
 
 
@@ -163,8 +163,8 @@ public:
     explicit Button(const Config& cfg)
         : on_click(cfg.on_click) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    void activate(Adafruit_GFX& display) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    void activate(UIContext& ctx) override;
 };
 
 
@@ -224,7 +224,7 @@ public:
         if (owns_mem) delete[] ptr;
     }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    void renderInline(Adafruit_GFX& display) override;
-    bool update(char key) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    void renderInline(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
 };

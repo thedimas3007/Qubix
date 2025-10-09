@@ -57,8 +57,8 @@ public:
     // void removeLastChild() { children.pop_back(); }
     // void removeFirstChild() { children.erase(children.begin()); }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    bool update(char key) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    bool update(UIContext& ctx, char key) override;
 };
 
 class TabSelector : public UIElement {
@@ -89,6 +89,6 @@ public:
     explicit TabSelector(const Config& cfg)
         : children(cfg.children) { icon = cfg.icon; title = cfg.title; }
 
-    void render(Adafruit_GFX& display, bool minimalized) override;
-    bool update(char key) override;
+    void render(UIContext& ctx, bool minimalized) override;
+    bool update(UIContext& ctx, char key) override;
 };

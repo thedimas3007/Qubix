@@ -4,32 +4,32 @@
 /*******************/
 /**** CharTable ****/
 /*******************/
-void CharTable::render(Adafruit_GFX& display, bool minimalized) {
+void CharTable::render(UIContext& ctx, bool minimalized) {
     if (minimalized) {
-        display.println("Characters");
+        ctx.println("Characters");
     } else {
-        display.println("  |0123456789ABCDEF| ");
-        display.println(" -+----------------+-");
+        ctx.println("  |0123456789ABCDEF| ");
+        ctx.println(" -+----------------+-");
         for (uint8_t y = start; y < start + max_lines; y++) {
             if (y == 0x10) {
-                display.println(" -+----------------+-");
+                ctx.println(" -+----------------+-");
             } else {
-                display.print(' ');
-                display.print(y, HEX);
-                display.print("|");
+                ctx.print(String(' '));
+                ctx.printf("%x\n", y);
+                ctx.print("|");
                 for (uint8_t x = 0; x < 16; x++) {
                     char c = static_cast<char>(x + y * 16);
                     if (c == 0x0A || c == 0x0D || c == '\n' || c == '\t') c = ' ';
-                    display.print(c);
+                    ctx.print(String(c));
                 }
-                display.print("|");
-                display.println(y, HEX);
+                ctx.print("|");
+                ctx.printf("%x\n", y);
             }
         }
     }
 }
 
-bool CharTable::update(char key) {
+bool CharTable::update(UIContext& ctx, char key) {
     if (key == KEY_UP) {
         start--;
         if (start < 0) start++;
