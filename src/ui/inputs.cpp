@@ -103,8 +103,8 @@ bool NumberPicker<T>::update(UIContext& ctx, char key) {
         else                        *number += step;
         roundToPrecision();
 
-        uint8_t newTotal = getDigits();
-        if (total > newTotal && cursor == total - 1 && cursor != 0) {
+        uint8_t new_total = getDigits();
+        if (total > new_total && cursor == total - 1 && cursor != 0) {
             cursor--;
         }
     } else if (key == KEY_FN_UP) {
@@ -118,8 +118,8 @@ bool NumberPicker<T>::update(UIContext& ctx, char key) {
         else                            *number -= step;
         roundToPrecision();
 
-        uint8_t newTotal = getDigits();
-        if (total > newTotal && cursor == total - 1 && cursor != 0) {
+        uint8_t new_total = getDigits();
+        if (total > new_total && cursor == total - 1 && cursor != 0) {
             cursor--;
         }
     } else if (key == KEY_FN_DOWN) {
@@ -132,6 +132,34 @@ bool NumberPicker<T>::update(UIContext& ctx, char key) {
         cursor = (cursor == 0) ? (total - 1) : (cursor - 1);
     } else if (key == KEY_FN_RIGHT) {
         cursor = 0;
+    } else if (key >= KEY_0 && key <= KEY_9) {
+        uint8_t new_digit = key - KEY_0;
+
+        int64_t factor = pow10i(precision);
+        int64_t place = pow10i(cursor);
+
+        int64_t num_int = *number * factor + 0.5;
+        int64_t top = std::min(maximum, std::numeric_limits<T>::max()) * factor + 0.5;
+        int64_t bottom = std::max(minimum, std::numeric_limits<T>::min()) * factor + 0.5;
+
+        uint8_t cur_digit = (num_int / place) % 10;
+
+        int64_t digit_change = (new_digit - cur_digit) * place;
+
+        int64_t candidate;
+        if (digit_change >= 0) {
+            if (digit_change > top - num_int)   candidate = top;
+            else                                candidate = num_int + digit_change;
+        } else {
+            int64_t abs_change = -digit_change;
+            if (abs_change > num_int - bottom)  candidate = bottom;
+            else                                candidate = num_int + digit_change;
+        }
+
+        *number = static_cast<T>(candidate) / factor;
+        roundToPrecision();
+
+        cursor = (cursor == 0) ? (total - 1) : (cursor - 1);
     } else {
         return false;
     }
