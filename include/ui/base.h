@@ -60,6 +60,7 @@ class UIApp {
     std::vector<UIModal*> modals{};
 
     UIModal* eraseFirstModal();
+    UIModal* eraseLastModal();
 public:
     struct Config {
         String title = "";

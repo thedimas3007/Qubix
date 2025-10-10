@@ -2,12 +2,17 @@
 #include "configuration.h"
 
 UIModal* UIApp::eraseFirstModal() {
-    if (modals.empty()) {
-        return nullptr;
-    }
+    if (modals.empty()) return nullptr;
 
     UIModal* m = modals.front();
     modals.erase(modals.begin());
+    return m;
+}
+
+UIModal* UIApp::eraseLastModal() {
+    if (modals.empty()) return nullptr;
+    UIModal* m = modals.back();
+    modals.pop_back();
     return m;
 }
 

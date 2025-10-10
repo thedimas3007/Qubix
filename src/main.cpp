@@ -65,7 +65,10 @@ auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr(
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
             Button::make().title("Alert").onClick([] {
-                root.addModal(Alert::make().message("Hello!").buildPtr());
+                // root.addModal(ConfirmModal::make().message("Hello!").buildPtr());
+                root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
+                    // Nothing
+                }).buildPtr());
             }).buildPtr(),
             TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
@@ -140,8 +143,10 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
             }).buildPtr(),
             Button::make().title("Wipe EEPROM").onClick([] {
-                settings.wipe();
-                resetMCU();
+                root.addModal(ConfirmModal::make().message("Sure?").onConfirm([] {
+                    settings.wipe();
+                    resetMCU();
+                }).buildPtr());
             }).buildPtr()
         }).buildPtr(),
 

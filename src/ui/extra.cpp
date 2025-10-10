@@ -15,7 +15,7 @@ void CharTable::render(UIContext& ctx, bool minimalized) {
                 ctx.println(" -+----------------+-");
             } else {
                 ctx.print(String(' '));
-                ctx.printf("%x\n", y);
+                ctx.printf("%x", y);
                 ctx.print("|");
                 for (uint8_t x = 0; x < 16; x++) {
                     char c = static_cast<char>(x + y * 16);
