@@ -62,20 +62,86 @@ std::vector<String> bandwidths = { "31.25kHz", "41.7kHz", "62.5kHz", "125.0kHz",
 
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
+void setup() {
+    Wire1.setSCL(EXT_I2C_SCL);
+    Wire1.setSDA(EXT_I2C_SDA);
+
+    SPI.setMISO(EXT_SPI0_MISO);
+    SPI.setMOSI(EXT_SPI0_MOSI);
+    SPI.setSCK(EXT_SPI0_SCK);
+
+    SPI1.setMISO(EXT_SPI1_MISO);
+    SPI1.setMOSI(EXT_SPI1_MOSI);
+    SPI1.setSCK(EXT_SPI1_SCK);
+
+    Serial.begin(115200);
+    Wire1.begin();
+    SPI.begin();
+    SPI1.begin();
+
+    bool settings_reset = settings.begin();
+
+#ifdef TARGET_SH1106
+    display.begin(DISPLAY_ADDRESS, true);
+#elif defined(TARGET_SSD1306)
+    display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
+#elif defined(TARGET_ST7567)
+    display.begin();
+#endif
+
+    ui_context.display.cp437();
+    settings.applyDisplay(display);
+    ui_context.reset();
+    if (settings_reset) ui_context.println("Settings reset...");
+    ui_context.println("Loading radio...");
+    display.display();
+
+    int state = radio.begin(868.0, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 1.6, false);
+    radio.setCurrentLimit(60.0);
+    radio.setDio2AsRfSwitch(true);
+    radio.explicitHeader();
+    radio.setCRC(1);
+    radio.setDio1Action(setFlag);
+    radio.startReceive();
+
+    if (state == RADIOLIB_ERR_NONE) {
+        display.println("Radio OK!");
+    } else {
+        display.println("Radio ERROR!");
+        display.println(state);
+        display.display();
+        while (true) {}
+    }
+
+    display.display();
+    delay(1000);
+}
+
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
-            Button::make().title("Alert").onClick([] {
-                // root.addModal(ConfirmModal::make().message("Hello!").buildPtr());
-                root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
-                    // Nothing
-                }).buildPtr());
-            }).buildPtr(),
-            TabSelector::make().icon('\x8C').title("Broadcast").children({
+        Button::make().title("Alert").onClick([] {
+            // root.addModal(ConfirmModal::make().message("Hello!").buildPtr());
+            root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
+                // Nothing
+            }).buildPtr());
+        }).buildPtr(),
+        TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
-                message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
                 enable_interrupt = false;
-                radio.transmit(buf);
+
+                int16_t ch_status = radio.scanChannel();
+                if (ch_status != RADIOLIB_CHANNEL_FREE) {
+                    root.addModal(Alert::make().message("Busy channel: " + String(ch_status)).buildPtr());
+                } else {
+                    int16_t tx_status = radio.transmit(buf);
+                    if (tx_status == RADIOLIB_ERR_NONE) {
+                        message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
+                    } else {
+                        root.addModal(Alert::make().message("Err: " + String(tx_status)).buildPtr());
+                    }
+                }
+
                 enable_interrupt = true;
                 radio.startReceive();
             }).buildPtr(),
@@ -165,61 +231,6 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
         }).buildPtr()
     }).buildPtr()
 ).build();
-
-void setup() {
-    Wire1.setSCL(EXT_I2C_SCL);
-    Wire1.setSDA(EXT_I2C_SDA);
-
-    SPI.setMISO(EXT_SPI0_MISO);
-    SPI.setMOSI(EXT_SPI0_MOSI);
-    SPI.setSCK(EXT_SPI0_SCK);
-
-    SPI1.setMISO(EXT_SPI1_MISO);
-    SPI1.setMOSI(EXT_SPI1_MOSI);
-    SPI1.setSCK(EXT_SPI1_SCK);
-
-    Serial.begin(115200);
-    Wire1.begin();
-    SPI.begin();
-    SPI1.begin();
-
-    bool settings_reset = settings.begin();
-
-#ifdef TARGET_SH1106
-    display.begin(DISPLAY_ADDRESS, true);
-#elif defined(TARGET_SSD1306)
-    display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
-#elif defined(TARGET_ST7567)
-    display.begin();
-#endif
-
-    ui_context.display.cp437();
-    settings.applyDisplay(display);
-    ui_context.reset();
-    if (settings_reset) ui_context.println("Settings reset...");
-    ui_context.println("Loading radio...");
-    display.display();
-
-    int state = radio.begin(868.0, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 1.6, false);
-    radio.setCurrentLimit(60.0);
-    radio.setDio2AsRfSwitch(true);
-    radio.explicitHeader();
-    radio.setCRC(1);
-    radio.setDio1Action(setFlag);
-    radio.startReceive();
-
-    if (state == RADIOLIB_ERR_NONE) {
-        display.println("Radio OK!");
-    } else {
-        display.println("Radio ERROR!");
-        display.println(state);
-        display.display();
-        while (true) {}
-    }
-
-    display.display();
-    delay(1000);
-}
 
 void loop() {
     Wire1.requestFrom(KEYBOARD_ADDRESS, 1);
