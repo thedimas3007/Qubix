@@ -96,7 +96,11 @@ void setup() {
     ui_context.println("Loading radio...");
     display.display();
 
-    int state = radio.begin(868.0, 125.0, 9, 7, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 1.6, false);
+    int state = radio.begin(settings.data.radio_frequency, bandwidths_float[settings.data.radio_bandwidth],
+        settings.data.radio_sf, settings.data.radio_cr,
+        RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
+        settings.data.radio_power,
+        8, 1.6, false);
     radio.setCurrentLimit(60.0);
     radio.setDio2AsRfSwitch(true);
     radio.explicitHeader();
@@ -119,12 +123,6 @@ void setup() {
 
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
-        Button::make().title("Alert").onClick([] {
-            // root.addModal(ConfirmModal::make().message("Hello!").buildPtr());
-            root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
-                // Nothing
-            }).buildPtr());
-        }).buildPtr(),
         TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
@@ -147,9 +145,10 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             }).buildPtr(),
             message_menu
         }).buildPtr(),
+
         MenuView::make().icon('\x8D').title("Settings").children({
             MenuView::make().icon('\xAD').title("Radio").children({
-                NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.data.radio_frequency).min(868.000).max(915.000).precision(3).cursor(3).buildPtr(),
+                NumberPicker<float>::make().icon('\x90').title("Freq").suffix("mHz").pointer(&settings.data.radio_frequency).min(863.000).max(870.000).precision(3).cursor(3).buildPtr(),
                 Selector::make().icon('\x1D').title("Bandw").pointer(&settings.data.radio_bandwidth).items(bandwidths).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\x12').title("SF").pointer(&settings.data.radio_sf).min(5).max(12).buildPtr(),
                 NumberPicker<uint8_t>::make().icon('\xAF').title("CR").pointer(&settings.data.radio_cr).min(5).max(8).buildPtr(),
@@ -186,7 +185,10 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             }).buildPtr(),
         }).buildPtr(),
 
-        MenuView::make().icon('*').title("Tools").buildPtr(),
+        MenuView::make().icon('*').title("Tools").children({
+            BandScanner::make().radio(&radio).buildPtr(),
+        }).buildPtr(),
+
         MenuView::make().icon('\x91').title("Debug").children({
             CharTable::make().buildPtr(),
             MenuView::make().title("Settings").windowSize(6).children({
