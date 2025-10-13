@@ -1,26 +1,33 @@
 #include "ui/modals.h"
 #include "keycodes.h"
 
+const uint8_t pad_x = 3;
+const uint8_t pad_y = 2;
+
+void drawBoxed(UIContext& ctx, const String& text, int16_t& bx, int16_t& by, uint16_t& bw, uint16_t& bh) {
+    ctx.display.getTextBounds(text, 0, 0, &bx, &by, &bw, &bh);
+
+    uint16_t box_w = bw + pad_x*2;
+    uint16_t box_h = bh + pad_y*2 + 2;
+
+    bx = (ctx.width  - box_w) / 2;
+    by = (ctx.height - box_h) / 2;
+
+    ctx.display.fillRect(bx+2, by+1, box_w-1, box_h, ctx.theme.fg);
+    ctx.display.fillRect(bx, by-1, box_w-1, box_h, ctx.theme.bg);
+    ctx.display.drawRect(bx, by-1, box_w-1, box_h, ctx.theme.fg);
+
+    ctx.resetColors();
+    ctx.setCursor(bx + pad_x, by + pad_y);
+    ctx.print(text);
+}
+
 /***************/
 /**** Alert ****/
 /***************/
 void Alert::render(UIContext& ctx) {
-    int16_t bx, by; uint16_t bw, bh;
-    ctx.display.getTextBounds(message, 0, 0, &bx, &by, &bw, &bh);
-    const int pad_x = 3;
-    const int pad_y = 2;
-    uint16_t box_w = bw + pad_x*2;
-    uint16_t box_h = bh + pad_y*2 + 2;
-
-    int16_t x = (ctx.width  - box_w) / 2;
-    int16_t y = (ctx.height - box_h) / 2;
-
-    ctx.display.fillRect(x, y-1, box_w-1, box_h, ctx.theme.bg);
-    ctx.display.drawRect(x, y-1, box_w-1, box_h, ctx.theme.fg);
-
-    ctx.resetColors();
-    ctx.setCursor(x + pad_x, y + pad_y);
-    ctx.print(message);
+    int16_t x, y; uint16_t bw, bh;
+    drawBoxed(ctx, message, x, y, bw, bh);
 }
 
 bool Alert::update(UIContext& ctx, char key) {
@@ -38,22 +45,9 @@ void ConfirmModal::render(UIContext& ctx) {
             copy += " ";
         }
     }
-    int16_t bx, by; uint16_t bw, bh;
-    ctx.display.getTextBounds(copy, 0, 0, &bx, &by, &bw, &bh);
-    const int pad_x = 3;
-    const int pad_y = 2;
-    uint16_t box_w = bw + pad_x*2;
-    uint16_t box_h = bh + pad_y*2 + 2;
 
-    int16_t x = (ctx.width  - box_w) / 2;
-    int16_t y = (ctx.height - box_h) / 2;
-
-    ctx.display.fillRect(x, y-1, box_w-1, box_h, ctx.theme.bg);
-    ctx.display.drawRect(x, y-1, box_w-1, box_h, ctx.theme.fg);
-
-    ctx.resetColors();
-    ctx.setCursor(x + pad_x, y + pad_y);
-    ctx.print(copy);
+    int16_t x, y; uint16_t bw, bh;
+    drawBoxed(ctx, copy, x, y, bw, bh);
 
 
     if (!flag) {
@@ -90,5 +84,4 @@ bool ConfirmModal::update(UIContext& ctx, char key) {
     }
 
     return false;
-
 }

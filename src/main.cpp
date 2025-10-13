@@ -211,7 +211,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
             }).buildPtr(),
             Button::make().title("Wipe EEPROM").onClick([] {
-                root.addModal(ConfirmModal::make().message("Sure?").onConfirm([] {
+                root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
                     settings.wipe();
                     resetMCU();
                 }).buildPtr());
