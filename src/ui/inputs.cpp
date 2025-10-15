@@ -172,6 +172,7 @@ bool NumberPicker<T>::update(UIContext& ctx, char key) {
 /**** Selector ****/
 /******************/
 void Selector::render(UIContext& ctx, bool /* minimalized */) {
+    if (cursor == -1) cursor = selection != nullptr ? *selection : 0;
     String prefix = getLabel();
     String current = items.at(cursor) + suffix;
     uint8_t spaces = ctx.availableSpaces(prefix.length() + current.length());
@@ -189,7 +190,7 @@ void Selector::renderInline(UIContext& ctx) {
 
     ctx.invertColors();
     ctx.print(current);
-    ctx.invertColors();
+    ctx.resetColors();
 }
 
 bool Selector::update(UIContext& ctx, char key) {

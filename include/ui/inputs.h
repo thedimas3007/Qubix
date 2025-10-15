@@ -69,7 +69,7 @@ template class NumberPicker<float>;
 class Selector : public UIInline {
     uint8_t* selection;
     std::vector<String> items;
-    int8_t cursor = 0;
+    int8_t cursor = -1;
 public:
     struct Config {
         char icon = 0x00;
@@ -99,7 +99,7 @@ public:
     String suffix;
 
     explicit Selector(const Config& cfg)
-        : selection(cfg.selection), cursor(cfg.selection != nullptr ? *cfg.selection : 0), items(cfg.items), suffix(cfg.suffix) { icon = cfg.icon; title = cfg.title; }
+        : selection(cfg.selection), items(cfg.items), suffix(cfg.suffix) { icon = cfg.icon; title = cfg.title; }
 
     void render(UIContext& ctx, bool minimalized) override;
     void renderInline(UIContext& ctx) override;
