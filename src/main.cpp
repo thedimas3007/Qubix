@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "configuration.h"
+#include "hardware.h"
 #include "keycodes.h"
 #include "settings.h"
 
@@ -16,16 +17,16 @@
 #include "ui/static.h"
 
 #if     defined(TARGET_SH1106)
-Adafruit_SH1106G display(128, 64, &Wire1, -1);
+Adafruit_SH1106G display(128, 64, extI2C, -1);
 #elif   defined(TARGET_SSD1306)
-Adafruit_SSD1306 display(128, 64, &Wire1, -1);
+Adafruit_SSD1306 display(128, 64, extI2C, -1);
 #elif   defined(TARGET_ST7567)
-ST7567 display(128, 64, &SPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
+ST7567 display(128, 64, extSPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #endif
 
 UIContext ui_context(display);
 
-SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, SPI);
+SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 
 volatile bool received_flag = false;
 volatile bool enable_interrupt = true;
@@ -53,31 +54,15 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, 
     return numbuf + prefixes[power] + symbol;
 }
 
-
-Settings settings;
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
-
 std::vector<float> bandwidths_float = {31.25, 41.7, 62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = { "31.25kHz", "41.7kHz", "62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
 void setup() {
-    Wire1.setSCL(EXT_I2C_SCL);
-    Wire1.setSDA(EXT_I2C_SDA);
-
-    SPI.setMISO(EXT_SPI0_MISO);
-    SPI.setMOSI(EXT_SPI0_MOSI);
-    SPI.setSCK(EXT_SPI0_SCK);
-
-    SPI1.setMISO(EXT_SPI1_MISO);
-    SPI1.setMOSI(EXT_SPI1_MOSI);
-    SPI1.setSCK(EXT_SPI1_SCK);
-
+    initHardware();
     Serial.begin(115200);
-    Wire1.begin();
-    SPI.begin();
-    SPI1.begin();
 
     bool settings_reset = settings.begin();
 
@@ -129,15 +114,24 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 enable_interrupt = false;
 
                 int16_t ch_status = radio.scanChannel();
-                if (ch_status != RADIOLIB_CHANNEL_FREE) {
-                    root.addModal(Alert::make().message("Busy channel: " + String(ch_status)).buildPtr());
-                } else {
+                if (ch_status == RADIOLIB_CHANNEL_FREE) {
                     int16_t tx_status = radio.transmit(buf);
                     if (tx_status == RADIOLIB_ERR_NONE) {
                         message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
                     } else {
                         root.addModal(Alert::make().message("Err: " + String(tx_status)).buildPtr());
                     }
+                } else if (ch_status == RADIOLIB_LORA_DETECTED) { // maybe remove detection at all?
+                    root.addModal(ConfirmModal::make().message("Busy channel" + String(ch_status)).onConfirm([buf] {
+                        int16_t tx_status = radio.transmit(buf);
+                        if (tx_status == RADIOLIB_ERR_NONE) {
+                            message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
+                        } else {
+                            root.addModal(Alert::make().message("Err: " + String(tx_status)).buildPtr());
+                        }
+                    }).buildPtr());
+                } else {
+                    root.addModal(Alert::make().message("Err: " + String(ch_status)).buildPtr());
                 }
 
                 enable_interrupt = true;
@@ -235,9 +229,9 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 ).build();
 
 void loop() {
-    Wire1.requestFrom(KEYBOARD_ADDRESS, 1);
-    while (Wire1.available()) {
-        char c = Wire1.read();
+    extI2C->requestFrom(KEYBOARD_ADDRESS, 1);
+    while (extI2C->available()) {
+        char c = extI2C->read();
         if (c == 0) continue;
         if (c == KEY_FN_C) resetMCU();
         root.update(ui_context, c);

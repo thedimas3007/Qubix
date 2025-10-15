@@ -16,7 +16,9 @@ void Settings::setDefaults() {
 }
 
 bool Settings::begin() {
+#if defined(ARDUINO_ARCH_RP2040)
     EEPROM.begin(EEPROM_SIZE);
+#endif
 
     const uint8_t ver = EEPROM.read(0);
     if (ver != CFG_VERSION) {
@@ -29,7 +31,9 @@ bool Settings::begin() {
 }
 
 void Settings::end() {
+#if   defined(ARDUINO_ARCH_RP2040)
     EEPROM.end();
+#endif
 }
 
 bool Settings::load() {
@@ -58,14 +62,18 @@ void Settings::save() const {
 
     EEPROM.write(0, CFG_VERSION);
     EEPROM.put(1, tmp);
+#if defined(ARDUINO_ARCH_RP2040)
     EEPROM.commit();
+#endif
 }
 
 void Settings::wipe(bool write) {
     for (int i = 0; i < EEPROM.length(); ++i) {
         EEPROM.write(i, 0);
     }
+#if defined(ARDUINO_ARCH_RP2040)
     EEPROM.commit();
+#endif
 
     if (write) {
         setDefaults();

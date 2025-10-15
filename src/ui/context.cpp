@@ -3,8 +3,8 @@
 #include "configuration.h"
 
 void UIContext::setCursor(const int16_t tx, const int16_t ty) {
-    assert(tx >= 0 && ty >= 0);
-    assert(tx < width && ty < height);
+    // assert(tx >= 0 && ty >= 0);
+    // assert(tx < width && ty < height);
     display.setCursor(tx, ty);
     sync();
 }

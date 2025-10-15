@@ -4,7 +4,7 @@
 #define QUBIX_SETTINGS_H
 
 #include <EEPROM.h>
-#include "Adafruit_GFX.h"
+#include <Adafruit_GFX.h>
 
 #define EEPROM_SIZE     1024
 #define CFG_VERSION     0x04

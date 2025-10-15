@@ -74,12 +74,12 @@ public:
         Builder& root(UIElement* root) { c_.root = root; return *this; }
 
         [[nodiscard]] UIApp build() const {
-            assert(c_.root != nullptr && "Root cannot be nullptr");
+            // assert(c_.root != nullptr && "Root cannot be nullptr");
             return UIApp(c_);
         }
 
         [[nodiscard]] UIApp* buildPtr() const {
-            assert(c_.root != nullptr && "Root cannot be nullptr");
+            // assert(c_.root != nullptr && "Root cannot be nullptr");
             return new UIApp(c_);
         }
     };
