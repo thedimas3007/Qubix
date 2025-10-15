@@ -55,8 +55,8 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, 
 }
 
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
-std::vector<float> bandwidths_float = {31.25, 41.7, 62.5, 125.0, 250.0, 500.0 };
-std::vector<String> bandwidths = { "31.25kHz", "41.7kHz", "62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
+std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
+std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
