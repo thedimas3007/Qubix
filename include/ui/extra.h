@@ -69,3 +69,24 @@ public:
     void render(UIContext& ctx, bool minimalized) override;
     bool update(UIContext& ctx, char key) override;
 };
+
+
+class ColorWheel : public UIElement {
+    int8_t start = 0;
+public:
+    struct Config {};
+
+    class Builder {
+        Config c_;
+    public:
+        [[nodiscard]] ColorWheel build() const { return ColorWheel(c_); }
+        [[nodiscard]] ColorWheel* buildPtr() const { return new ColorWheel(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit ColorWheel(const Config& cfg) { icon = 0x00; title = "Colors"; };
+
+    void render(UIContext& ctx, bool minimalized) override;
+    bool update(UIContext& ctx, char key) override;
+};

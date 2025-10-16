@@ -208,6 +208,9 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 Label::make().title("====").buildPtr(),
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
             }).buildPtr(),
+#ifdef HAS_COLOR
+            ColorWheel::make().buildPtr(),
+#endif
             Button::make().title("Wipe EEPROM").onClick([] {
                 root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
                     settings.wipe();

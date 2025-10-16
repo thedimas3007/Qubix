@@ -30,6 +30,6 @@ extern Buffered_SSD1351 display;
 //     display.sendCommand(std::floor(contrast / 16.0f)); // 0-15
 // }
 #define THEME (UITheme{0x1FF1, 0x0000})
-#define DISPLAY_COLORFUL
+#define HAS_COLOR
 
 #endif
