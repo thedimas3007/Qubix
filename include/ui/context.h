@@ -45,16 +45,19 @@ public:
     void setRotation(uint8_t r);
 
     void setTextColor(uint16_t c, uint16_t bg);
-    void setTextColor(uint16_t c) { setTextColor(c, theme.bg); };
+    void setTextColor(uint16_t c) { setTextColor(c, theme.bg); }
+    void setTextColor(uint32_t c, uint32_t bg);
+    void setTextColor(uint32_t c);
     void invertColors();
     void resetColors();
 
-    void print(const String& text);
-    void print(const char text)                 { print(String(text)); }
+    void print(const String& text, bool colorized = false);
+    void print(const char text, bool colorized = false)                 { print(String(text), colorized); }
 
-    void println(const String& text = String{}) { print(text + '\n'); }
-    void println(const char* text)              { println(String(text)); }
-    void println(const char text)               { println(String(text)); };
+    void println(const String& text = String{}, bool colorized = false) { print(text + '\n', colorized); }
+    void println(const char* text, bool colorized = false)              { println(String(text), colorized); }
+    void println(const char text, bool colorized = false)               { println(String(text), colorized); };
 
-    void printf(const char* text, ...);
+    void printf(const char* format, ...);
+    void printfColor(const char* format, ...);
 };
