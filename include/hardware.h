@@ -11,42 +11,31 @@
 /* RP2040 */
 /**********/
 #if defined(ARDUINO_ARCH_RP2040)
-#define EXT_I2C_SDA 6
-#define EXT_I2C_SCL 7
+#define EXT_I2C_SDA     6
+#define EXT_I2C_SCL     7
 
-#define EXT_SPI0_MISO 4
-#define EXT_SPI0_MOSI 3
-#define EXT_SPI0_SCK 2
+#define EXT_SPI0_MISO   4
+#define EXT_SPI0_MOSI   3
+#define EXT_SPI0_SCK    2
 
-#define EXT_SPI1_MISO 12
-#define EXT_SPI1_MOSI 11
-#define EXT_SPI1_SCK 10
-
-/*****************/
-/* STM32WB55CGUx */
-/*****************/
-#elif defined(ARDUINO_GENERIC_WB55CGUX)
-#define EXT_I2C_SDA PB9
-#define EXT_I2C_SCL PB8
-
-#define EXT_SPI0_MISO PA6
-#define EXT_SPI0_MOSI PA7
-#define EXT_SPI0_SCK PA5
+#define EXT_SPI1_MISO   12
+#define EXT_SPI1_MOSI   11
+#define EXT_SPI1_SCK    10
 
 /*****************/
 /* STM32F446RETx */
 /*****************/
 #elif defined(ARDUINO_GENERIC_F446RETX)
-#define EXT_I2C_SDA PB9
-#define EXT_I2C_SCL PB8
+#define EXT_I2C_SDA     PB9
+#define EXT_I2C_SCL     PB8
 
-#define EXT_SPI0_MISO PA6
-#define EXT_SPI0_MOSI PA7
-#define EXT_SPI0_SCK PA5
+#define EXT_SPI0_MISO   PA6
+#define EXT_SPI0_MOSI   PA7
+#define EXT_SPI0_SCK    PA5
 
-// #define EXT_SPI1_MISO 12
-// #define EXT_SPI1_MOSI 11
-// #define EXT_SPI1_SCK 10
+#define EXT_SPI1_MISO   PB14
+#define EXT_SPI1_MOSI   PB15
+#define EXT_SPI1_SCK    PB13
 
 #else
 #error "Unknown platform. Define pins in `hardware.h`"

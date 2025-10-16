@@ -23,10 +23,10 @@
 #define RADIO_CS            PA4
 #define RADIO_RESET         RADIOLIB_NC
 
-// #define DISPLAY_RESET       -1
-// #define DISPLAY_CS          -1
-// #define DISPLAY_DC          -1
-// #define DISPLAY_BL          -1
+#define DISPLAY_RESET       PC6
+#define DISPLAY_CS          PC7
+#define DISPLAY_DC          PC8
+#define DISPLAY_BL          0
 
 #endif
 
@@ -54,6 +54,13 @@
 
 #elif defined(TARGET_ST7567)
 #include "displays/display_st7567.h"
+
+
+#elif defined(TARGET_SSD1351)
+#include "displays/display_ssd1351.h"
+
+#else
+#error "Unknown display. Define it in `configuration.h`"
 #endif
 
 inline Settings settings;

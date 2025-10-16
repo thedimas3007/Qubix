@@ -10,5 +10,6 @@ inline void setContrast(uint8_t contrast) {
     display.ssd1306_command(contrast);
 }
 #define THEME (UITheme{SSD1306_WHITE, SSD1306_BLACK})
+typedef uint8_t color_t;
 
 #endif

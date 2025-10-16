@@ -16,12 +16,14 @@
 #include "ui/stackers.h"
 #include "ui/static.h"
 
-#if     defined(TARGET_SH1106)
+#if   defined(TARGET_SH1106)
 Adafruit_SH1106G display(128, 64, extI2C, -1);
-#elif   defined(TARGET_SSD1306)
+#elif defined(TARGET_SSD1306)
 Adafruit_SSD1306 display(128, 64, extI2C, -1);
-#elif   defined(TARGET_ST7567)
+#elif defined(TARGET_ST7567)
 ST7567 display(128, 64, extSPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
+#elif defined(TARGET_SSD1351)
+Buffered_SSD1351 display(128, 128, extSPI1, DISPLAY_CS, DISPLAY_DC, DISPLAY_RESET);
 #endif
 
 UIContext ui_context(display);
@@ -71,6 +73,8 @@ void setup() {
 #elif defined(TARGET_SSD1306)
     display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
 #elif defined(TARGET_ST7567)
+    display.begin();
+#elif defined(TARGET_SSD1351)
     display.begin();
 #endif
 
@@ -170,7 +174,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             }).onExit([] {
                 settings.save();
                 settings.applyDisplay(display);
-                display.display();
+                // display.display();
             }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
                 TextField::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
