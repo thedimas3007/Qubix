@@ -6,29 +6,24 @@
 
 class CharTable : public UIElement {
     int8_t start = 0;
-    uint8_t max_lines;
 public:
-    struct Config {
-        uint8_t max_lines = 5;
-    };
+    struct Config {};
 
     class Builder {
         Config c_;
     public:
-        Builder& maxLines(uint8_t m) { c_.max_lines = m; return *this; }
-
         [[nodiscard]] CharTable build() const { return CharTable(c_); }
         [[nodiscard]] CharTable* buildPtr() const { return new CharTable(c_); }
     };
 
     static Builder make() { return Builder{}; }
 
-    explicit CharTable(const Config& cfg)
-        : max_lines(cfg.max_lines) { icon = 0x00; title = "Characters"; };
+    explicit CharTable(const Config& cfg) { icon = 0x00; title = "Characters"; };
 
     void render(UIContext& ctx, bool minimalized) override;
     bool update(UIContext& ctx, char key) override;
 };
+
 
 struct ScanEntry {
     float freq, rssi;

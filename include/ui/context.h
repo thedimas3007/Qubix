@@ -4,11 +4,11 @@
 #include "configuration.h"
 
 struct UITheme {
-    color_t foreground;
-    color_t background;
+    uint16_t foreground;
+    uint16_t background;
 
-    color_t& fg = foreground;
-    color_t& bg = background;
+    uint16_t& fg = foreground;
+    uint16_t& bg = background;
 };
 
 class UIContext {
@@ -44,8 +44,8 @@ public:
     void setCharCursor(int16_t cx, int16_t cy);
     void setRotation(uint8_t r);
 
-    void setTextColor(color_t c, color_t bg);
-    void setTextColor(color_t c) { setTextColor(c, theme.bg); };
+    void setTextColor(uint16_t c, uint16_t bg);
+    void setTextColor(uint16_t c) { setTextColor(c, theme.bg); };
     void invertColors();
     void resetColors();
 

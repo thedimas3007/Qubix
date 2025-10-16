@@ -18,7 +18,7 @@ void UIContext::setRotation(uint8_t r) {
     sync();
 }
 
-void UIContext::setTextColor(color_t c, color_t bg) {
+void UIContext::setTextColor(uint16_t c, uint16_t bg) {
     display.setTextColor(c, bg);
 }
 

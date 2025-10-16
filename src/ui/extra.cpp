@@ -10,7 +10,7 @@ void CharTable::render(UIContext& ctx, bool minimalized) {
     } else {
         ctx.println("  |0123456789ABCDEF| ");
         ctx.println(" -+----------------+-");
-        for (uint8_t y = start; y < start + max_lines; y++) {
+        for (uint8_t y = start; y < start + ctx.maxCharsY() - 1; y++) {
             if (y == 0x10) {
                 ctx.println(" -+----------------+-");
             } else {
@@ -35,7 +35,7 @@ bool CharTable::update(UIContext& ctx, char key) {
         if (start < 0) start++;
     } else if (key == KEY_DOWN) {
         start++;
-        if (start > 16 - static_cast<int>(max_lines) + 1) start--;
+        if (ctx.maxCharsY() > 16 || start > 16-ctx.maxCharsY()+4) start--;
     } else {
         return false;
     }
@@ -43,6 +43,10 @@ bool CharTable::update(UIContext& ctx, char key) {
     return true;
 }
 
+
+/***************/
+/* BandScanner */
+/***************/
 void BandScanner::render(UIContext& ctx, bool minimalized) {
     if (minimalized) {
         ctx.println(getLabel());

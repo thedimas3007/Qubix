@@ -7,6 +7,5 @@ extern Adafruit_SH1106G display;
 #define HAS_CONTRAST
 inline void setContrast(uint8_t contrast) { display.setContrast(contrast); }
 #define THEME (UITheme{SH110X_WHITE, SH110X_BLACK})
-typedef uint8_t color_t;
 
 #endif
