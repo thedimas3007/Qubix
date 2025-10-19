@@ -1,5 +1,5 @@
-#include "configuration.h"
 #include "settings.h"
+#include "configuration.h"
 
 uint16_t Settings::crc16(const uint8_t* p, size_t n) {
     uint16_t crc = 0xFFFF;

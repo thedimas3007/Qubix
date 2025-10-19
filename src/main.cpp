@@ -64,6 +64,8 @@ auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr(
 
 void setup() {
     initHardware();
+    // Serial.setRx(PB7);
+    // Serial.setTx(PB6);
     Serial.begin(115200);
 
     bool settings_reset = settings.begin();
@@ -83,6 +85,7 @@ void setup() {
     ui_context.reset();
     if (settings_reset) ui_context.println("Settings reset...");
     ui_context.println("Loading radio...");
+    ui_context.printf("%dMHz\n", SystemCoreClock/1'000'000);
     display.display();
 
     int state = radio.begin(settings.data.radio_frequency, bandwidths_float[settings.data.radio_bandwidth],

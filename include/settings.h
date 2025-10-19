@@ -1,17 +1,14 @@
 #pragma once
 
-#ifndef QUBIX_SETTINGS_H
-#define QUBIX_SETTINGS_H
-
-#include <EEPROM.h>
 #include <Adafruit_GFX.h>
+#include <EEPROM.h>
 
 #define EEPROM_SIZE     1024
 #define CFG_VERSION     0x04
 
 struct SettingsData {
     float   radio_frequency =   868.000f;
-    uint8_t radio_bandwidth =   3; // 125.0kHz default
+    uint8_t radio_bandwidth =   1; // 125.0kHz default
     uint8_t radio_sf =          9;
     uint8_t radio_cr =          7;
     int8_t  radio_power =       10;
@@ -44,5 +41,3 @@ public:
 
     void applyDisplay(Adafruit_GFX& gfx) const;
 };
-
-#endif
