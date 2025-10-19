@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "configuration.h"
-#include "hardware.h"
 #include "keycodes.h"
 #include "settings.h"
 
@@ -64,7 +63,7 @@ std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" 
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
 void setup() {
-    initHardware();
+    driver->init();
     // Serial.setRx(PB7);
     // Serial.setTx(PB6);
     Serial.begin(115200);
@@ -218,7 +217,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             Button::make().title("Wipe EEPROM").onClick([] {
                 root.addModal(ConfirmModal::make().message("Are you sure?").onConfirm([] {
                     settings.wipe();
-                    resetMCU();
+                    driver->reboot();
                 }).buildPtr());
             }).buildPtr()
         }).buildPtr(),
@@ -244,7 +243,7 @@ void loop() {
     while (extI2C->available()) {
         char c = extI2C->read();
         if (c == 0) continue;
-        if (c == KEY_FN_C) resetMCU();
+        if (c == KEY_FN_C) driver->reboot();
         root.update(ui_context, c);
     }
 

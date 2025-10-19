@@ -1,6 +1,5 @@
 #pragma once
 #ifdef TARGET_SSD1306 // double check and calm the compiler down
-
 #include <Adafruit_SSD1306.h>
 
 extern Adafruit_SSD1306 display;

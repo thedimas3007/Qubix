@@ -1,6 +1,5 @@
 #pragma once
 #ifdef TARGET_SSD1351 // double check and calm the compiler down
-
 #include <Adafruit_SSD1351.h>
 
 // TODO: specify 1-8-16

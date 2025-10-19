@@ -12,7 +12,6 @@ def as_int(v, default=0):
     except Exception:
         return default
 
-inspect(board)
 mcu        = board.get("build.mcu")
 f_cpu      = as_int(board.get("build.f_cpu"))
 flash_max  = as_int(board.get("upload.maximum_size"))

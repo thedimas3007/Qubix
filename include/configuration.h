@@ -1,11 +1,11 @@
 #pragma once
 
 #include "settings.h"
-#include "hardware.h"
+#include "hw_impl/hw_base.h"
 
-/***************/
-/* Module Pins */
-/***************/
+/*********************/
+/**** Module Pins ****/
+/*********************/
 #if defined(ARDUINO_ARCH_RP2040)
 #define RADIO_BUSY          15
 #define RADIO_IRQ           14
@@ -31,22 +31,23 @@
 #endif
 
 
-/*****************/
-/* I2C addresses */
-/*****************/
+/***********************/
+/**** I2C addresses ****/
+/***********************/
 #define DISPLAY_ADDRESS     0x3C
 #define KEYBOARD_ADDRESS    0x5F
 
 
-/**********/
-/* Consts */
-/**********/
+/****************/
+/**** Consts ****/
+/****************/
 #define MESSAGE_LENGTH 128
 
-/***********/
-/* Display */
-/***********/
-#ifdef TARGET_SH1106
+
+/*****************/
+/**** Display ****/
+/*****************/
+#if   defined(TARGET_SH1106)
 #include "displays/display_sh1106.h"
 
 #elif defined(TARGET_SSD1306)
@@ -55,25 +56,30 @@
 #elif defined(TARGET_ST7567)
 #include "displays/display_st7567.h"
 
-
 #elif defined(TARGET_SSD1351)
 #include "displays/display_ssd1351.h"
 
 #else
-#error "Unknown display. Define it in `configuration.h`"
+#error "Unknown display. Define in `configuration.h`"
 #endif
 
-inline Settings settings;
 
+/******************/
+/**** Hardware ****/
+/******************/
+#if  defined(ARDUINO_ARCH_RP2040)
+#include "hw_impl/hw_rp2040.h"
 
-/*****************/
-/* Power helpers */
-/*****************/
-inline void resetMCU() {
-#if defined(ARDUINO_ARCH_RP2040)
-    watchdog_enable(1, true);
-    while (true);
 #elif defined(ARDUINO_ARCH_STM32)
-    NVIC_SystemReset();
+#include "hw_impl/hw_stm32.h"
+
+#else
+#error "Unknown platform. Define in `configuration.h`"
 #endif
-}
+
+
+/*******************/
+/**** Variables ****/
+/*******************/
+inline Settings settings;
+extern DriverBase* driver;

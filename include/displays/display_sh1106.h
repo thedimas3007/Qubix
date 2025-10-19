@@ -1,6 +1,5 @@
 #pragma once
 #ifdef TARGET_SH1106 // double check and calm the compiler down
-
 #include <Adafruit_SH110X.h>
 
 extern Adafruit_SH1106G display;

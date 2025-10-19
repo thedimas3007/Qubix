@@ -1,6 +1,5 @@
 #pragma once
 #ifdef TARGET_ST7567 // double check and calm the compiler down
-
 #include <ST7567.h>
 #include "configuration.h"
 
