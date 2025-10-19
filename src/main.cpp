@@ -39,21 +39,22 @@ void setFlag() {
 }
 
 String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, uint16_t per_kilo = 1000) {
-    String prefixes[] = {"", "K", "M", "G"};
-    int power = 0;
-    double scaled = static_cast<double>(value);
+    static const char* prefixes[] = {"", "K", "M", "G", "T", "P"};
+    uint8_t prefix_idx = 0;
+    double scaled = value;
 
-    while (scaled >= per_kilo && power < 3) {
+    while (scaled >= per_kilo && prefix_idx < std::size(prefixes) - 1) {
         scaled /= per_kilo;
-        ++power;
+        prefix_idx++;
     }
 
-    char fmt[16];
-    std::snprintf(fmt, sizeof(fmt), "%%.%uf", precision);
+    String result{};
+    precision = (scaled < 10 && prefix_idx > 0 && precision > 0) ? (precision) : 0;
+    result = String(scaled, precision);
+    result += prefixes[prefix_idx];
+    result += symbol;
 
-    char numbuf[64];
-    std::snprintf(numbuf, sizeof(numbuf), fmt, scaled);
-    return numbuf + prefixes[power] + symbol;
+    return result;
 }
 
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
@@ -85,7 +86,7 @@ void setup() {
     ui_context.reset();
     if (settings_reset) ui_context.println("Settings reset...");
     ui_context.println("Loading radio...");
-    ui_context.printf("%dMHz\n", SystemCoreClock/1'000'000);
+    // ui_context.println(prettyValue(SystemCoreClock, "Hz"));
     display.display();
 
     int state = radio.begin(settings.data.radio_frequency, bandwidths_float[settings.data.radio_bandwidth],
