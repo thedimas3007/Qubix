@@ -6,6 +6,7 @@
 /**** Label ****/
 /***************/
 void Label::render(UIContext& ctx, bool minimalized) {
+    if (max_length < 0) max_length = ctx.availableCharsX();
     String data = getLabel();
     if (max_length && data.length() > max_length && minimalized) {
         ctx.println(data.substring(0, max_length-1) + '\x96');

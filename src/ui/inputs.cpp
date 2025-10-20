@@ -246,6 +246,7 @@ void Button::activate(UIContext& ctx) {
 /**** TextField ****/
 /*******************/
 void TextField::render(UIContext& ctx, bool minimalized) {
+    if (window_size < 0) window_size = ctx.availableCharsX();
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);
 
@@ -272,6 +273,7 @@ void TextField::renderInline(UIContext& ctx) {
     if (cursor == -1) cursor = strlen(ptr);
 
     String prefix = getLabel();
+    if (window_size < 0) window_size = ctx.maxCharsX()-prefix.length();
     String data = ptr;
     uint8_t size = data.length();
     bool has_cursor = data.length() < max_length && cursor == data.length();

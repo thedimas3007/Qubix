@@ -172,7 +172,7 @@ class TextField : public UIInline {
     char* ptr;
     int16_t cursor;
     uint8_t max_length;
-    uint8_t window_size;
+    int16_t window_size;
     uint8_t slice_at = 0;
     std::function<void(char*)> on_submit;
     bool submittable;
@@ -184,7 +184,7 @@ public:
         bool spacer = true;
         char* ptr = nullptr;
         uint8_t max_length = 64;
-        uint8_t window_size = 0;
+        int16_t window_size = -1;
         std::function<void(char*)> on_submit = [](char*) {};
         bool submittable = false;
     };
@@ -197,7 +197,7 @@ public:
         Builder& spacer(bool s) { c_.spacer = s; return *this; }
         Builder& pointer(char c[]) { c_.ptr = c; return *this; }
         Builder& maxLength(uint8_t l) { c_.max_length = l; return *this; }
-        Builder& windowSize(uint8_t s) { c_.window_size = s; return *this; };
+        Builder& windowSize(int16_t s) { c_.window_size = s; return *this; };
         Builder& onSubmit(std::function<void(char*)> f) { c_.on_submit = std::move(f); c_.submittable = true; return *this; }
 
         [[nodiscard]] TextField build() const { return TextField(c_); }
@@ -210,7 +210,7 @@ public:
 
     explicit TextField(const Config& cfg)
         : ptr(cfg.ptr), cursor(-1), max_length(cfg.max_length),
-          window_size(cfg.window_size ? std::min<uint8_t>(cfg.max_length, cfg.window_size) : cfg.max_length),
+          window_size(std::min<int16_t>(cfg.max_length, cfg.window_size)),
           on_submit(cfg.on_submit), submittable(cfg.submittable), spacer(cfg.spacer) {
         icon = cfg.icon; title = cfg.title;
         if (!ptr) {

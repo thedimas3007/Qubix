@@ -60,12 +60,12 @@ std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7
 std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
-auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
+auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
 
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
-            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).windowSize(20).onSubmit([](char* buf) {
+            TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
                 enable_interrupt = false;
 
@@ -73,7 +73,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 if (ch_status == RADIOLIB_CHANNEL_FREE) {
                     int16_t tx_status = radio.transmit(buf);
                     if (tx_status == RADIOLIB_ERR_NONE) {
-                        message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
+                        message_menu->addChild(Label::make().icon('\xBD').title(buf).buildPtr());
                     } else {
                         root.addModal(Alert::make().message("Err: " + String(tx_status)).buildPtr());
                     }
@@ -81,7 +81,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                     root.addModal(ConfirmModal::make().message("Busy channel" + String(ch_status)).onConfirm([buf] {
                         int16_t tx_status = radio.transmit(buf);
                         if (tx_status == RADIOLIB_ERR_NONE) {
-                            message_menu->addChild(Label::make().icon('\xBD').title(buf).maxLength(20).buildPtr());
+                            message_menu->addChild(Label::make().icon('\xBD').title(buf).buildPtr());
                         } else {
                             root.addModal(Alert::make().message("Err: " + String(tx_status)).buildPtr());
                         }
@@ -149,7 +149,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                     ).buildPtr());
                 }).buildPtr(),
             }).buildPtr(),
-            MenuView::make().title("Settings").windowSize(6).children({
+            MenuView::make().title("Settings").children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
                 Property<uint8_t>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).values(bandwidths).buildPtr(),
                 Property<uint8_t>::make().title("SF").pointer(&settings.data.radio_sf).fmt("%d").buildPtr(),

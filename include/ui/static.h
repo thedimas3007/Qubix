@@ -3,12 +3,12 @@
 #include "base.h"
 
 class Label : public UIElement {
-    uint8_t max_length;
+    int16_t max_length;
 public:
     struct Config {
         char icon = 0x00;
         String title = "";
-        uint8_t max_length = 0;
+        int16_t max_length = -1;
     };
 
     class Builder {

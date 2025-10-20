@@ -11,6 +11,7 @@ void MenuView::addChild(UIElement* e) {
 }
 
 void MenuView::render(UIContext& ctx, bool minimalized) {
+    if (window_size < 0) window_size = ctx.availableCharsY(); // Maybe make it more dynamic
     const int16_t n = children.size();
     const int16_t last = std::min<int16_t>(slice_at + window_size, n);
 

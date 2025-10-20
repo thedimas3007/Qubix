@@ -15,7 +15,7 @@ class MenuView : public UIActive {
 
     int16_t slice_at = 0;
     int16_t cursor = 0;
-    int16_t window_size = 6;
+    int16_t window_size;
 
     std::function<void()> on_exit;
 
@@ -25,7 +25,7 @@ public:
         String title = "";
         std::vector<UIElement*> children{};
         FillMode fill_mode = FillMode::NONE;
-        uint8_t window_size = 6;
+        int16_t window_size = -1;
         std::function<void()> on_exit = [] {};
     };
 
