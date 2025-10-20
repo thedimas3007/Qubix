@@ -1,5 +1,6 @@
 #pragma once
 #ifdef ARDUINO_ARCH_STM32
+#include "hw_base.h"
 #include <SPI.h>
 #include <Wire.h>
 
@@ -12,7 +13,6 @@
 #define EXT_SPI0_MISO   PA6
 #define EXT_SPI0_MOSI   PA7
 #define EXT_SPI0_SCK    PA5
-#include "hw_base.h"
 
 // TODO: make automatic pin rotation/detection
 #if defined(PB14) && defined(PB15) && defined(PB13)

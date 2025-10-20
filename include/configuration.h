@@ -77,6 +77,10 @@
 #error "Unknown platform. Define in `configuration.h`"
 #endif
 
+#if defined(EXT_SPI1_MISO) && defined(EXT_SPI1_MOSI) && defined(EXT_SPI1_SCK)
+#define EXTRA_SPI
+#endif
+
 
 /*******************/
 /**** Variables ****/

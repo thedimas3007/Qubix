@@ -13,21 +13,17 @@ uint32_t DriverRP2040::currentClock() const {
 }
 
 uint32_t DriverRP2040::currentRam() const {
-    extern char __StackLimit, __bss_end__;
-    extern char *__brkval;
+    extern char __bss_start__, __bss_end__;
+    extern char __data_start__, __data_end__;
+    size_t static_used = (&__bss_end__ - &__bss_start__) + (&__data_end__ - &__data_start__);
 
-    uint32_t static_used = &__bss_end__ - &__StackLimit;
-    uint32_t heap_used = 0;
-
-    struct mallinfo mi = mallinfo();
-    heap_used = mi.uordblks;
+    struct mallinfo m = mallinfo();
+    size_t heap_used = m.uordblks;
 
     return static_used + heap_used;
 }
-
 uint32_t DriverRP2040::currentFlash() const {
     extern char __flash_binary_start, __flash_binary_end;
-
     return (uint32_t)(&__flash_binary_end - &__flash_binary_start);
 }
 

@@ -192,6 +192,14 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 
         MenuView::make().icon('\x91').title("Debug").children({
             CharTable::make().buildPtr(),
+            MenuView::make().title("Dynamic HW").children({
+                Button::make().title("Clock").onClick([] {
+                    root.addModal(Alert::make().message(
+                        // prettyValue(driver->currentFlash(), "B", 1, 1024) + "/" + prettyValue(driver->maxFlash(), "B", 1, 1024)
+                        prettyValue(driver->currentClock(), "Hz") + "/" + prettyValue(driver->maxClock(), "Hz")
+                    ).buildPtr());
+                }).buildPtr(),
+            }).buildPtr(),
             MenuView::make().title("Settings").windowSize(6).children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
                 Property<uint8_t>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).values(bandwidths).buildPtr(),

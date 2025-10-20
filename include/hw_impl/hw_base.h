@@ -12,7 +12,6 @@ public:
 
     virtual uint32_t maxClock() const { return HW_F_CPU; }
     virtual uint32_t currentClock() const = 0;
-    virtual bool currentClock(uint32_t) const { return false; };
 
     virtual uint32_t maxRam() const { return HW_RAM_BYTES; }
     virtual uint32_t currentRam() const = 0;
