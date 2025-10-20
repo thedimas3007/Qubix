@@ -62,57 +62,6 @@ std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" 
 
 auto message_menu = MenuView::make().windowSize(6).fill(FillMode::TOP).buildPtr();
 
-void setup() {
-    driver->init();
-    // Serial.setRx(PB7);
-    // Serial.setTx(PB6);
-    Serial.begin(115200);
-
-    bool settings_reset = settings.begin();
-
-#ifdef TARGET_SH1106
-    display.begin(DISPLAY_ADDRESS, true);
-#elif defined(TARGET_SSD1306)
-    display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
-#elif defined(TARGET_ST7567)
-    display.begin();
-#elif defined(TARGET_SSD1351)
-    display.begin();
-#endif
-
-    ui_context.display.cp437();
-    settings.applyDisplay(display);
-    ui_context.reset();
-    if (settings_reset) ui_context.println("Settings reset...");
-    ui_context.println("Loading radio...");
-    // ui_context.println(prettyValue(SystemCoreClock, "Hz"));
-    display.display();
-
-    int state = radio.begin(settings.data.radio_frequency, bandwidths_float[settings.data.radio_bandwidth],
-        settings.data.radio_sf, settings.data.radio_cr,
-        RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
-        settings.data.radio_power,
-        8, 1.6, false);
-    radio.setCurrentLimit(60.0);
-    radio.setDio2AsRfSwitch(true);
-    radio.explicitHeader();
-    radio.setCRC(1);
-    radio.setDio1Action(setFlag);
-    radio.startReceive();
-
-    if (state == RADIOLIB_ERR_NONE) {
-        display.println("Radio OK!");
-    } else {
-        display.println("Radio ERROR!");
-        display.println(state);
-        display.display();
-        while (true) {}
-    }
-
-    display.display();
-    delay(1000);
-}
-
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
@@ -245,6 +194,59 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
         }).buildPtr()
     }).buildPtr()
 ).build();
+
+
+void setup() {
+    driver->init();
+    // Serial.setRx(PB7);
+    // Serial.setTx(PB6);
+    Serial.begin(115200);
+
+    bool settings_reset = settings.begin();
+
+#ifdef TARGET_SH1106
+    display.begin(DISPLAY_ADDRESS, true);
+#elif defined(TARGET_SSD1306)
+    display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS);
+#elif defined(TARGET_ST7567)
+    display.begin();
+#elif defined(TARGET_SSD1351)
+    display.begin();
+#endif
+
+    ui_context.display.cp437();
+    settings.applyDisplay(display);
+    ui_context.reset();
+    if (settings_reset) ui_context.println("Settings reset...");
+    ui_context.println("Loading radio...");
+    // ui_context.println(prettyValue(SystemCoreClock, "Hz"));
+    display.display();
+
+    int state = radio.begin(settings.data.radio_frequency, bandwidths_float[settings.data.radio_bandwidth],
+                            settings.data.radio_sf, settings.data.radio_cr,
+                            RADIOLIB_SX126X_SYNC_WORD_PRIVATE,
+                            settings.data.radio_power,
+                            8, 1.6, false);
+    radio.setCurrentLimit(60.0);
+    radio.setDio2AsRfSwitch(true);
+    radio.explicitHeader();
+    radio.setCRC(1);
+    radio.setDio1Action(setFlag);
+    radio.startReceive();
+
+    if (state == RADIOLIB_ERR_NONE) {
+        display.println("Radio OK!");
+    } else {
+        display.println("Radio ERROR!");
+        display.println(state);
+        display.display();
+        while (true) {}
+    }
+
+    display.display();
+    delay(1000);
+}
+
 
 void loop() {
     extI2C->requestFrom(KEYBOARD_ADDRESS, 1);
