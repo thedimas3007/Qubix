@@ -21,7 +21,7 @@ void Label::render(UIContext& ctx, bool minimalized) {
 /**** Property ****/
 /******************/
 template <class T>
-void Property<T>::render(UIContext& ctx, bool /*minimalized*/) {
+void Property<T>::render(UIContext& ctx, bool minimalized) {
     String data = "";
     if (with_values && std::is_integral_v<T>) {
         if (*ptr < 0) {
@@ -39,6 +39,9 @@ void Property<T>::render(UIContext& ctx, bool /*minimalized*/) {
 
     String prefix = getLabel();
     uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
+    if (prefix.length() + data.length() > ctx.availableCharsX() && minimalized) {
+        prefix = prefix.substring(0, std::max(0u, ctx.availableCharsX()-data.length()-1)) + '\x96';
+    }
 
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
@@ -52,6 +55,10 @@ void StringProperty::render(UIContext& ctx, bool minimalized) {
     String prefix = getLabel();
     String data = ptr != nullptr ? String(ptr) : "<null>";
     uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
+    if (prefix.length() + data.length() > ctx.availableCharsX() && minimalized) {
+        prefix = prefix.substring(0, std::max(0u, ctx.availableCharsX()-data.length()-1)) + '\x96';
+    }
+
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
     ctx.println(data);
