@@ -42,6 +42,7 @@
 /**** Consts ****/
 /****************/
 #define MESSAGE_LENGTH 128
+#define DISPLAY_FPS 30
 
 
 /*****************/

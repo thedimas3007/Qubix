@@ -27,9 +27,13 @@ Buffered_SSD1351 display(128, 128, extSPI1, DISPLAY_CS, DISPLAY_DC, DISPLAY_RESE
 #endif
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
+
 UIContext ui_context(display);
+std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
+std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
+std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
-
+uint32_t last_update;
 volatile bool received_flag = false;
 volatile bool enable_interrupt = true;
 
@@ -38,12 +42,8 @@ void setFlag() {
     received_flag = true;
 }
 
-std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
-std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
-std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
 auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
-
 UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
@@ -278,7 +278,11 @@ void loop() {
         enable_interrupt = true;
     }
 
-    ui_context.reset();
-    root.render(ui_context);
-    display.display();
+    uint32_t frame_interval = 1000 / DISPLAY_FPS;
+    if ((millis() - last_update) > frame_interval) {
+        ui_context.reset();
+        root.render(ui_context);
+        display.display();
+        last_update += frame_interval;
+    }
 }
