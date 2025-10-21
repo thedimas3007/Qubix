@@ -1,0 +1,69 @@
+#include "utils.h"
+
+#include <cmath>
+#include <iterator>
+
+uint16_t Color::as565() const {
+    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
+}
+
+Color Color::unpack(uint32_t rgb) {
+    return {
+        rgb >> 16 & 0xFF,
+        rgb >> 8 & 0xFF,
+        rgb & 0xFF
+    };
+}
+
+Color Color::fromHSV(float h, float s, float v) {
+    float c = v * s;
+    float x = c * (1 - std::fabs(std::fmod(h / 60.0f, 2) - 1));
+    float m = v - c;
+
+    float r, g, b;
+
+    if (h < 60)       { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else              { r = c; g = 0; b = x; }
+
+    return {(r + m) * 255.0f, (g + m) * 255.0f, (b + m) * 255.0f};
+}
+
+
+uint16_t crc16(const uint8_t* p, size_t n) {
+    uint16_t crc = 0xFFFF;
+    while (n--) {
+        crc ^= static_cast<uint16_t>(*p++) << 8;
+        for (uint8_t i=0; i<8; ++i)
+            crc = (crc & 0x8000) ? (crc<<1) ^ 0x1021 : (crc<<1);
+    }
+    return crc;
+}
+
+int64_t pow10i(uint8_t n) {
+    int64_t p = 1;
+    while (n--) p *= 10;
+    return p;
+}
+
+String prettyValue(uint64_t value, const String& symbol, uint8_t precision, uint16_t per_kilo) {
+    static const char* prefixes[] = {"", "K", "M", "G", "T", "P"};
+    uint8_t prefix_idx = 0;
+    double scaled = value;
+
+    while (scaled >= per_kilo && prefix_idx < std::size(prefixes) - 1) {
+        scaled /= per_kilo;
+        prefix_idx++;
+    }
+
+    String result{};
+    precision = (scaled < 10 && prefix_idx > 0 && precision > 0) ? (precision) : 0;
+    result = String(scaled, precision);
+    result += prefixes[prefix_idx];
+    result += symbol;
+
+    return result;
+}

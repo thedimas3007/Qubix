@@ -1,12 +1,7 @@
 #include "ui/inputs.h"
 
 #include "keycodes.h"
-
-static int64_t pow10i(uint8_t n) {
-    int64_t p = 1;
-    while (n--) p *= 10;
-    return p;
-}
+#include "utils.h"
 
 /**********************/
 /**** NumberPicker ****/

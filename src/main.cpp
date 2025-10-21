@@ -7,6 +7,7 @@
 #include "configuration.h"
 #include "keycodes.h"
 #include "settings.h"
+#include "utils.h"
 
 #include "ui/base.h"
 #include "ui/extra.h"
@@ -25,9 +26,9 @@ ST7567 display(128, 64, extSPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 Buffered_SSD1351 display(128, 128, extSPI1, DISPLAY_CS, DISPLAY_DC, DISPLAY_RESET);
 #endif
 
+SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 UIContext ui_context(display);
 
-SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 
 volatile bool received_flag = false;
 volatile bool enable_interrupt = true;
@@ -35,25 +36,6 @@ volatile bool enable_interrupt = true;
 void setFlag() {
     if (!enable_interrupt) return;
     received_flag = true;
-}
-
-String prettyValue(uint64_t value, const String& symbol, uint8_t precision = 0, uint16_t per_kilo = 1000) {
-    static const char* prefixes[] = {"", "K", "M", "G", "T", "P"};
-    uint8_t prefix_idx = 0;
-    double scaled = value;
-
-    while (scaled >= per_kilo && prefix_idx < std::size(prefixes) - 1) {
-        scaled /= per_kilo;
-        prefix_idx++;
-    }
-
-    String result{};
-    precision = (scaled < 10 && prefix_idx > 0 && precision > 0) ? (precision) : 0;
-    result = String(scaled, precision);
-    result += prefixes[prefix_idx];
-    result += symbol;
-
-    return result;
 }
 
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
@@ -167,6 +149,24 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                 Property<bool>::make().title("Inverted").pointer(&settings.data.display_inverted).fmt("%d").buildPtr(),
                 Label::make().title("====").buildPtr(),
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
+                Label::make().title("====").buildPtr(),
+                Label::make().title(String("MCU:   ") + HW_MCU).buildPtr(),
+                Label::make().title(String("Clock: ") + prettyValue(HW_F_CPU,"Hz",0,1000)).buildPtr(),
+                Label::make().title(String("RAM:   ") + prettyValue(HW_RAM_BYTES,"B",0,1024)).buildPtr(),
+                Label::make().title(String("Flash: ") + prettyValue(HW_FLASH_BYTES,"B",0,1024)).buildPtr(),
+                Label::make().title("====").buildPtr(),
+                Button::make().title("Clock").onClick([] {
+                    root.addModal(Alert::make().message(
+                        // prettyValue(driver->currentFlash(), "B", 1, 1024) + "/" + prettyValue(driver->maxFlash(), "B", 1, 1024)
+                        prettyValue(driver->currentClock(), "Hz") + "/" + prettyValue(driver->maxClock(), "Hz")
+                    ).buildPtr());
+                }).buildPtr(),
+                Button::make().title("RAM").onClick([] {
+                    root.addModal(Alert::make().message(
+                        // prettyValue(driver->currentFlash(), "B", 1, 1024) + "/" + prettyValue(driver->maxFlash(), "B", 1, 1024)
+                        prettyValue(driver->currentRam(), "B", 0, 1024) + "/" + prettyValue(driver->maxRam(), "B", 0, 1024)
+                    ).buildPtr());
+                }).buildPtr(),
             }).buildPtr(),
 #ifdef HAS_COLOR
             ColorWheel::make().buildPtr(),

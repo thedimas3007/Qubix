@@ -1,33 +1,6 @@
 #include "ui/extra.h"
 #include "keycodes.h"
-
-void hsv2rgb(uint8_t& fR, uint8_t& fG, uint8_t& fB, float fH, float fS, float fV) {
-    float H = fH;
-    float S = fS;
-    float V = fV;
-
-    float C = V * S; // Chroma
-    float X = C * (1 - fabs(fmod(H / 60.0f, 2) - 1));
-    float m = V - C;
-
-    float r, g, b;
-
-    if (H < 60)       { r = C; g = X; b = 0; }
-    else if (H < 120) { r = X; g = C; b = 0; }
-    else if (H < 180) { r = 0; g = C; b = X; }
-    else if (H < 240) { r = 0; g = X; b = C; }
-    else if (H < 300) { r = X; g = 0; b = C; }
-    else              { r = C; g = 0; b = X; }
-
-    fR = static_cast<uint8_t>((r + m) * 255.0f);
-    fG = static_cast<uint8_t>((g + m) * 255.0f);
-    fB = static_cast<uint8_t>((b + m) * 255.0f);
-}
-
-
-uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
-    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
-}
+#include "utils.h"
 
 /*******************/
 /**** CharTable ****/
@@ -72,9 +45,9 @@ bool CharTable::update(UIContext& ctx, char key) {
 }
 
 
-/***************/
-/* BandScanner */
-/***************/
+/*********************/
+/**** BandScanner ****/
+/*********************/
 void BandScanner::render(UIContext& ctx, bool minimalized) {
     if (minimalized) {
         ctx.println(getLabel());
@@ -126,9 +99,9 @@ bool BandScanner::update(UIContext& ctx, char key) {
 }
 
 
-/**************/
-/* ColorWheel */
-/**************/
+/********************/
+/**** ColorWheel ****/
+/********************/
 void ColorWheel::render(UIContext& ctx, bool minimalized) {
     if (minimalized) {
         ctx.println(getLabel());
@@ -151,11 +124,7 @@ void ColorWheel::render(UIContext& ctx, bool minimalized) {
             if (angle < 0) angle += 2 * M_PI;
 
             float degrees = angle * 180.0f / M_PI;
-            uint8_t r, g, b;
-
-            hsv2rgb(r, g, b, degrees, 1, dist / radius);
-
-            ctx.display.drawPixel(x, y, rgb565(r, g, b));
+            ctx.display.drawPixel(x, y, Color::fromHSV(degrees, 1, dist / radius).as565());
         }
     }
 }

@@ -28,7 +28,6 @@ struct SettingsData {
 };
 
 class Settings {
-    static uint16_t crc16(const uint8_t* p, size_t n);
     void setDefaults();
 public:
     SettingsData data{};

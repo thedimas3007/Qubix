@@ -1,15 +1,6 @@
 #include "settings.h"
 #include "configuration.h"
-
-uint16_t Settings::crc16(const uint8_t* p, size_t n) {
-    uint16_t crc = 0xFFFF;
-    while (n--) {
-        crc ^= static_cast<uint16_t>(*p++) << 8;
-        for (uint8_t i=0; i<8; ++i)
-            crc = (crc & 0x8000) ? (crc<<1) ^ 0x1021 : (crc<<1);
-    }
-    return crc;
-}
+#include "utils.h"
 
 void Settings::setDefaults() {
     data = SettingsData{};
