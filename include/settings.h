@@ -18,7 +18,7 @@ struct SettingsData {
     uint8_t display_contrast =  50;
     uint8_t display_backlight = 128;
     bool    display_inverted =  false;
-    bool    display_flipped =   false;
+    uint8_t display_rotation =  0;
     bool    display_icons =     true;
     bool    display_inv_alert = false;
 

@@ -76,7 +76,7 @@ void Settings::applyDisplay(Adafruit_GFX& gfx) const {
 #ifdef HAS_CONTRAST
     setContrast(data.display_contrast);
 #endif
-    gfx.setRotation(data.display_flipped ? 2 : 0);
+    gfx.setRotation(data.display_rotation);
     gfx.invertDisplay(data.display_inverted);
 #ifdef HAS_BACKLIGHT
     setBacklight(data.display_backlight);

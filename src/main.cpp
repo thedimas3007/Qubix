@@ -101,7 +101,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 #ifdef HAS_BACKLIGHT
                 NumberPicker<uint8_t>::make().title("Backlight").pointer(&settings.data.display_backlight).buildPtr(),
 #endif
-                Toggle::make().title("Flipped").pointer(&settings.data.display_flipped).buildPtr(),
+                NumberPicker<uint8_t>::make().title("Rotation").pointer(&settings.data.display_rotation).min(0).max(3).buildPtr(),
                 Toggle::make().title("Inverted").pointer(&settings.data.display_inverted).buildPtr(),
                 Toggle::make().title("Icons").pointer(&settings.data.display_icons).buildPtr(),
                 Toggle::make().title("Alert inv").pointer(&settings.data.display_inv_alert).buildPtr()
@@ -145,7 +145,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 #ifdef HAS_BACKLIGHT
                 Property<uint8_t>::make().title("Backlight").pointer(&settings.data.display_backlight).fmt("%d").buildPtr(),
 #endif
-                Property<bool>::make().title("Flipped").pointer(&settings.data.display_flipped).fmt("%d").buildPtr(),
+                Property<uint8_t>::make().title("Rotation").pointer(&settings.data.display_rotation).fmt("%d").buildPtr(),
                 Property<bool>::make().title("Inverted").pointer(&settings.data.display_inverted).fmt("%d").buildPtr(),
                 Label::make().title("====").buildPtr(),
                 StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
