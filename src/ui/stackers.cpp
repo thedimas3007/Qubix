@@ -11,9 +11,7 @@ void MenuView::addChild(UIElement* e) {
 }
 
 void MenuView::render(UIContext& ctx, bool minimalized) {
-    window_size = ctx.availableCharsY();
     const int16_t n = children.size();
-    const int16_t last = std::min<int16_t>(slice_at + window_size, n);
 
     if (selected == nullptr) {
         if (minimalized) {
@@ -21,6 +19,10 @@ void MenuView::render(UIContext& ctx, bool minimalized) {
             ctx.println(getLabel());
         } else {
             if (title.length()) ctx.println(title);
+
+            window_size = ctx.availableCharsY();
+            const int16_t last = std::min<int16_t>(slice_at + window_size, n);
+
             if (fill_mode == FillMode::TOP && n < window_size) {
                 for (int16_t i = 0; i < window_size-n; i++) ctx.println();
             }
@@ -37,6 +39,9 @@ void MenuView::render(UIContext& ctx, bool minimalized) {
     } else {
         if (selected->getType() == ElementType::INLINE) {
             ctx.println(title);
+            window_size = ctx.availableCharsY();
+            const int16_t last = std::min<int16_t>(slice_at + window_size, n);
+
             for (int16_t i = slice_at; i < last; ++i) {
                 ctx.print(i == cursor && active ? "\x1A" : " ");
                 if (children[i] == selected) {
