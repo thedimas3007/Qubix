@@ -15,7 +15,7 @@ class UIElement {
 public:
     char icon = 0x00;
     String title{};
-    String getLabel() { return icon && settings.data.display_icons ? (String(icon) + title) : title; }
+    String getLabel(int16_t available = -1);
 
     virtual ~UIElement() = default;
 

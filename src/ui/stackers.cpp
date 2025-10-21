@@ -17,6 +17,7 @@ void MenuView::render(UIContext& ctx, bool minimalized) {
 
     if (selected == nullptr) {
         if (minimalized) {
+            // TODO: maybe trim here as well
             ctx.println(getLabel());
         } else {
             if (title.length()) ctx.println(title);

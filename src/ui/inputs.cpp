@@ -41,10 +41,11 @@ void NumberPicker<T>::roundToPrecision() {
 
 template<class T>
 void NumberPicker<T>::render(UIContext& ctx, bool /*minimalized*/) {
-    String prefix = getLabel();
     T v = getValue();
     uint8_t total = getDigits();
-    uint8_t spaces = ctx.availableSpaces(prefix.length() + total + (precision > 0) + suffix.length() + (v < 0));
+    uint8_t num_len = total + (precision > 0) + suffix.length() + (v < 0); // digits + dec. point + suffix + neg. sign
+    String prefix = getLabel(ctx.availableCharsX() - num_len);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + num_len);
     int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
 
@@ -64,10 +65,11 @@ void NumberPicker<T>::render(UIContext& ctx, bool /*minimalized*/) {
 
 template<class T>
 void NumberPicker<T>::renderInline(UIContext& ctx) {
-    String prefix = getLabel();
     T v = getValue();
     uint8_t total = getDigits();
-    uint8_t spaces = ctx.availableSpaces(prefix.length() + total + (precision > 0) + suffix.length() + (v < 0));
+    uint8_t num_len = total + (precision > 0) + suffix.length() + (v < 0); // digits + dec. point + suffix + neg. sign
+    String prefix = getLabel(ctx.availableCharsX() - num_len);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + num_len);
     int64_t scale = pow10i(precision);
     int64_t scaled = std::llround(static_cast<double>(getAbsoluteValue()) * scale);
 
@@ -173,8 +175,8 @@ bool NumberPicker<T>::update(UIContext& ctx, char key) {
 /******************/
 void Selector::render(UIContext& ctx, bool /* minimalized */) {
     if (cursor == -1) cursor = selection != nullptr ? *selection : 0;
-    String prefix = getLabel();
     String current = items.at(cursor) + suffix;
+    String prefix = getLabel(ctx.availableCharsX() - current.length());
     uint8_t spaces = ctx.availableSpaces(prefix.length() + current.length());
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
@@ -182,8 +184,8 @@ void Selector::render(UIContext& ctx, bool /* minimalized */) {
 }
 
 void Selector::renderInline(UIContext& ctx) {
-    String prefix = getLabel();
     String current = items.at(cursor) + suffix;
+    String prefix = getLabel(ctx.availableCharsX() - current.length());
     uint8_t spaces = ctx.availableSpaces(prefix.length() + current.length());
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
@@ -216,7 +218,7 @@ bool Selector::update(UIContext& ctx, char key) {
 /**** Toggle ****/
 /****************/
 void Toggle::render(UIContext& ctx, bool minimalized) {
-    String prefix = getLabel();
+    String prefix = getLabel(ctx.availableCharsX() - 3);
     uint8_t spaces = ctx.availableSpaces(prefix.length() + 3);
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
@@ -234,7 +236,7 @@ void Toggle::activate(UIContext& /* ctx */) {
 /**** Button ****/
 /****************/
 void Button::render(UIContext& ctx, bool minimalized) {
-    ctx.println("[" + getLabel() + "]");
+    ctx.println("[" + getLabel(ctx.availableCharsX() - 2) + "]");
 }
 
 void Button::activate(UIContext& ctx) {
@@ -245,7 +247,7 @@ void Button::activate(UIContext& ctx) {
 /*******************/
 /**** TextField ****/
 /*******************/
-void TextField::render(UIContext& ctx, bool minimalized) {
+void TextField::render(UIContext& ctx, bool minimalized) { // TODO: implement dynamic trimming
     if (window_size < 0) window_size = ctx.availableCharsX();
     if (ptr == nullptr) return;
     if (cursor == -1) cursor = strlen(ptr);

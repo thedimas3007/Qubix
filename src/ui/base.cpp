@@ -1,6 +1,19 @@
 #include "ui/base.h"
 #include "configuration.h"
 
+String UIElement::getLabel(int16_t available) {
+    String label = icon && settings.data.display_icons ? (String(icon) + title) : title;
+    if (available < 0 || available >= label.length()) {
+        // do nothing
+    } else if (available == 0) {
+        label = "";
+    } else if (available < label.length()) {
+        label = label.substring(0, available-1) + '\x96';
+    }
+
+    return label;
+}
+
 UIModal* UIApp::eraseFirstModal() {
     if (modals.empty()) return nullptr;
 

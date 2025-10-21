@@ -7,14 +7,7 @@
 /***************/
 void Label::render(UIContext& ctx, bool minimalized) {
     if (max_length < 0) max_length = ctx.availableCharsX();
-    String data = getLabel();
-    if (max_length && data.length() > max_length && minimalized) {
-        ctx.println(data.substring(0, max_length-1) + '\x96');
-    } else if (minimalized) {
-        ctx.println(data);
-    } else {
-        ctx.println(title);
-    }
+    ctx.println(minimalized ? getLabel(max_length) : title);
 }
 
 /******************/
@@ -37,11 +30,15 @@ void Property<T>::render(UIContext& ctx, bool minimalized) {
         data = String(buf);
     }
 
-    String prefix = getLabel();
-    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
-    if (prefix.length() + data.length() > ctx.availableCharsX() && minimalized) {
-        prefix = prefix.substring(0, std::max(0u, ctx.availableCharsX()-data.length()-1)) + '\x96';
+    if (!minimalized) {
+        ctx.print(getLabel());
+        ctx.print(": ");
+        ctx.println(data);
+        return;
     }
+
+    String prefix = getLabel(ctx.availableCharsX() - data.length());
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
 
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
@@ -52,13 +49,17 @@ void Property<T>::render(UIContext& ctx, bool minimalized) {
 /**** StringProperty ****/
 /************************/
 void StringProperty::render(UIContext& ctx, bool minimalized) {
-    String prefix = getLabel();
     String data = ptr != nullptr ? String(ptr) : "<null>";
-    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
-    if (prefix.length() + data.length() > ctx.availableCharsX() && minimalized) {
-        prefix = prefix.substring(0, std::max(0u, ctx.availableCharsX()-data.length()-1)) + '\x96';
+
+    if (!minimalized) {
+        ctx.print(getLabel());
+        ctx.print(": ");
+        ctx.println(data);
+        return;
     }
 
+    String prefix = getLabel(ctx.availableCharsX() - data.length());
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
     ctx.println(data);
