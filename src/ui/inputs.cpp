@@ -363,3 +363,98 @@ bool TextField::update(UIContext& ctx, char key) {
     strcpy(ptr, buf.c_str());
     return true;
 }
+
+
+/********************/
+/**** ColorInput ****/
+/********************/
+template <class T>
+Color ColorInput<T>::getColor() {
+    if (mode == ColorMode::COLOR_16) return Color::from565(*ptr);
+    if (mode == ColorMode::COLOR_24) return Color::unpack(*ptr);
+    return {0,0,0};
+}
+
+template <class T>
+void ColorInput<T>::render(UIContext& ctx, bool /*minimalized*/) {
+    String prefix = getLabel(ctx.availableCharsX() - 7);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 7);
+
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    ctx.printf("#%06X", getColor().pack());
+}
+
+template <class T>
+void ColorInput<T>::renderInline(UIContext& ctx) {
+    String prefix = getLabel(ctx.availableCharsX() - 7);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 7);
+
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    bool high = (cursor % 2 == 0);
+    ctx.setTextColor(color.as565(), ctx.theme.bg);
+    ctx.print('#');
+    ctx.resetColors();
+    for (uint8_t i = 0; i < 3; ++i) {
+        if (cursor/2 == i) {
+            if (high) ctx.invertColors();
+            ctx.printf("%01X", color.raw[i] >> 4 & 0x0F);
+
+            if (high)   ctx.resetColors();
+            else        ctx.invertColors();
+
+            ctx.printf("%01X", color.raw[i] & 0x0F);
+            ctx.resetColors();
+        } else {
+            ctx.resetColors();
+            ctx.printf("%02X", color.raw[i]);
+        }
+    };
+    ctx.resetColors();
+}
+
+template <class T> bool ColorInput<T>::update(UIContext& ctx, char key) {
+    uint8_t channel = cursor / 2;
+    bool high = (cursor % 2 == 0);
+
+    if (key == KEY_UP) {
+        color.raw[channel] += (high ? 0x10 : 0x01);
+    } else if (key == KEY_FN_UP) {
+        color.raw[channel] = 0xFF;
+    } else if (key == KEY_DOWN) {
+        color.raw[channel] -= (high ? 0x10 : 0x01);
+    } else if (key == KEY_FN_DOWN) {
+        color.raw[channel] = 0x00;
+    } else if (key == KEY_LEFT) {
+        cursor--;
+        if (cursor < 0) cursor = 5;
+    } else if (key == KEY_FN_LEFT) {
+        cursor = 0;
+    } else if (key == KEY_RIGHT) {
+        cursor++;
+        if (cursor > 5) cursor = 0;
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = 5;
+    } else if (isxdigit(key)) {
+        uint8_t value;
+        if (isdigit(key)) value = key - '0';
+        else value = 10 + (tolower(key) - 'a');
+
+        if (high)   color.raw[channel] = (value << 4) | (color.raw[channel] & 0x0F);
+        else        color.raw[channel] = (color.raw[channel] & 0xF0) | value;
+        cursor = (cursor + 1) % 6;
+    } else if (key == KEY_ESC) {
+        if (mode == ColorMode::COLOR_16) color = Color::from565(*ptr);
+        else if (mode == ColorMode::COLOR_24) color = Color::unpack(*ptr);
+        return false;
+    } else {
+        return false;
+    }
+
+    if (mode == ColorMode::COLOR_16) *ptr = color.as565();
+    else if (mode == ColorMode::COLOR_24) *ptr = color.pack();
+    else *ptr = 0;
+
+    return true;
+}

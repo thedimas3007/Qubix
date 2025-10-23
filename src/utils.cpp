@@ -7,11 +7,27 @@ uint16_t Color::as565() const {
     return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
 
+uint32_t Color::pack() const {
+    return ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF) << 0);
+}
+
 Color Color::unpack(uint32_t rgb) {
     return {
         rgb >> 16 & 0xFF,
         rgb >> 8 & 0xFF,
         rgb & 0xFF
+    };
+}
+
+Color Color::from565(uint16_t rgb) {
+    uint8_t r5 = (rgb >> 11) & 0x1F;
+    uint8_t g6 = (rgb >> 5)  & 0x3F;
+    uint8_t b5 = (rgb >> 0)  & 0x1F;
+
+    return {
+        static_cast<uint8_t>(r5 / 31.0f * 255.0f),
+        static_cast<uint8_t>(g6 / 63.0f * 255.0f),
+        static_cast<uint8_t>(b5 / 31.0f * 255.0f)
     };
 }
 

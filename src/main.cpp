@@ -122,6 +122,10 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
         }).buildPtr(),
 
         MenuView::make().icon('\x91').title("Debug").children({
+#ifdef HAS_COLOR
+            ColorInput<uint16_t>::make().pointer(&ui_context.theme.fg).title("Foreground").buildPtr(),
+            ColorInput<uint16_t>::make().pointer(&ui_context.theme.bg).title("Background").buildPtr(),
+#endif
             CharTable::make().buildPtr(),
             MenuView::make().title("Dynamic HW").children({
                 Button::make().title("Clock").onClick([] {
@@ -265,7 +269,6 @@ void loop() {
         int state = radio.readData(str);
         if (state == RADIOLIB_ERR_NONE) {
             message_menu->addChild(Label::make().icon('\xBF').title(str).maxLength(20).buildPtr());
-
         } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
             display.println("[TIMEOUT]");
         } else {

@@ -11,7 +11,9 @@ union Color {
     uint8_t raw[3];
 
     uint16_t as565() const;
+    uint32_t pack() const;
     static Color unpack(uint32_t rgb);
+    static Color from565(uint16_t rgb);
     static Color fromHSV(float h, float s, float v);
 };
 

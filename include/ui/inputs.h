@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "base.h"
+#include "utils.h"
 
 template<class T>
 class NumberPicker : public UIInline {
@@ -228,3 +229,52 @@ public:
     void renderInline(UIContext& ctx) override;
     bool update(UIContext& ctx, char key) override;
 };
+
+
+template<class T>
+class ColorInput : public UIInline {
+    enum class ColorMode { UNKNOWN, COLOR_16, COLOR_24 };
+
+    static_assert(std::is_integral_v<T>);
+    T* ptr;
+    int8_t cursor = 0;
+    ColorMode mode;
+    Color color;
+public:
+    Color getColor();
+
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        T* ptr = nullptr;
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& pointer(T* p) { c_.ptr = p; return *this; }
+
+        [[nodiscard]] ColorInput build() const { return ColorInput(c_); }
+        [[nodiscard]] ColorInput* buildPtr() const { return new ColorInput(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit ColorInput(const Config& cfg) : ptr(cfg.ptr) {
+        if (sizeof(*cfg.ptr) == 2)      mode = ColorMode::COLOR_16;
+        else if (sizeof(*cfg.ptr) == 4) mode = ColorMode::COLOR_24;
+        else                            mode = ColorMode::UNKNOWN;
+
+        icon = cfg.icon;
+        title = cfg.title;
+        color = getColor();
+    };
+
+    void render(UIContext& ctx, bool minimalized) override;
+    void renderInline(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
+};
+template class ColorInput<uint16_t>;
+template class ColorInput<uint32_t>;
