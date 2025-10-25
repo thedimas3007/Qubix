@@ -1,5 +1,18 @@
 #pragma once
+
 #include <Arduino.h>
+
+class ReadBuffer;
+class WriteBuffer;
+
+class Serializable {
+public:
+    virtual void serialize(WriteBuffer& buffer) = 0;
+    virtual void deserialize(ReadBuffer& buffer) = 0;
+    virtual size_t size() = 0;
+    virtual ~Serializable() = default;
+};
+
 
 class ReadBuffer {
     const uint8_t* buf;
@@ -38,6 +51,24 @@ public:
         pos += s.length() + 1 <= size ? s.length() + 1 : size - pos;
         return s;
     }
+
+    template <typename T>
+    T ser() {
+        T t;
+        t.deserialize(*this);
+        return t;
+    }
+
+    template <typename T>
+    T obj() {
+        T v{};
+        if (available(sizeof(T))) {
+            memcpy(&v, buf + pos, sizeof(T));
+            pos += sizeof(T);
+        }
+        return v;
+    }
+
 };
 
 
@@ -46,7 +77,7 @@ class WriteBuffer {
     size_t size, pos;
 public:
     WriteBuffer(size_t s) : buf(new uint8_t[s]()), size(s), pos(0) {}
-    ~WriteBuffer() { delete[] buf; }
+    ~WriteBuffer()          { delete[] buf; }
 
     bool available(size_t n = 1) const
                             { return pos + n <= size; }
@@ -76,8 +107,18 @@ public:
         if (pos + n <= size) buf[pos + n - 1] = '\0';
         pos += n;
     }
+
+    void ser(Serializable& s) {
+        if (!available(s.size())) return;
+        s.serialize(*this);
+    }
+
+
+    template <typename T>
+    void obj(const T& v) {
+        if (!available(sizeof(T))) return;
+        memcpy(buf + pos, &v, sizeof(T));
+        pos += sizeof(T);
+    }
 };
-
-
-
 

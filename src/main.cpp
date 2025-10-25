@@ -9,6 +9,8 @@
 #include "settings.h"
 #include "utils.h"
 
+#include "network/serializable.h"
+
 #include "ui/base.h"
 #include "ui/extra.h"
 #include "ui/inputs.h"
