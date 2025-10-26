@@ -9,7 +9,8 @@
 #include "settings.h"
 #include "utils.h"
 
-#include "network/serializable.h"
+#include "network/packet.h"
+#include "network/packet_types.h"
 
 #include "ui/base.h"
 #include "ui/extra.h"
@@ -30,6 +31,7 @@ Buffered_SSD1351 display(128, 128, extSPI1, DISPLAY_CS, DISPLAY_DC, DISPLAY_RESE
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 
+NetManager netman;
 UIContext ui_context(display);
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
 std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
@@ -249,8 +251,18 @@ void setup() {
         while (true) {}
     }
 
+    netman.begin(&radio, &enable_interrupt);
+    netman.reg<HelloPacket>([](const auto& packet) {
+        root.addModal(Alert::make().message(String(packet.hwid(), HEX)).buildPtr());
+    });
+
+    display.println("Post init!");
     display.display();
     delay(1000);
+
+    HelloPacket packet;
+    packet.hwid(0x12345678);
+    netman.send(packet);
 }
 
 
@@ -267,20 +279,20 @@ void loop() {
         enable_interrupt = false;
         received_flag = false;
 
-        String str;
-        int state = radio.readData(str);
-        if (state == RADIOLIB_ERR_NONE) {
-            message_menu->addChild(Label::make().icon('\xBF').title(str).maxLength(20).buildPtr());
-        } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
-            display.println("[TIMEOUT]");
-        } else {
-            display.print("[ERROR ");
-            display.print(state);
-            display.print("]");
+        uint8_t len = radio.getPacketLength();
+        uint8_t* data = new uint8_t[len];
+        radio.readData(data, 0);
+        ReadBuffer buffer = ReadBuffer(data, len);
+        Packet* packet = Packet::create(buffer.u8());
+        if (packet) {
+            packet->deserialize(buffer);
+            netman.dispatch(*packet);
         }
         radio.startReceive();
-
         enable_interrupt = true;
+
+        delete packet;
+        delete[] data;
     }
 
     uint32_t frame_interval = 1000 / DISPLAY_FPS;

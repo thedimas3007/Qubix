@@ -19,7 +19,7 @@ class ReadBuffer {
     size_t size, pos;
 public:
     ReadBuffer(const uint8_t* b, size_t s) : buf(b), size(s), pos(0) {}
-    ~ReadBuffer()   { delete[] buf; }
+    ~ReadBuffer() = default;
 
     bool available(size_t n = 1) const
                             { return pos + n <= size; }
@@ -47,8 +47,9 @@ public:
 
     String str() {
         if (!available(1)) return "";
+        size_t l = strnlen(reinterpret_cast<const char*>(buf + pos), size - pos);
         String s(reinterpret_cast<const char*>(buf + pos));
-        pos += s.length() + 1 <= size ? s.length() + 1 : size - pos;
+        pos += (l + 1 <= size - pos) ? l + 1 : size - pos;
         return s;
     }
 
@@ -88,6 +89,7 @@ public:
     size_t capacity() const { return size; }
     void reset()            { pos = 0; }
 
+    // TODO: maybe chaining
     void u8(uint8_t v)      { if (available(1)) buf[pos++] = v; }
     void u16(uint16_t v)    { if (available(2)) { u8(v & 0xFF); u8(v >> 8); } }
     void u32(uint32_t v)    { if (available(4)) { u16(v & 0xFFFF); u16(v >> 16); } }
