@@ -40,10 +40,11 @@ public:
         if (!radio || !irq_en) { return RADIOLIB_ERR_NULL_POINTER; }
 
         *irq_en = false;
-        WriteBuffer buffer = WriteBuffer(packet.size());
+        WriteBuffer buffer = WriteBuffer(packet.size()+1);
         packet.serialize(buffer);
         int16_t status = radio->transmit(buffer.raw(), buffer.len());
         *irq_en = true;
+        radio->startReceive();
         return status;
     }
 

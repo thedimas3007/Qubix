@@ -206,8 +206,8 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 
 void setup() {
     driver->init();
-    // Serial.setRx(PB7);
-    // Serial.setTx(PB6);
+    Serial.setRx(PB7);
+    Serial.setTx(PB6);
     Serial.begin(115200);
 
     bool settings_reset = settings.begin();
@@ -253,7 +253,9 @@ void setup() {
 
     netman.begin(&radio, &enable_interrupt);
     netman.reg<HelloPacket>([](const auto& packet) {
-        root.addModal(Alert::make().message(String(packet.hwid(), HEX)).buildPtr());
+        char txt[11];
+        snprintf(txt, sizeof(txt), "0x%08lX", (unsigned long)(packet.hwid()));
+        root.addModal(Alert::make().message(txt).buildPtr());
     });
 
     display.println("Post init!");
@@ -261,8 +263,13 @@ void setup() {
     delay(1000);
 
     HelloPacket packet;
-    packet.hwid(0x12345678);
-    netman.send(packet);
+    packet.hwid(driver->boardId());
+    int16_t res = netman.send(packet);
+    if (res != RADIOLIB_ERR_NONE) {
+        ui_context.printf("Failed: %d", res);
+        display.display();
+        while (true) {}
+    }
 }
 
 
@@ -283,7 +290,8 @@ void loop() {
         uint8_t* data = new uint8_t[len];
         radio.readData(data, 0);
         ReadBuffer buffer = ReadBuffer(data, len);
-        Packet* packet = Packet::create(buffer.u8());
+        uint8_t packet_type = buffer.u8();
+        Packet* packet = Packet::create(packet_type);
         if (packet) {
             packet->deserialize(buffer);
             netman.dispatch(*packet);

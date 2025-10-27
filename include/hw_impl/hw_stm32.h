@@ -41,6 +41,8 @@ public:
     uint32_t currentRam() const override;
     uint32_t currentFlash() const override;
 
+    uint32_t boardId() const override;
+
     void init() override;
     void reboot() override;;
 };

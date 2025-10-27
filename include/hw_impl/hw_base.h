@@ -19,6 +19,8 @@ public:
     virtual uint32_t maxFlash() const { return HW_FLASH_BYTES; }
     virtual uint32_t currentFlash() const = 0;
 
+    virtual uint32_t boardId() const = 0;
+
     virtual void init() = 0;
     virtual void reboot() = 0;
 };

@@ -1,6 +1,7 @@
 #ifdef ARDUINO_ARCH_STM32
 #include "hw_impl/hw_stm32.h"
 #include "configuration.h"
+#include "utils.h"
 
 TwoWire* extI2C = new TwoWire(EXT_I2C_SDA, EXT_I2C_SCL);
 SPIClass* extSPI = new SPIClass(EXT_SPI0_MOSI, EXT_SPI0_MISO, EXT_SPI0_SCK);
@@ -31,6 +32,10 @@ uint32_t DriverSTM32::currentRam() const {
 uint32_t DriverSTM32::currentFlash() const {
     extern uint32_t _etext;
     return (uint32_t)&_etext - FLASH_BASE;
+}
+
+uint32_t DriverSTM32::boardId() const {
+    return crc32(reinterpret_cast<const uint8_t*>(UID_BASE), 12);
 }
 
 void DriverSTM32::init() {

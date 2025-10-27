@@ -27,6 +27,12 @@ uint32_t DriverRP2040::currentFlash() const {
     return (uint32_t)(&__flash_binary_end - &__flash_binary_start);
 }
 
+uint32_t DriverRP2040::boardId() const {
+    pico_unique_board_id_t id{};
+    pico_get_unique_board_id(&id);
+    return crc32(id.id, sizeof(id.id));
+}
+
 void DriverRP2040::init() {
     extI2C->setSCL(EXT_I2C_SCL);
     extI2C->setSDA(EXT_I2C_SDA);

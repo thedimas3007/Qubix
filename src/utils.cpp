@@ -59,6 +59,26 @@ uint16_t crc16(const uint8_t* p, size_t n) {
     return crc;
 }
 
+uint32_t crc32(const uint8_t* p, size_t n) {
+    uint32_t crc = 0xFFFFFFFF;
+    while (n--) {
+        crc ^= static_cast<uint32_t>(*p++) << 24;
+        for (uint8_t i = 0; i < 8; ++i)
+            crc = (crc & 0x80000000) ? (crc << 1) ^ 0x04C11DB7 : (crc << 1);
+    }
+    return crc ^ 0xFFFFFFFF;
+}
+
+uint64_t crc64(const uint8_t* p, size_t n) {
+    uint64_t crc = 0xFFFFFFFFFFFFFFFFULL;
+    while (n--) {
+        crc ^= static_cast<uint64_t>(*p++) << 56;
+        for (uint8_t i = 0; i < 8; ++i)
+            crc = (crc & 0x8000000000000000ULL) ? (crc << 1) ^ 0x42F0E1EBA9EA3693ULL : (crc << 1);
+    }
+    return crc ^ 0xFFFFFFFFFFFFFFFFULL;
+}
+
 int64_t pow10i(uint8_t n) {
     int64_t p = 1;
     while (n--) p *= 10;
