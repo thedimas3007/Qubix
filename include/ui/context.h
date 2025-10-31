@@ -22,13 +22,14 @@ struct UITheme {
 
 class UIContext {
     const uint8_t glyph_width = 6, glyph_height = 8;
-    uint8_t text_size = 1;
+    float text_size = 1;
+
     bool refresh_requested = false;
     bool refresh_full = false;
 
 #if DISPLAY_MODE == DISPLAY_MODE_EINK
     uint8_t partial_updates = 0;
-    const uint8_t partial_cap = 15; // TODO: move into configuration.h or make config configurable
+    const uint8_t partial_cap = 15; // each n-th is full; TODO: move into configuration.h or make config configurable
 #endif
 public:
 #ifdef THEME
@@ -37,24 +38,26 @@ public:
     UITheme theme = {1,0};
 #endif
 
-
+    // TODO: migrate to getters
     DisplayType& display;
     int16_t x, y, width, height;
 
     explicit UIContext(DisplayType& display)
         : display(display), x(0), y(0), width(display.width()), height(display.height()) {}
 
-    [[nodiscard]] int16_t charWidth() const       { return glyph_width * text_size; }
-    [[nodiscard]] int16_t charHeight() const      { return glyph_height * text_size; }
+    [[nodiscard]] int16_t charWidth() const         { return glyph_width * text_size + 0.5; }
+    [[nodiscard]] int16_t charHeight() const        { return glyph_height * text_size + 0.5; }
+    [[nodiscard]] float textSize() const            { return text_size; }
 
-    [[nodiscard]] uint8_t maxCharsX() const       { return width / charWidth(); }
-    [[nodiscard]] uint8_t maxCharsY() const       { return height / charHeight(); }
-    [[nodiscard]] uint8_t availableCharsX() const { return (width - x) / charWidth(); }
-    [[nodiscard]] uint8_t availableCharsY() const { return (height - y) / charHeight(); }
+    [[nodiscard]] uint8_t maxCharsX() const         { return width / charWidth(); }
+    [[nodiscard]] uint8_t maxCharsY() const         { return height / charHeight(); }
+    [[nodiscard]] uint8_t availableCharsX() const   { return (width - x) / charWidth(); }
+    [[nodiscard]] uint8_t availableCharsY() const   { return (height - y) / charHeight(); }
 
     [[nodiscard]] uint8_t availableSpaces(uint8_t chars) const;
 
-    [[nodiscard]] bool refreshRequested() const { return refresh_requested; }
+    [[nodiscard]] bool refreshRequested() const     { return refresh_requested; }
+
 
     void sync();
     void reset();
@@ -62,6 +65,7 @@ public:
     void refresh(bool full = false);
     void setCursor(int16_t tx, int16_t ty);
     void setCharCursor(int16_t cx, int16_t cy);
+    void setTextSize(float s);
     void setRotation(uint8_t r);
 
     void setTextColor(uint16_t c, uint16_t bg);

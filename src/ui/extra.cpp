@@ -132,3 +132,31 @@ void ColorWheel::render(UIContext& ctx, bool minimalized) {
 bool ColorWheel::update(UIContext& ctx, char key) {
     return UIElement::update(ctx, key);
 }
+
+/******************/
+/**** SizeDemo ****/
+/******************/
+SizeDemo::SizeDemo(const Config& cfg) {
+    icon = 0x00;
+    title = "Text Size";
+    picker = NumberPicker<float>::make().title("Size")
+        .precision(1).min(0.5).max(8)
+        .pointer(&size).buildPtr();
+}
+
+void SizeDemo::render(UIContext& ctx, bool minimalized) {
+    if (minimalized) {
+        ctx.println(getLabel());
+        return;
+    }
+
+    picker->renderInline(ctx);
+    float old_size = ctx.textSize();
+    ctx.setTextSize(size);
+    ctx.printf("Size: %.1f\n", size);
+    ctx.setTextSize(old_size);
+}
+
+bool SizeDemo::update(UIContext& ctx, char key) {
+    return picker->update(ctx, key);
+}

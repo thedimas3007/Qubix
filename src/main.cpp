@@ -133,6 +133,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
             ColorInput<uint16_t>::make().pointer(&ui_context.theme.bg).title("Background").buildPtr(),
 #endif
             CharTable::make().buildPtr(),
+            SizeDemo::make().buildPtr(),
             MenuView::make().title("Dynamic HW").children({
                 Button::make().title("Clock").onClick([] {
                     root.addModal(Alert::make().message(

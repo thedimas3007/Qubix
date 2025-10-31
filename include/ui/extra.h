@@ -3,6 +3,7 @@
 #include <RadioLib.h>
 
 #include "base.h"
+#include "inputs.h"
 
 class CharTable : public UIElement {
     int8_t start = 0;
@@ -86,6 +87,28 @@ public:
     static Builder make() { return Builder{}; }
 
     explicit ColorWheel(const Config& cfg) { icon = 0x00; title = "Colors"; };
+
+    void render(UIContext& ctx, bool minimalized) override;
+    bool update(UIContext& ctx, char key) override;
+};
+
+class SizeDemo : public UIElement {
+    float size = 1;
+    NumberPicker<float>* picker;
+public:
+    struct Config {};
+
+    class Builder {
+        Config c_;
+    public:
+        [[nodiscard]] SizeDemo build() const { return SizeDemo(c_); }
+        [[nodiscard]] SizeDemo* buildPtr() const { return new SizeDemo(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit SizeDemo(const Config& cfg);
+    ~SizeDemo() override { delete picker; };
 
     void render(UIContext& ctx, bool minimalized) override;
     bool update(UIContext& ctx, char key) override;

@@ -22,6 +22,16 @@ void UIContext::setCharCursor(const int16_t cx, const int16_t cy) {
     setCursor(cx*charWidth(), cy*charHeight());
 }
 
+void UIContext::setTextSize(float s) {
+    if (s < 0 || s > 8) {
+        display.setTextSize(1);
+        text_size = 1;
+    } else {
+        display.setTextSize(s);
+        text_size = s;
+    }
+}
+
 void UIContext::setRotation(uint8_t r) {
     display.setRotation(r);
     sync();
@@ -204,7 +214,7 @@ void UIContext::render(UIApp& app) {
     display.display();
 
 #elif DISPLAY_MODE == DISPLAY_MODE_EINK
-    if (refresh_full || ++partial_updates > partial_cap) {
+    if (refresh_full || ++partial_updates >= partial_cap) {
         display.setFullWindow();
         partial_updates = 0;
     } else {
