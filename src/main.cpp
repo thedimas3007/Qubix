@@ -209,8 +209,6 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
 
 void setup() {
     driver->init();
-    Serial.setRx(PB7);
-    Serial.setTx(PB6);
     Serial.begin(115200);
 
     bool settings_reset = settings.begin();
@@ -231,10 +229,16 @@ void setup() {
     ui_context.display.cp437();
     settings.applyDisplay(display);
     ui_context.reset();
+
+#if DISPLAY_MODE == DISPLAY_MODE_EINK // simple output mode for e-in
+    display.setPartialWindow(0, 0, 200, 200);
+    display.firstPage();
+#endif
+
     if (settings_reset) ui_context.println("Settings reset...");
-    ui_context.println("Loading radio...");
+    ui_context.print("Radio...");
     // ui_context.println(prettyValue(SystemCoreClock, "Hz"));
-    display.display();
+    ui_context.flush();
 
     int state = radio.begin(settings.data.radio_frequency, bandwidths_float[settings.data.radio_bandwidth],
                             settings.data.radio_sf, settings.data.radio_cr,
@@ -249,33 +253,40 @@ void setup() {
     radio.startReceive();
 
     if (state == RADIOLIB_ERR_NONE) {
-        display.println("Radio OK!");
+        ui_context.println("OK");
+        ui_context.flush();
     } else {
-        display.println("Radio ERROR!");
-        display.println(state);
-        display.display();
+        ui_context.printf("ERROR %i", state);
+        ui_context.flush();
         while (true) {}
     }
 
+    ui_context.print("Events...");
+    ui_context.flush();
     netman.begin(&radio, &enable_interrupt);
     netman.reg<HelloPacket>([](const auto& packet) {
         char txt[11];
         snprintf(txt, sizeof(txt), "0x%08lX", (unsigned long)(packet.hwid()));
         root.addModal(Alert::make().message(txt).buildPtr());
     });
+    ui_context.println("OK");
+    ui_context.flush();
 
-    display.println("Post init!");
-    display.display();
-    delay(1000);
-
+    ui_context.print("Beacon...");
+    ui_context.flush();
     HelloPacket packet;
     packet.hwid(driver->boardId());
     int16_t res = netman.send(packet);
     if (res != RADIOLIB_ERR_NONE) {
-        ui_context.printf("Failed: %d", res);
-        display.display();
+        ui_context.printf("ERROR %i", res);
+        ui_context.flush();
         while (true) {}
     }
+    ui_context.println("OK");
+
+    ui_context.println("Loaded!");
+    ui_context.flush();
+    delay(1000);
 
     ui_context.refresh(true);
 }

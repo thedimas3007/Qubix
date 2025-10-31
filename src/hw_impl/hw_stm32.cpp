@@ -44,6 +44,8 @@ void DriverSTM32::init() {
 #ifdef EXTRA_SPI
     extSPI1->begin();
 #endif
+    Serial.setRx(PB7);
+    Serial.setTx(PB6);
 }
 
 void DriverSTM32::reboot() {

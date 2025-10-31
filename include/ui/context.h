@@ -62,7 +62,9 @@ public:
     void sync();
     void reset();
     void render(UIApp& app);
+    void flush();
     void refresh(bool full = false);
+
     void setCursor(int16_t tx, int16_t ty);
     void setCharCursor(int16_t cx, int16_t cy);
     void setTextSize(float s);

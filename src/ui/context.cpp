@@ -234,6 +234,18 @@ void UIContext::render(UIApp& app) {
     refresh_full = false;
 }
 
+void UIContext::flush() {
+#if DISPLAY_MODE == DISPLAY_MODE_BUFFERED
+    display.display();
+#elif DISPLAY_MODE == DISPLAY_MODE_BUFFERLESS
+    // indeed bufferless
+#elif DISPLAY_MODE == DISPLAY_MODE_EINK
+    display.nextPage(); // may not always work
+#else
+#error "Invalid display mode specified. Check implementation"
+#endif
+}
+
 void UIContext::refresh(bool full) {
     refresh_requested = true;
     refresh_full = full || refresh_full;
