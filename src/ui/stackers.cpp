@@ -91,6 +91,7 @@ bool MenuView::update(UIContext& ctx, char key) {
                 on_exit();
             } else {
                 selected = children[cursor];
+                ctx.refresh(true);
             }
             return true;
         }
@@ -98,6 +99,7 @@ bool MenuView::update(UIContext& ctx, char key) {
         if (selected->update(ctx, key)) return true;
 
         if (key == KEY_LEFT || key == KEY_ESC) {
+            ctx.refresh(true);
             selected = nullptr;
             on_exit();
             return true;

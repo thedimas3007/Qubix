@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Adafruit_GFX.h>
 #include <cstdio>
 #include <RadioLib.h>
 #include <vector>
@@ -27,7 +26,10 @@ Adafruit_SSD1306 display(128, 64, extI2C, -1);
 ST7567 display(128, 64, extSPI1, DISPLAY_DC, DISPLAY_RESET, DISPLAY_CS);
 #elif defined(TARGET_SSD1351)
 Buffered_SSD1351 display(128, 128, extSPI1, DISPLAY_CS, DISPLAY_DC, DISPLAY_RESET);
+#elif defined(TARGET_SSD1681)
+GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display = GxEPD2_154_D67(DISPLAY_CS, DISPLAY_DC, DISPLAY_RESET, DISPLAY_BUSY);
 #endif
+
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 
@@ -220,6 +222,9 @@ void setup() {
     display.begin();
 #elif defined(TARGET_SSD1351)
     display.begin();
+#elif defined(TARGET_SSD1681)
+    display.epd2.selectSPI(*extSPI1, SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    display.init();
 #endif
 
     ui_context.display.cp437();
@@ -270,6 +275,8 @@ void setup() {
         display.display();
         while (true) {}
     }
+
+    ui_context.refresh(true);
 }
 
 
@@ -279,7 +286,7 @@ void loop() {
         char c = extI2C->read();
         if (c == 0) continue;
         if (c == KEY_FN_C) driver->reboot();
-        root.update(ui_context, c);
+        if (root.update(ui_context, c)) ui_context.refresh();
     }
 
     if (received_flag) {
@@ -304,10 +311,8 @@ void loop() {
     }
 
     uint32_t frame_interval = 1000 / DISPLAY_FPS;
-    if ((millis() - last_update) > frame_interval) {
-        ui_context.reset();
-        root.render(ui_context);
-        display.display();
+    if (millis() - last_update > frame_interval && ui_context.refreshRequested()) {
+        ui_context.render(root);
         last_update += frame_interval;
     }
 }

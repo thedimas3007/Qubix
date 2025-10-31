@@ -1,5 +1,6 @@
-#include "configuration.h"
 #include "ui/context.h"
+#include "configuration.h"
+#include "ui/base.h"
 
 uint16_t rgb565(uint32_t rgb) {
     uint8_t r = (rgb & 0xFF0000) >> 16;
@@ -194,4 +195,36 @@ void UIContext::reset() {
     setCursor(0, 0);
     resetColors();
     sync();
+}
+
+void UIContext::render(UIApp& app) {
+    reset();
+#if   DISPLAY_MODE == DISPLAY_MODE_BUFFERED
+    app.render(*this);
+    display.display();
+
+#elif DISPLAY_MODE == DISPLAY_MODE_EINK
+    if (refresh_full || ++partial_updates > partial_cap) {
+        display.setFullWindow();
+        partial_updates = 0;
+    } else {
+        display.setPartialWindow(0, 0, width, height);
+    }
+
+    display.firstPage();
+    do {
+        app.render(*this);
+    } while (display.nextPage());
+
+#else
+#error "Invalid display mode specified. Check implementation"
+#endif
+
+    refresh_requested = false;
+    refresh_full = false;
+}
+
+void UIContext::refresh(bool full) {
+    refresh_requested = true;
+    refresh_full = full || refresh_full;
 }

@@ -292,7 +292,7 @@ void TextField::renderInline(UIContext& ctx) {
 
     for (uint8_t i = 0; i < data.length(); i++) {
         if (i == cursor-slice_at) {
-            if (millis() / 500 % 2) ctx.invertColors();
+            if (millis() / 500 % 2 || DISPLAY_MODE == DISPLAY_MODE_EINK) ctx.invertColors();
             ctx.print(data.charAt(i));
             ctx.resetColors();
             has_cursor = false;
@@ -301,7 +301,7 @@ void TextField::renderInline(UIContext& ctx) {
         }
     };
 
-    if (has_cursor) ctx.print((millis() / 500 % 2) ? '_' : ' ');
+    if (has_cursor) ctx.print((millis() / 500 % 2 || DISPLAY_MODE == DISPLAY_MODE_EINK) ? '_' : ' ');
     ctx.println();
 }
 

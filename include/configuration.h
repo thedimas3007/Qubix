@@ -27,6 +27,7 @@
 #define DISPLAY_CS          PC7
 #define DISPLAY_DC          PC8
 #define DISPLAY_BL          0
+#define DISPLAY_BUSY        PC9
 
 #endif
 
@@ -42,7 +43,7 @@
 /**** Consts ****/
 /****************/
 #define MESSAGE_LENGTH 128
-#define DISPLAY_FPS 30
+#define DISPLAY_FPS 1
 
 
 /*****************/
@@ -59,6 +60,9 @@
 
 #elif defined(TARGET_SSD1351)
 #include "displays/display_ssd1351.h"
+
+#elif defined(TARGET_SSD1681)
+#include "displays/display_ssd1681.h"
 
 #else
 #error "Unknown display. Define in `configuration.h`"

@@ -1,7 +1,7 @@
 #include "ui/base.h"
 #include "configuration.h"
 
-String UIElement::getLabel(int16_t available) {
+String UIElement::getLabel(int16_t available) const {
     String label = icon && settings.data.display_icons ? (String(icon) + title) : title;
     if (available < 0 || available >= label.length()) {
         // do nothing
@@ -29,9 +29,14 @@ UIModal* UIApp::eraseLastModal() {
     return m;
 }
 
-void UIApp::render(UIContext& ctx) const {
-    if (title) ctx.print(title);
+void UIApp::render(UIContext& ctx) {
+    if (title) ctx.println(title);
     root->render(ctx, false);
+
+    if (last_size != modals.size()) {
+        ctx.refresh(true);
+        last_size = modals.size();
+    }
 
     if (hasModals()) {
         for (int16_t y = 0; y < ctx.height; y++) {
@@ -50,6 +55,10 @@ bool UIApp::update(UIContext& ctx, char key) {
         if (!result) return false;
 
         delete eraseFirstModal();
+        if (last_size != modals.size()) {
+            ctx.refresh(true);
+            last_size = modals.size();
+        }
         return true;
     }
 

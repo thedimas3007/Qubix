@@ -1,5 +1,6 @@
 #pragma once
 #ifdef TARGET_SSD1351 // double check and calm the compiler down
+
 #include <Adafruit_SSD1351.h>
 
 // TODO: specify 1-8-16
@@ -22,13 +23,15 @@ public:
     void display();
 };
 
-extern Buffered_SSD1351 display;
+typedef Buffered_SSD1351 DisplayType;
+extern DisplayType display;
 // #define HAS_CONTRAST
 // inline void setContrast(uint8_t contrast) {
 //     display.sendCommand(SSD1351_CMD_CONTRASTMASTER);
 //     display.sendCommand(std::floor(contrast / 16.0f)); // 0-15
 // }
 #define THEME (UITheme{0x1FF1, 0x0000})
+#define DISPLAY_MODE DISPLAY_MODE_BUFFERED
 #define HAS_COLOR
 
 #endif

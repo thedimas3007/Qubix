@@ -15,7 +15,7 @@ class UIElement {
 public:
     char icon = 0x00;
     String title{};
-    String getLabel(int16_t available = -1);
+    String getLabel(int16_t available = -1) const;
 
     virtual ~UIElement() = default;
 
@@ -61,6 +61,8 @@ class UIApp {
 
     UIModal* eraseFirstModal();
     UIModal* eraseLastModal();
+
+    size_t last_size = 0;
 public:
     struct Config {
         String title = "";
@@ -94,6 +96,6 @@ public:
     void addModal(UIModal* modal) { modals.push_back(modal); }
     bool hasModals() const { return !modals.empty(); }
 
-    void render(UIContext& ctx) const;
+    void render(UIContext& ctx);
     bool update(UIContext& ctx, char key);
 };
