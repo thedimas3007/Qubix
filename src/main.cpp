@@ -30,7 +30,6 @@ Buffered_SSD1351 display(128, 128, extSPI1, DISPLAY_CS, DISPLAY_DC, DISPLAY_RESE
 GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display = GxEPD2_154_D67(DISPLAY_CS, DISPLAY_DC, DISPLAY_RESET, DISPLAY_BUSY);
 #endif
 
-
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 
 NetManager netman;
@@ -51,6 +50,11 @@ void setFlag() {
 auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
 UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
+        Button::make().title("Preved Medved").onClick([]() {
+            auto pkt = std::make_unique<Preved>();
+            pkt->hwid(driver->boardId());
+            netman.queue(std::move(pkt));
+        }).buildPtr(),
         TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
@@ -263,11 +267,26 @@ void setup() {
     ui_context.print("Events...");
     ui_context.flush();
     netman.begin(&radio, &enable_interrupt, &received_flag);
-    netman.reg<HelloPacket>([](const auto& /* mgr */, const auto& packet) {
+
+    netman.reg<HelloPacket>([](auto& /* manager */, const auto& packet) {
         char txt[11];
         snprintf(txt, sizeof(txt), "0x%08lX", (unsigned long)(packet.hwid()));
         root.addModal(Alert::make().message(txt).buildPtr());
     });
+
+    netman.reg<Preved>([](auto& manager, const auto& packet) {
+        auto pkt = std::make_unique<Medved>();
+        pkt->hwid(driver->boardId());
+        pkt->mcu(driver->mcu());
+        pkt->rssi(std::clamp<float>(radio.getRSSI(), -128, 127));
+        pkt->snr(std::clamp<float>(radio.getSNR(), -128, 127));
+        manager.queue(std::move(pkt));
+    });
+
+    netman.reg<Medved>([](auto& /* manager */, const auto& packet) {
+        root.addModal(Alert::make().message(packet.mcu()).buildPtr());
+    });
+
     ui_context.println("OK");
     ui_context.flush();
 
