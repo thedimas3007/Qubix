@@ -40,9 +40,10 @@ class NetManager {
     std::map<uint8_t, std::vector<std::function<void(NetManager&, Packet&)>>> listeners; // type_id -> vector of listeners
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
 
-    volatile bool irq_en = true, received = false;
+    volatile bool* irq_en = nullptr;
+    volatile bool* irq_rx = nullptr;
 public:
-    void begin(PhysicalLayer* r, volatile bool* en);
+    void begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx);
     void queue(std::unique_ptr<Packet> packet, int8_t priority = 0);
     int16_t send(Packet& packet); // should I make it private?
     void dispatch(Packet& p);

@@ -262,7 +262,7 @@ void setup() {
 
     ui_context.print("Events...");
     ui_context.flush();
-    netman.begin(&radio, &enable_interrupt);
+    netman.begin(&radio, &enable_interrupt, &received_flag);
     netman.reg<HelloPacket>([](const auto& /* mgr */, const auto& packet) {
         char txt[11];
         snprintf(txt, sizeof(txt), "0x%08lX", (unsigned long)(packet.hwid()));
