@@ -210,7 +210,7 @@ void UIContext::reset() {
 void UIContext::render(UIApp& app) {
     reset();
 #if   DISPLAY_MODE == DISPLAY_MODE_BUFFERED
-    app.render(*this);
+    app.render();
     display.display();
 
 #elif DISPLAY_MODE == DISPLAY_MODE_EINK
@@ -223,7 +223,7 @@ void UIContext::render(UIApp& app) {
 
     display.firstPage();
     do {
-        app.render(*this);
+        app.render();
     } while (display.nextPage());
 
 #else
@@ -244,6 +244,7 @@ void UIContext::flush() {
 #else
 #error "Invalid display mode specified. Check implementation"
 #endif
+    // to sync or not to sync?
 }
 
 void UIContext::refresh(bool full) {

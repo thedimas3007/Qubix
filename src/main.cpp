@@ -48,14 +48,13 @@ void setFlag() {
     received_flag = true;
 }
 
-
 auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
-UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
+UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
-                enable_interrupt = false;
+                // enable_interrupt = false;
 
                 int16_t ch_status = radio.scanChannel();
                 if (ch_status == RADIOLIB_CHANNEL_FREE) {
@@ -78,7 +77,7 @@ UIApp root = UIApp::make().title("\xAD\x99\x9A               \x9D\xA1\xA3").root
                     root.addModal(Alert::make().message("Err: " + String(ch_status)).buildPtr());
                 }
 
-                enable_interrupt = true;
+                // enable_interrupt = true;
                 radio.startReceive();
             }).buildPtr(),
             message_menu
@@ -264,7 +263,7 @@ void setup() {
     ui_context.print("Events...");
     ui_context.flush();
     netman.begin(&radio, &enable_interrupt);
-    netman.reg<HelloPacket>([](const auto& packet) {
+    netman.reg<HelloPacket>([](const auto& /* mgr */, const auto& packet) {
         char txt[11];
         snprintf(txt, sizeof(txt), "0x%08lX", (unsigned long)(packet.hwid()));
         root.addModal(Alert::make().message(txt).buildPtr());
@@ -272,17 +271,9 @@ void setup() {
     ui_context.println("OK");
     ui_context.flush();
 
-    ui_context.print("Beacon...");
-    ui_context.flush();
-    HelloPacket packet;
-    packet.hwid(driver->boardId());
-    int16_t res = netman.send(packet);
-    if (res != RADIOLIB_ERR_NONE) {
-        ui_context.printf("ERROR %i", res);
-        ui_context.flush();
-        while (true) {}
-    }
-    ui_context.println("OK");
+    auto packet = std::make_unique<HelloPacket>();
+    packet->hwid(driver->boardId());
+    netman.queue(std::move(packet));
 
     ui_context.println("Loaded!");
     ui_context.flush();
@@ -293,12 +284,14 @@ void setup() {
 
 
 void loop() {
+    netman.tick(); // TODO: kinda error logger
+
     extI2C->requestFrom(KEYBOARD_ADDRESS, 1);
     while (extI2C->available()) {
         char c = extI2C->read();
         if (c == 0) continue;
         if (c == KEY_FN_C) driver->reboot();
-        if (root.update(ui_context, c)) ui_context.refresh();
+        if (root.update(c)) ui_context.refresh();
     }
 
     if (received_flag) {
@@ -306,20 +299,18 @@ void loop() {
         received_flag = false;
 
         uint8_t len = radio.getPacketLength();
-        uint8_t* data = new uint8_t[len];
-        radio.readData(data, 0);
-        ReadBuffer buffer = ReadBuffer(data, len);
+        auto data = std::make_unique<uint8_t[]>(len);
+        radio.readData(data.get(), 0);
+        ReadBuffer buffer = ReadBuffer(data.get(), len);
+
         uint8_t packet_type = buffer.u8();
-        Packet* packet = Packet::create(packet_type);
-        if (packet) {
+        if (auto packet = Packet::create(packet_type)) {
             packet->deserialize(buffer);
             netman.dispatch(*packet);
         }
+
         radio.startReceive();
         enable_interrupt = true;
-
-        delete packet;
-        delete[] data;
     }
 
     uint32_t frame_interval = 1000 / DISPLAY_FPS;

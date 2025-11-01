@@ -29,38 +29,45 @@ UIModal* UIApp::eraseLastModal() {
     return m;
 }
 
-void UIApp::render(UIContext& ctx) {
-    if (title) ctx.println(title);
-    root->render(ctx, false);
+void UIApp::addModal(UIModal* modal) {
+    modals.push_back(modal);
+    if (ctx) ctx->refresh(true);
+}
+
+void UIApp::render() {
+    if (!ctx) return;
+
+    if (title) ctx->println(title);
+    root->render(*ctx, false);
 
     if (last_size != modals.size()) {
-        ctx.refresh(true);
+        ctx->refresh(true);
         last_size = modals.size();
     }
 
     if (hasModals()) {
-        for (int16_t y = 0; y < ctx.height; y++) {
-            for (int16_t x = 0; x < ctx.width; x++) {
-                if ((x + y) % 2) ctx.display.writePixel(x, y, settings.data.display_inv_alert ? ctx.theme.foreground : ctx.theme.background);
+        for (int16_t y = 0; y < ctx->height; y++) {
+            for (int16_t x = 0; x < ctx->width; x++) {
+                if ((x + y) % 2) ctx->display.writePixel(x, y, settings.data.display_inv_alert ? ctx->theme.foreground : ctx->theme.background);
             }
         }
-        ctx.setCursor(0, 0);
-        modals.front()->render(ctx);
+        ctx->setCursor(0, 0);
+        modals.front()->render(*ctx);
     }
 }
 
-bool UIApp::update(UIContext& ctx, char key) {
+bool UIApp::update(char key) {
     if (hasModals()) {
-        bool result = modals[0]->update(ctx, key);
+        bool result = modals[0]->update(*ctx, key);
         if (!result) return false;
 
         delete eraseFirstModal();
         if (last_size != modals.size()) {
-            ctx.refresh(true);
+            ctx->refresh(true);
             last_size = modals.size();
         }
         return true;
     }
 
-    return root->update(ctx, key);
+    return root->update(*ctx, key);
 }

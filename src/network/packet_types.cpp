@@ -12,7 +12,7 @@ void HelloPacket::deserialize(ReadBuffer& buffer) {
 
 namespace {
     const bool _registered = [](){
-        Packet::registerType(HelloPacket::PACKET_TYPE, [](){ return new HelloPacket(); });
+        Packet::registerType(HelloPacket::PACKET_TYPE, [](){ return std::make_unique<HelloPacket>(); });
         return true;
     }();
 }

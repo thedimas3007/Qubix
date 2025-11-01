@@ -1,13 +1,15 @@
 #pragma once
 
 #include <map>
+#include <memory>
+#include <queue>
 
 #include "RadioLib.h"
 #include "buffer.h"
 
 class Packet : public Serializable {
 public:
-    using Factory = std::function<Packet*()>;
+    using Factory = std::function<std::unique_ptr<Packet>()>;
 
 private:
     static inline std::map<uint8_t, Factory> registry{};
@@ -20,46 +22,39 @@ public:
         registry[id] = factory;
     }
 
-    static Packet* create(uint8_t id) {
+    static std::unique_ptr<Packet> create(uint8_t id) {
         auto it = registry.find(id);
         return (it != registry.end()) ? it->second() : nullptr;
     }
 };
 
 class NetManager {
-    PhysicalLayer* radio = nullptr;
-    volatile bool* irq_en;
-    std::map<uint8_t, std::vector<std::function<void(Packet&)>>> listeners;
-public:
-    void begin(PhysicalLayer* r, volatile bool* en) {
-        this->radio = r;
-        this->irq_en = en;
-    }
-
-    int16_t send(Packet& packet) const {
-        if (!radio || !irq_en) { return RADIOLIB_ERR_NULL_POINTER; }
-
-        *irq_en = false;
-        WriteBuffer buffer = WriteBuffer(packet.size()+1);
-        packet.serialize(buffer);
-        int16_t status = radio->transmit(buffer.raw(), buffer.len());
-        *irq_en = true;
-        radio->startReceive();
-        return status;
-    }
-
-    template<typename T>
-    void reg(std::function<void(T&)> fn) {
-        uint8_t id = T::PACKET_TYPE;
-        listeners[id].push_back([fn](Packet& p) {
-            fn(static_cast<T&>(p));
-        });
-    }
-
-    void dispatch(Packet& p) {
-        auto it = listeners.find(p.type());
-        if (it != listeners.end()) {
-            for (auto& f : it->second) f(p);
+    struct PendingPacket { std::unique_ptr<Packet> packet; int8_t priority; };
+    struct ComparePriority {
+        bool operator()(const PendingPacket& a, const PendingPacket& b) const {
+            return a.priority < b.priority;
         }
+    };
+
+    PhysicalLayer* radio = nullptr;
+    std::map<uint8_t, std::vector<std::function<void(NetManager&, Packet&)>>> listeners; // type_id -> vector of listeners
+    std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
+
+    volatile bool irq_en = true, received = false;
+public:
+    void begin(PhysicalLayer* r, volatile bool* en);
+    void queue(std::unique_ptr<Packet> packet, int8_t priority = 0);
+    int16_t send(Packet& packet); // should I make it private?
+    void dispatch(Packet& p);
+    int16_t tick();
+
+    template <typename T>
+    void reg(std::function<void(NetManager&, T&)> fn) {
+        uint8_t id = T::PACKET_TYPE;
+        listeners[id].push_back(
+            [fn](NetManager& nm, Packet& p) {
+                fn(nm, static_cast<T&>(p));
+            }
+        );
     }
 };

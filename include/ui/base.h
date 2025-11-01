@@ -56,6 +56,7 @@ public:
 };
 
 class UIApp {
+    UIContext* ctx;
     UIElement* root;
     std::vector<UIModal*> modals{};
 
@@ -66,6 +67,7 @@ class UIApp {
 public:
     struct Config {
         String title = "";
+        UIContext* ctx = nullptr;
         UIElement* root = nullptr;
     };
 
@@ -73,6 +75,7 @@ public:
         Config c_;
     public:
         Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& ctx(UIContext* ptr) {c_.ctx = ptr; return *this; }
         Builder& root(UIElement* root) { c_.root = root; return *this; }
 
         [[nodiscard]] UIApp build() const {
@@ -91,11 +94,11 @@ public:
     static Builder make() { return Builder{}; }
 
     explicit UIApp(const Config& cfg)
-        : root(cfg.root) { title = cfg.title; }
+        : ctx(cfg.ctx), root(cfg.root) { title = cfg.title; }
 
-    void addModal(UIModal* modal) { modals.push_back(modal); }
+    void addModal(UIModal* modal);
     bool hasModals() const { return !modals.empty(); }
 
-    void render(UIContext& ctx);
-    bool update(UIContext& ctx, char key);
+    void render();
+    bool update(char key);
 };
