@@ -52,8 +52,10 @@ public:
           fill_mode(cfg.fill_mode),
           window_size(cfg.window_size),
           on_exit(cfg.on_exit) { icon = cfg.icon; title = cfg.title; }
+    ~MenuView() override { for (auto& e : children) delete e; }
 
     void addChild(UIElement* e);
+    void clearChildren();
     // void removeLastChild() { children.pop_back(); }
     // void removeFirstChild() { children.erase(children.begin()); }
 

@@ -32,7 +32,7 @@ void NetManager::dispatch(Packet& p) {
 
 int16_t NetManager::tick() {
     if (!radio) return RADIOLIB_ERR_NULL_POINTER;
-    if (packet_queue.empty()) return 0;
+    if (packet_queue.empty() || isTimedOut()) return 0;
 
     auto pkt = std::move(const_cast<PendingPacket&>(packet_queue.top()));
     if (!pkt.packet) {
@@ -42,10 +42,16 @@ int16_t NetManager::tick() {
 
     // TODO: implement RSSI scan, aka LBT
     int16_t ch_status = radio->scanChannel();
-    if (ch_status != RADIOLIB_CHANNEL_FREE) return ch_status;
-    // ^^^ including RADIOLIB_LORA_DETECTED
+    if (ch_status != RADIOLIB_CHANNEL_FREE && ch_status != RADIOLIB_LORA_DETECTED) return ch_status;
 
+    if (ch_status == RADIOLIB_LORA_DETECTED) {
+        timed_out = millis() + (++retries)*25;
+        if (retries >= 5) return RADIOLIB_LORA_DETECTED;
+        return 0;
+    }
+
+    timed_out = 0; retries = 0;
     int16_t status = send(*pkt.packet);
-    packet_queue.pop();
+    if (!status) packet_queue.pop();
     return status;
 }

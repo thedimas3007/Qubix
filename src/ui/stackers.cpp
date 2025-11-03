@@ -10,6 +10,11 @@ void MenuView::addChild(UIElement* e) {
     if (cursor > window_size+slice_at-1) slice_at++;
 }
 
+void MenuView::clearChildren() {
+    for (auto& e : children) delete e;
+    children.clear();
+}
+
 void MenuView::render(UIContext& ctx, bool minimalized) {
     const int16_t n = children.size();
 

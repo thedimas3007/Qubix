@@ -68,6 +68,7 @@ public:
     void render(UIContext& ctx, bool minimalized) override;
 };
 template class Property<uint8_t>;
+template class Property<uint32_t>;
 template class Property<int8_t>;
 template class Property<float>;
 template class Property<bool>;

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <Arduino.h>
 #include <cstdio>
 #include <RadioLib.h>
@@ -39,6 +40,7 @@ std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
 uint32_t last_update;
+uint32_t netman_update;
 volatile bool received_flag = false;
 volatile bool enable_interrupt = true;
 
@@ -48,13 +50,17 @@ void setFlag() {
 }
 
 auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
+auto nodes_menu = MenuView::make().title("Nodes").buildPtr();
+
+void updateNodes() {
+    nodes_menu->clearChildren();
+    auto pkt = std::make_unique<Preved>();
+    pkt->hwid(driver->boardId());
+    netman.queue(std::move(pkt));
+}
+
 UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
     MenuView::make().title("Radio").children({
-        Button::make().title("Preved Medved").onClick([]() {
-            auto pkt = std::make_unique<Preved>();
-            pkt->hwid(driver->boardId());
-            netman.queue(std::move(pkt));
-        }).buildPtr(),
         TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).onSubmit([](char* buf) {
                 if (!strlen(buf)) return;
@@ -127,6 +133,7 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
         }).buildPtr(),
 
         MenuView::make().icon('*').title("Tools").children({
+            nodes_menu,
             BandScanner::make().radio(&radio).buildPtr(),
         }).buildPtr(),
 
@@ -283,8 +290,15 @@ void setup() {
         manager.queue(std::move(pkt));
     });
 
-    netman.reg<Medved>([](auto& /* manager */, const auto& packet) {
-        root.addModal(Alert::make().message(packet.mcu()).buildPtr());
+    netman.reg<Medved>([](auto& /* manager */, const Medved& packet) {
+        char buf[11];
+        snprintf(buf, sizeof(buf), "0x%08lX", packet.hwid());
+        nodes_menu->addChild(MenuView::make().title("Node " + String(buf)).children({
+            Label::make().title("HWID:" + String(buf)).buildPtr(),
+            Label::make().title("MCU:" + packet.mcu()).buildPtr(),
+            Label::make().title("RSSI:" + String(packet.rssi())).buildPtr(),
+            Label::make().title("SNR:" + String(packet.snr())).buildPtr(),
+        }).buildPtr());
     });
 
     ui_context.println("OK");
@@ -303,14 +317,23 @@ void setup() {
 
 
 void loop() {
-    netman.tick(); // TODO: kinda error logger
+    uint32_t netman_interval = 1000 / 10; // 10Hz
+    if (millis() - netman_update > netman_interval && !netman.isTimedOut()) {
+        if (int16_t st = netman.tick()) {
+            // TODO: kinda error logger
+            root.addModal(Alert::make().message("Error " + String(st)).buildPtr());
+        }
+        netman_update += netman_interval;
+    }
 
     extI2C->requestFrom(KEYBOARD_ADDRESS, 1);
     while (extI2C->available()) {
         char c = extI2C->read();
         if (c == 0) continue;
+
         if (c == KEY_FN_C) driver->reboot();
-        if (root.update(c)) ui_context.refresh();
+        else if (c == KEY_FN_R) updateNodes();
+        else if (root.update(c)) ui_context.refresh();
     }
 
     if (received_flag) {
@@ -333,7 +356,8 @@ void loop() {
     }
 
     uint32_t frame_interval = 1000 / DISPLAY_FPS;
-    if (millis() - last_update > frame_interval && ui_context.refreshRequested()) {
+    if ((DISPLAY_MODE == DISPLAY_MODE_BUFFERED && millis() - last_update > frame_interval) ||
+        (DISPLAY_MODE == DISPLAY_MODE_EINK) && millis() - last_update > frame_interval && ui_context.refreshRequested()) {
         ui_context.render(root);
         last_update += frame_interval;
     }

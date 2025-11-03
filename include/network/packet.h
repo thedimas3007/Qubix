@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <queue>
@@ -42,12 +43,16 @@ class NetManager {
 
     volatile bool* irq_en = nullptr;
     volatile bool* irq_rx = nullptr;
+
+    uint32_t timed_out = 0;
+    uint8_t retries = 0; // max retries maybe
 public:
     void begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx);
     void queue(std::unique_ptr<Packet> packet, int8_t priority = 0);
     int16_t send(Packet& packet); // should I make it private?
     void dispatch(Packet& p);
     int16_t tick();
+    bool isTimedOut() const { return timed_out != 0 && timed_out > millis(); };
 
     template <typename T>
     void reg(std::function<void(NetManager&, T&)> fn) {
