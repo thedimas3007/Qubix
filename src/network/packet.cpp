@@ -41,6 +41,63 @@ int16_t NetManager::send(Packet& packet, uint32_t target = 0xFFFFFFFF) const {
     return status;
 }
 
+void NetManager::received() {
+    size_t len = radio->getPacketLength();
+    auto data = std::make_unique<uint8_t[]>(len);
+    radio->readData(data.get(), 0);
+    ReadBuffer buffer = ReadBuffer(data.get(), len);
+
+    uint32_t packet_id = buffer.u32();
+    uint32_t sender = buffer.u32();
+    uint32_t target = buffer.u32();
+    uint8_t packet_type = buffer.u8();
+
+    if (sender == driver->boardId()) {
+        radio->startReceive();
+        return;
+    }
+
+    if (seen(sender, packet_id)) {
+        radio->startReceive();
+        return;
+    }
+
+    if (last_packets.size() == 32) last_packets.pop_front();
+    last_packets.push_back({sender, packet_id});
+
+    Serial.print("RX #");
+    Serial.print(packet_id);
+    Serial.print(", ");
+    Serial.print(packet_type);
+    Serial.print("@");
+    Serial.print(len);
+    Serial.print(" bytes | 0x");
+    Serial.print(sender, HEX);
+    Serial.print(" -> 0x");
+    Serial.println(target, HEX);
+
+    if (target != driver->boardId() && target != 0xFFFFFFFF) {
+        radio->startReceive();
+        return;
+    };
+
+    if (target == 0xFFFFFFFF && !isTimedOut()) {
+        uint32_t hwid = driver->boardId();
+        uint16_t hwid_jitter = ((hwid >> 8) & 0xFF) * 3;
+        wait(random(150, 800) + hwid_jitter);
+    }
+
+    if (auto packet = Packet::create(packet_type)) {
+        packet->pktid(packet_id);
+        packet->hwid(sender);
+        packet->target(target);
+        packet->deserialize(buffer);
+        dispatch(*packet);
+    }
+
+    radio->startReceive();
+}
+
 void NetManager::dispatch(Packet& p) {
     auto it = listeners.find(p.type());
     if (it != listeners.end()) {

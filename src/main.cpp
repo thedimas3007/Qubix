@@ -318,13 +318,6 @@ void setup() {
     ui_context.refresh(true);
 }
 
-struct PacketKey { uint32_t sender, id; };
-std::deque<PacketKey> last_packets;
-
-bool seen(uint32_t sender, uint32_t id) {
-    return std::find_if(last_packets.begin(), last_packets.end(),
-        [&](auto& p){ return p.sender==sender && p.id==id; }) != last_packets.end();
-}
 
 void loop() {
     uint32_t netman_interval = 1000 / 50; // 50 Hz
@@ -353,78 +346,10 @@ void loop() {
         last_update += frame_interval;
     }
 
-    if (received_flag) { // TODO: move into netman
+    if (received_flag) {
         enable_interrupt = false;
         received_flag = false;
-
-        uint8_t len = radio.getPacketLength();
-        auto data = std::make_unique<uint8_t[]>(len);
-        radio.readData(data.get(), 0);
-
-        ReadBuffer buffer = ReadBuffer(data.get(), len);
-
-        uint32_t packet_id = buffer.u32();
-        uint32_t sender = buffer.u32();
-        uint32_t target = buffer.u32();
-        uint8_t packet_type = buffer.u8();
-
-        if (sender == driver->boardId()) {
-            radio.startReceive();
-            enable_interrupt = true;
-            return;
-        }
-
-        if (seen(sender, packet_id)) {
-            /*Serial.print("RX (duplicate) #");
-            Serial.print(packet_id);
-            Serial.print(", ");
-            Serial.print(packet_type);
-            Serial.print("@");
-            Serial.print(len);
-            Serial.print(" bytes | 0x");
-            Serial.print(sender, HEX);
-            Serial.print(" -> 0x");
-            Serial.println(target, HEX);*/
-            radio.startReceive();
-            enable_interrupt = true;
-            return;
-        }
-
-        if (last_packets.size() == 32) last_packets.pop_front();
-        last_packets.push_back({sender, packet_id});
-
-        Serial.print("RX #");
-        Serial.print(packet_id);
-        Serial.print(", ");
-        Serial.print(packet_type);
-        Serial.print("@");
-        Serial.print(len);
-        Serial.print(" bytes | 0x");
-        Serial.print(sender, HEX);
-        Serial.print(" -> 0x");
-        Serial.println(target, HEX);
-
-        if (target != driver->boardId() && target != 0xFFFFFFFF) {
-            radio.startReceive();
-            enable_interrupt = true;
-            return;
-        };
-
-        if (target == 0xFFFFFFFF && !netman.isTimedOut()) {
-            uint32_t hwid = driver->boardId();
-            uint16_t hwid_jitter = ((hwid >> 8) & 0xFF) * 3;
-            netman.wait(random(150, 800) + hwid_jitter);
-        }
-
-        if (auto packet = Packet::create(packet_type)) {
-            packet->pktid(packet_id);
-            packet->hwid(sender);
-            packet->target(target);
-            packet->deserialize(buffer);
-            netman.dispatch(*packet);
-        }
-
-        radio.startReceive();
+        netman.received();
         enable_interrupt = true;
     }
 }

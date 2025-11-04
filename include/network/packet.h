@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
@@ -44,6 +45,7 @@ public:
 };
 
 class NetManager {
+    struct PacketKey { uint32_t sender, id; };
     struct PendingPacket { std::unique_ptr<Packet> packet; uint32_t target; int8_t priority; };
     struct ComparePriority {
         bool operator()(const PendingPacket& a, const PendingPacket& b) const {
@@ -54,16 +56,23 @@ class NetManager {
     PhysicalLayer* radio = nullptr;
     std::map<uint8_t, std::vector<std::function<void(NetManager&, Packet&)>>> listeners; // type_id -> vector of listeners
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
+    std::deque<PacketKey> last_packets;
 
     volatile bool* irq_en = nullptr;
     volatile bool* irq_rx = nullptr;
 
     uint32_t timed_out = 0;
     uint8_t retries = 0; // max retries maybe
+
+    bool seen(uint32_t sender, uint32_t id) {
+        return std::find_if(last_packets.begin(), last_packets.end(),
+            [&](auto& p){ return p.sender==sender && p.id==id; }) != last_packets.end();
+    }
 public:
     void begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx);
     void queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
     int16_t send(Packet& packet, uint32_t target) const; // should I make it private?
+    void received();
     void dispatch(Packet& p);
     int16_t tick();
     bool isTimedOut() const { return timed_out != 0 && timed_out > millis(); }
