@@ -56,7 +56,7 @@ void updateNodes() {
     nodes_menu->clearChildren();
     auto pkt = std::make_unique<Preved>();
     pkt->hwid(driver->boardId());
-    netman.queue(std::move(pkt));
+    netman.queue(std::move(pkt), 0xFFFFFFFF);
 }
 
 UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
@@ -220,6 +220,7 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
 void setup() {
     driver->init();
     Serial.begin(115200);
+    Serial.println("== Console for " + String(driver->mcu()) + " ==");
 
     bool settings_reset = settings.begin();
 
@@ -266,6 +267,8 @@ void setup() {
         ui_context.println("OK");
         ui_context.flush();
     } else {
+        Serial.print("Radio error: ");
+        Serial.println(state);
         ui_context.printf("ERROR %i", state);
         ui_context.flush();
         while (true) {}
@@ -287,7 +290,7 @@ void setup() {
         pkt->mcu(driver->mcu());
         pkt->rssi(std::clamp<float>(radio.getRSSI(), -128, 127));
         pkt->snr(std::clamp<float>(radio.getSNR(), -128, 127));
-        manager.queue(std::move(pkt));
+        manager.queue(std::move(pkt), packet.hwid());
     });
 
     netman.reg<Medved>([](auto& /* manager */, const Medved& packet) {
@@ -305,9 +308,9 @@ void setup() {
     ui_context.flush();
 
     auto packet = std::make_unique<HelloPacket>();
-    packet->hwid(driver->boardId());
-    netman.queue(std::move(packet));
+    netman.queue(std::move(packet), 0xFFFFFFFF);
 
+    Serial.println("Loaded");
     ui_context.println("Loaded!");
     ui_context.flush();
     delay(1000);
@@ -315,9 +318,16 @@ void setup() {
     ui_context.refresh(true);
 }
 
+struct PacketKey { uint32_t sender, id; };
+std::deque<PacketKey> last_packets;
+
+bool seen(uint32_t sender, uint32_t id) {
+    return std::find_if(last_packets.begin(), last_packets.end(),
+        [&](auto& p){ return p.sender==sender && p.id==id; }) != last_packets.end();
+}
 
 void loop() {
-    uint32_t netman_interval = 1000 / 10; // 10Hz
+    uint32_t netman_interval = 1000 / 50; // 50 Hz
     if (millis() - netman_update > netman_interval && !netman.isTimedOut()) {
         if (int16_t st = netman.tick()) {
             // TODO: kinda error logger
@@ -336,29 +346,85 @@ void loop() {
         else if (root.update(c)) ui_context.refresh();
     }
 
-    if (received_flag) {
+    uint32_t frame_interval = 1000 / DISPLAY_FPS;
+    if ((DISPLAY_MODE == DISPLAY_MODE_BUFFERED && millis() - last_update > frame_interval) ||
+        (DISPLAY_MODE == DISPLAY_MODE_EINK) && millis() - last_update > frame_interval && ui_context.refreshRequested()) {
+        ui_context.render(root);
+        last_update += frame_interval;
+    }
+
+    if (received_flag) { // TODO: move into netman
         enable_interrupt = false;
         received_flag = false;
 
         uint8_t len = radio.getPacketLength();
         auto data = std::make_unique<uint8_t[]>(len);
         radio.readData(data.get(), 0);
+
         ReadBuffer buffer = ReadBuffer(data.get(), len);
 
+        uint32_t packet_id = buffer.u32();
+        uint32_t sender = buffer.u32();
+        uint32_t target = buffer.u32();
         uint8_t packet_type = buffer.u8();
+
+        if (sender == driver->boardId()) {
+            radio.startReceive();
+            enable_interrupt = true;
+            return;
+        }
+
+        if (seen(sender, packet_id)) {
+            /*Serial.print("RX (duplicate) #");
+            Serial.print(packet_id);
+            Serial.print(", ");
+            Serial.print(packet_type);
+            Serial.print("@");
+            Serial.print(len);
+            Serial.print(" bytes | 0x");
+            Serial.print(sender, HEX);
+            Serial.print(" -> 0x");
+            Serial.println(target, HEX);*/
+            radio.startReceive();
+            enable_interrupt = true;
+            return;
+        }
+
+        if (last_packets.size() == 32) last_packets.pop_front();
+        last_packets.push_back({sender, packet_id});
+
+        Serial.print("RX #");
+        Serial.print(packet_id);
+        Serial.print(", ");
+        Serial.print(packet_type);
+        Serial.print("@");
+        Serial.print(len);
+        Serial.print(" bytes | 0x");
+        Serial.print(sender, HEX);
+        Serial.print(" -> 0x");
+        Serial.println(target, HEX);
+
+        if (target != driver->boardId() && target != 0xFFFFFFFF) {
+            radio.startReceive();
+            enable_interrupt = true;
+            return;
+        };
+
+        if (target == 0xFFFFFFFF && !netman.isTimedOut()) {
+            uint32_t hwid = driver->boardId();
+            uint16_t hwid_jitter = ((hwid >> 8) & 0xFF) * 3;
+            netman.wait(random(150, 800) + hwid_jitter);
+        }
+
         if (auto packet = Packet::create(packet_type)) {
+            packet->pktid(packet_id);
+            packet->hwid(sender);
+            packet->target(target);
             packet->deserialize(buffer);
             netman.dispatch(*packet);
         }
 
         radio.startReceive();
         enable_interrupt = true;
-    }
-
-    uint32_t frame_interval = 1000 / DISPLAY_FPS;
-    if ((DISPLAY_MODE == DISPLAY_MODE_BUFFERED && millis() - last_update > frame_interval) ||
-        (DISPLAY_MODE == DISPLAY_MODE_EINK) && millis() - last_update > frame_interval && ui_context.refreshRequested()) {
-        ui_context.render(root);
-        last_update += frame_interval;
     }
 }

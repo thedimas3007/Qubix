@@ -77,7 +77,7 @@ class WriteBuffer {
     uint8_t* buf;
     size_t size, pos;
 public:
-    WriteBuffer(size_t s) : buf(new uint8_t[s]()), size(s), pos(0) {}
+    explicit WriteBuffer(size_t s) : buf(new uint8_t[s]()), size(s), pos(0) {}
     ~WriteBuffer()          { delete[] buf; }
 
     bool available(size_t n = 1) const

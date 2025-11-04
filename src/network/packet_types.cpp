@@ -5,31 +5,21 @@ void HelloPacket::serialize(WriteBuffer& buffer) {
     buffer.u32(hwid());
 }
 
-void HelloPacket::deserialize(ReadBuffer& buffer) {
-    hwid(buffer.u32());
-}
+void HelloPacket::deserialize(ReadBuffer& buffer) {}
 
 
-void Preved::serialize(WriteBuffer& buffer) {
-    buffer.u8(type());
-    buffer.u32(hwid());
-}
+void Preved::serialize(WriteBuffer& buffer) {}
 
-void Preved::deserialize(ReadBuffer& buffer) {
-    hwid(buffer.u32());
-}
+void Preved::deserialize(ReadBuffer& buffer) {}
 
 
 void Medved::serialize(WriteBuffer& buffer) {
-    buffer.u8(type());
-    buffer.u32(hwid());
     buffer.str(mcu());
     buffer.i8(rssi());
     buffer.i8(snr());
 }
 
 void Medved::deserialize(ReadBuffer& buffer) {
-    hwid(buffer.u32());
     mcu(buffer.str());
     rssi(buffer.i8());
     snr(buffer.i8());
