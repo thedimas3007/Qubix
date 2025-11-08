@@ -61,3 +61,20 @@ void StringProperty::render(UIContext& ctx, bool minimalized) {
     for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
     ctx.println(data);
 }
+
+void LambdaProperty::render(UIContext& ctx, bool minimalized) {
+    String data = callback != nullptr ? callback() : "<null>";
+
+    if (!minimalized) {
+        ctx.print(getLabel());
+        ctx.print(": ");
+        ctx.println(data);
+        return;
+    }
+
+    String prefix = getLabel(ctx.availableCharsX() - data.length());
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + data.length());
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; i++) ctx.print(' ');
+    ctx.println(data);
+}

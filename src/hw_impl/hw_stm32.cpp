@@ -46,6 +46,9 @@ void DriverSTM32::init() {
 #endif
     Serial.setTx(PA9);
     Serial.setRx(PA10);
+
+    asm(".global _printf_float");
+    asm(".global _scanf_float");
 }
 
 void DriverSTM32::reboot() {

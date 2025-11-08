@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <utility>
+
 #include "base.h"
 
 class Label : public UIElement {
@@ -98,6 +101,34 @@ public:
 
     explicit StringProperty(const Config& cfg)
         : ptr(cfg.ptr) { icon = cfg.icon; title = cfg.title; }
+
+    void render(UIContext& ctx, bool minimalized) override;
+};
+
+class LambdaProperty : public UIElement {
+    const std::function<String()> callback;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        std::function<String()> callback = nullptr;
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& func(std::function<String()> f) { c_.callback = std::move(f); return *this; }
+
+        [[nodiscard]] LambdaProperty build() const { return LambdaProperty(c_); }
+        [[nodiscard]] LambdaProperty* buildPtr() const { return new LambdaProperty(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit LambdaProperty(const Config& cfg)
+        : callback(cfg.callback) { icon = cfg.icon; title = cfg.title; }
 
     void render(UIContext& ctx, bool minimalized) override;
 };

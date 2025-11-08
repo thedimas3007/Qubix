@@ -147,14 +147,6 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
 #endif
             CharTable::make().buildPtr(),
             SizeDemo::make().buildPtr(),
-            MenuView::make().title("Dynamic HW").children({
-                Button::make().title("Clock").onClick([] {
-                    root.addModal(Alert::make().message(
-                        // prettyValue(driver->currentFlash(), "B", 1, 1024) + "/" + prettyValue(driver->maxFlash(), "B", 1, 1024)
-                        prettyValue(driver->currentClock(), "Hz") + "/" + prettyValue(driver->maxClock(), "Hz")
-                    ).buildPtr());
-                }).buildPtr(),
-            }).buildPtr(),
             MenuView::make().title("Settings").children({
                 Property<float>::make().title("Freq").pointer(&settings.data.radio_frequency).fmt("%.3fmHz").buildPtr(),
                 Property<uint8_t>::make().title("Bandw").pointer(&settings.data.radio_bandwidth).values(bandwidths).buildPtr(),
@@ -207,10 +199,17 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
 
         MenuView::make().icon('i').title("Info").children({
             MenuView::make().title("Device").children({
-                Label::make().title(String("MCU:   ") + HW_MCU).buildPtr(),
-                Label::make().title(String("Clock: ") + prettyValue(HW_F_CPU,"Hz",0,1000)).buildPtr(),
-                Label::make().title(String("RAM:   ") + prettyValue(HW_RAM_BYTES,"B",0,1024)).buildPtr(),
-                Label::make().title(String("Flash: ") + prettyValue(HW_FLASH_BYTES,"B",0,1024)).buildPtr()
+                LambdaProperty::make().title("MCU").func([] { return driver->mcu(); }).buildPtr(),
+                LambdaProperty::make().title("Load").func([] { return stringf("%.1f%%", driver->currentLoad()*100); }).buildPtr(),
+                LambdaProperty::make().title("Clock").func([] {
+                    return prettyValue(driver->currentClock(),"Hz",0,1000);
+                }).buildPtr(),
+                LambdaProperty::make().title("RAM").func([] {
+                    return prettyValue(driver->currentRam(),"B",0,1024) + "/" + prettyValue(driver->maxRam(),"B", 0, 1024);
+                }).buildPtr(),
+                LambdaProperty::make().title("Flash").func([] {
+                    return prettyValue(driver->currentFlash(),"B",0,1024) + "/" + prettyValue(driver->maxFlash(),"B", 0, 1024);
+                }).buildPtr(),
             }).buildPtr(),
             MenuView::make().title("Libs").children({
                 Label::make().title("Work in progress").buildPtr()
@@ -339,6 +338,8 @@ void setup() {
 
 
 void loop() {
+    driver->loadTick();
+    // delay(250); // 25% load
     scheduler.tick();
 
     extI2C->requestFrom(KEYBOARD_ADDRESS, 1);

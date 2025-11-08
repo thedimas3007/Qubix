@@ -1,10 +1,29 @@
 #pragma once
-#include <cstdint>
+
+#include <Arduino.h>
 
 // TOOD: more detailed stats
 class DriverBase {
+    const float rise_alpha = 0.35f;
+    const float fall_alpha = 0.10f;
+
+    uint32_t loop_start = micros();
+    float last_load = 0;
 public:
     virtual ~DriverBase() = default;
+
+    void loadTick() {
+        uint32_t now = micros();
+        float dt = (now - loop_start) / 1'000'000.0f;
+        loop_start = now;
+
+        float load = dt <= 1.0f ? dt : 1.0f;
+
+        if (load > last_load)   last_load = last_load * (1.0f - rise_alpha) + load * rise_alpha;
+        else                    last_load = last_load * (1.0f - fall_alpha) + load * fall_alpha;
+    }
+
+    float currentLoad() const { return last_load; }
 
     virtual const char* platform() const { return PIO_PLATFORM; }
     virtual const char* board() const { return PIO_BOARD; }

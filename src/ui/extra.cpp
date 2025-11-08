@@ -94,10 +94,6 @@ void BandScanner::render(UIContext& ctx, bool minimalized) {
     ctx.printf("%.0f <-> %.0f", min_rssi, max_rssi);
 }
 
-bool BandScanner::update(UIContext& ctx, char key) {
-    return UIElement::update(ctx, key);
-}
-
 
 /********************/
 /**** ColorWheel ****/
@@ -127,10 +123,6 @@ void ColorWheel::render(UIContext& ctx, bool minimalized) {
             ctx.display.drawPixel(x, y, Color::fromHSV(degrees, 1, dist / radius).as565());
         }
     }
-}
-
-bool ColorWheel::update(UIContext& ctx, char key) {
-    return UIElement::update(ctx, key);
 }
 
 

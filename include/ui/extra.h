@@ -68,7 +68,6 @@ public:
     };
 
     void render(UIContext& ctx, bool minimalized) override;
-    bool update(UIContext& ctx, char key) override;
 };
 
 
@@ -89,7 +88,6 @@ public:
     explicit ColorWheel(const Config& cfg) { icon = 0x00; title = "Colors"; };
 
     void render(UIContext& ctx, bool minimalized) override;
-    bool update(UIContext& ctx, char key) override;
 };
 
 class SizeDemo : public UIElement {
