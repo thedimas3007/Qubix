@@ -1,6 +1,7 @@
 #include "network/packet.h"
 
 #include "configuration.h"
+#include "utils.h"
 
 void NetManager::begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx) {
     this->radio = r;
@@ -16,16 +17,8 @@ int16_t NetManager::send(Packet& packet, uint32_t target = 0xFFFFFFFF) const {
     if (!radio || !irq_en) { return RADIOLIB_ERR_NULL_POINTER; }
     uint32_t packet_id = static_cast<uint32_t>(random(0, 0x7FFFFFFF)) << 1 ^ micros();
 
-    Serial.print("TX #");
-    Serial.print(packet_id);
-    Serial.print(", ");
-    Serial.print(packet.type());
-    Serial.print("@");
-    Serial.print(packet.size());
-    Serial.print(" bytes | 0x");
-    Serial.print(packet.hwid(), HEX);
-    Serial.print(" -> 0x");
-    Serial.println(target, HEX);
+    Serial.println(stringf("TX #%08lX | %d@%d bytes | 0x%08lX -> 0x%08lX",
+        packet_id, packet.type(), packet.size(), packet.hwid() ? packet.hwid() : driver->boardId(), target));
 
     *irq_en = false;
     WriteBuffer buffer = WriteBuffer(packet.size());
@@ -65,16 +58,8 @@ void NetManager::received() {
     if (last_packets.size() == 32) last_packets.pop_front();
     last_packets.push_back({sender, packet_id});
 
-    Serial.print("RX #");
-    Serial.print(packet_id);
-    Serial.print(", ");
-    Serial.print(packet_type);
-    Serial.print("@");
-    Serial.print(len);
-    Serial.print(" bytes | 0x");
-    Serial.print(sender, HEX);
-    Serial.print(" -> 0x");
-    Serial.println(target, HEX);
+    Serial.println(stringf("RX #%08lX | %d@%d bytes | 0x%08lX -> 0x%08lX",
+        packet_id, packet_type, len, sender, target));
 
     if (target != driver->boardId() && target != 0xFFFFFFFF) {
         radio->startReceive();
@@ -118,12 +103,7 @@ int16_t NetManager::tick() {
 
         uint8_t ms = random(20, 60);
         wait(ms);
-        Serial.print("Postpone #");
-        Serial.print(retries);
-        Serial.print(" +");
-        Serial.print(ms);
-        Serial.println(" ms");
-
+        Serial.println(stringf("Postpone #%i, +%i ms", retries, ms));
         return 0;
     }
 
@@ -135,11 +115,10 @@ int16_t NetManager::tick() {
 
     int16_t status = send(*pkt.packet, pkt.target);
     if (status != RADIOLIB_ERR_NONE) {
-        Serial.print("TX failed ");
-        Serial.print(status);
-        Serial.println(", re-queuing");
+        Serial.println(stringf("TX failed: %i, re-queuing", status));
 
         // increased priority since the packet wasn't sent
+        // ch-hopping maybe? or not, since nodes have their places
         if (pkt.priority < 127) pkt.priority++;
         packet_queue.push(std::move(pkt));
         wait(100);

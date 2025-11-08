@@ -45,6 +45,7 @@
 #define MESSAGE_LENGTH  128
 #define DISPLAY_UPS     50
 #define NETMAN_UPS      50
+#define STRINGF_BUF     256
 
 
 /*****************/

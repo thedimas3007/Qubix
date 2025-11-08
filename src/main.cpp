@@ -58,7 +58,7 @@ void setFlag() {
 void updateNodes() {
     nodes_menu->clearChildren();
     auto pkt = std::make_unique<Preved>();
-    pkt->hwid(driver->boardId());
+    // pkt->hwid(driver->boardId());
     netman.queue(std::move(pkt), 0xFFFFFFFF);
 }
 
@@ -289,7 +289,7 @@ void setup() {
 
     netman.reg<Preved>([](auto& manager, const auto& packet) {
         auto pkt = std::make_unique<Medved>();
-        pkt->hwid(driver->boardId());
+        // pkt->hwid(driver->boardId());
         pkt->mcu(driver->mcu());
         pkt->rssi(std::clamp<float>(radio.getRSSI(), -128, 127));
         pkt->snr(std::clamp<float>(radio.getSNR(), -128, 127));

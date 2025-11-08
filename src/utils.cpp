@@ -3,6 +3,8 @@
 #include <cmath>
 #include <iterator>
 
+#include "configuration.h"
+
 uint16_t Color::as565() const {
     return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
@@ -102,4 +104,13 @@ String prettyValue(uint64_t value, const String& symbol, uint8_t precision, uint
     result += symbol;
 
     return result;
+}
+
+String stringf(const char* format, ...) {
+    char buffer[STRINGF_BUF];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    return buffer;
 }

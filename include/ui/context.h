@@ -84,6 +84,6 @@ public:
     void println(const char* text, bool colorized = false)              { println(String(text), colorized); }
     void println(const char text, bool colorized = false)               { println(String(text), colorized); };
 
-    void printf(const char* format, ...);
-    void printfColor(const char* format, ...);
+    void printf(const char* format, ...) __attribute__((format(printf, 2, 3)));
+    void printfColor(const char* format, ...)  __attribute__((format(printf, 2, 3)));
 };

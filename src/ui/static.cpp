@@ -1,6 +1,5 @@
-#include <cstdio>
-
 #include "ui/static.h"
+#include "utils.h"
 
 /***************/
 /**** Label ****/
@@ -25,9 +24,7 @@ void Property<T>::render(UIContext& ctx, bool minimalized) {
             data = values[*ptr];
         }
     } else {
-        char buf[16];
-        std::snprintf(buf, sizeof(buf), format, *ptr);
-        data = String(buf);
+        data = stringf(format, *ptr);
     }
 
     if (!minimalized) {
