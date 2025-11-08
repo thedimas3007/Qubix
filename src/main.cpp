@@ -7,6 +7,7 @@
 #include "configuration.h"
 #include "keycodes.h"
 #include "settings.h"
+#include "timing.h"
 #include "utils.h"
 
 #include "network/packet.h"
@@ -33,8 +34,10 @@ GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> display = GxEPD2_154_D67(DISPL
 
 SX1262 radio = new Module(RADIO_CS, RADIO_IRQ, RADIO_RESET, RADIO_BUSY, *extSPI);
 
+Scheduler scheduler;
 NetManager netman;
 UIContext ui_context(display);
+
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
 std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
@@ -44,13 +47,13 @@ uint32_t netman_update;
 volatile bool received_flag = false;
 volatile bool enable_interrupt = true;
 
+auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
+auto nodes_menu = MenuView::make().title("Nodes").buildPtr();
+
 void setFlag() {
     if (!enable_interrupt) return;
     received_flag = true;
 }
-
-auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
-auto nodes_menu = MenuView::make().title("Nodes").buildPtr();
 
 void updateNodes() {
     nodes_menu->clearChildren();
@@ -313,6 +316,22 @@ void setup() {
     Serial.println("Loaded");
     ui_context.println("Loaded!");
     ui_context.flush();
+
+    scheduler.schedule([]() {
+        if (netman.isTimedOut()) return;
+
+        int16_t st = netman.tick();
+        if (st) {
+            // TODO: kinda error logger
+            root.addModal(Alert::make().message("Error " + String(st)).buildPtr());
+        }
+    }, 1000 / NETMAN_UPS);
+
+    scheduler.schedule([]() {
+        if (DISPLAY_MODE == DISPLAY_MODE_EINK && !ui_context.refreshRequested()) return;
+        ui_context.render(root);
+    }, 1000 / DISPLAY_UPS);
+
     delay(1000);
 
     ui_context.refresh(true);
@@ -320,14 +339,7 @@ void setup() {
 
 
 void loop() {
-    uint32_t netman_interval = 1000 / 50; // 50 Hz
-    if (millis() - netman_update > netman_interval && !netman.isTimedOut()) {
-        if (int16_t st = netman.tick()) {
-            // TODO: kinda error logger
-            root.addModal(Alert::make().message("Error " + String(st)).buildPtr());
-        }
-        netman_update += netman_interval;
-    }
+    scheduler.tick();
 
     extI2C->requestFrom(KEYBOARD_ADDRESS, 1);
     while (extI2C->available()) {
@@ -337,13 +349,6 @@ void loop() {
         if (c == KEY_FN_C) driver->reboot();
         else if (c == KEY_FN_R) updateNodes();
         else if (root.update(c)) ui_context.refresh();
-    }
-
-    uint32_t frame_interval = 1000 / DISPLAY_FPS;
-    if ((DISPLAY_MODE == DISPLAY_MODE_BUFFERED && millis() - last_update > frame_interval) ||
-        (DISPLAY_MODE == DISPLAY_MODE_EINK) && millis() - last_update > frame_interval && ui_context.refreshRequested()) {
-        ui_context.render(root);
-        last_update += frame_interval;
     }
 
     if (received_flag) {

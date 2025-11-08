@@ -42,8 +42,9 @@
 /****************/
 /**** Consts ****/
 /****************/
-#define MESSAGE_LENGTH 128
-#define DISPLAY_FPS 1
+#define MESSAGE_LENGTH  128
+#define DISPLAY_UPS     50
+#define NETMAN_UPS      50
 
 
 /*****************/
