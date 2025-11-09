@@ -12,19 +12,30 @@ uint32_t DriverRP2040::currentClock() const {
     return clock_get_hz(clk_sys);
 }
 
-uint32_t DriverRP2040::currentRam() const {
+uint32_t DriverRP2040::currentRamBSS() const {
     extern char __bss_start__, __bss_end__;
-    extern char __data_start__, __data_end__;
-    size_t static_used = (&__bss_end__ - &__bss_start__) + (&__data_end__ - &__data_start__);
-
-    struct mallinfo m = mallinfo();
-    size_t heap_used = m.uordblks;
-
-    return static_used + heap_used;
+    return &__bss_end__ - &__bss_start__;
 }
+
+uint32_t DriverRP2040::currentRamData() const {
+    extern char __data_start__, __data_end__;
+    return &__data_end__ - &__data_start__;
+}
+
+uint32_t DriverRP2040::currentRamStack() const {
+    extern char __StackLimit, __StackTop;
+    uintptr_t sp;
+    __asm volatile("mov %0, sp" : "=r"(sp));
+    return reinterpret_cast<uintptr_t>(&__StackTop) - sp;
+}
+
+uint32_t DriverRP2040::currentRamHeap() const {
+    return mallinfo().uordblks;
+}
+
 uint32_t DriverRP2040::currentFlash() const {
     extern char __flash_binary_start, __flash_binary_end;
-    return (uint32_t)(&__flash_binary_end - &__flash_binary_start);
+    return &__flash_binary_end - &__flash_binary_start;
 }
 
 uint32_t DriverRP2040::boardId() const {

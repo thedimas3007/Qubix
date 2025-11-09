@@ -180,7 +180,7 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
                 Button::make().title("RAM").onClick([] {
                     root.addModal(Alert::make().message(
                         // prettyValue(driver->currentFlash(), "B", 1, 1024) + "/" + prettyValue(driver->maxFlash(), "B", 1, 1024)
-                        prettyValue(driver->currentRam(), "B", 0, 1024) + "/" + prettyValue(driver->maxRam(), "B", 0, 1024)
+                        prettyValue(driver->currentRamHeap(), "B", 0, 1024) + "/" + prettyValue(driver->maxRam(), "B", 0, 1024)
                     ).buildPtr());
                 }).buildPtr(),
             }).buildPtr(),
@@ -204,8 +204,22 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
                 LambdaProperty::make().title("Clock").func([] {
                     return prettyValue(driver->currentClock(),"Hz",0,1000);
                 }).buildPtr(),
-                LambdaProperty::make().title("RAM").func([] {
-                    return prettyValue(driver->currentRam(),"B",0,1024) + "/" + prettyValue(driver->maxRam(),"B", 0, 1024);
+                // LambdaProperty::make().title("RAM").func([] {
+                //     return prettyValue(driver->currentRam(),"B",0,1024) + "/" + prettyValue(driver->maxRam(),"B", 0, 1024);
+                // }).buildPtr(),
+                MenuView::make().title("RAM").children({
+                    LambdaProperty::make().title("BSS").func([] {
+                        return prettyValue(driver->currentRamBSS(),"B", 0,1024);
+                    }).buildPtr(),
+                    LambdaProperty::make().title("Data").func([] {
+                        return prettyValue(driver->currentRamData(),"B", 0,1024);
+                    }).buildPtr(),
+                    LambdaProperty::make().title("Stack").func([] {
+                        return prettyValue(driver->currentRamStack(),"B", 0,1024);
+                    }).buildPtr(),
+                    LambdaProperty::make().title("Heap").func([] {
+                        return prettyValue(driver->currentRamHeap(),"B", 0,1024);
+                    }).buildPtr(),
                 }).buildPtr(),
                 LambdaProperty::make().title("Flash").func([] {
                     return prettyValue(driver->currentFlash(),"B",0,1024) + "/" + prettyValue(driver->maxFlash(),"B", 0, 1024);

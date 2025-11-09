@@ -1,4 +1,6 @@
 #ifdef ARDUINO_ARCH_STM32
+
+#include <malloc.h>
 #include "hw_impl/hw_stm32.h"
 #include "configuration.h"
 #include "utils.h"
@@ -17,21 +19,30 @@ uint32_t DriverSTM32::currentClock() const {
     return SystemCoreClock;
 }
 
-uint32_t DriverSTM32::currentRam() const {
-    extern uint32_t _sdata, _edata, _sbss, _ebss;
-    extern uint32_t _Min_Stack_Size, _Min_Heap_Size;
+uint32_t DriverSTM32::currentRamBSS() const {
+    extern uint32_t _sbss, _ebss;
+    return reinterpret_cast<uint32_t>(&_ebss) - reinterpret_cast<uint32_t>(&_sbss);
+}
 
-    uint32_t data = &_edata - &_sdata;
-    uint32_t bss = &_ebss - &_sbss;
-    uint32_t stack = (uint32_t) &_Min_Stack_Size;
-    uint32_t heap = (uint32_t) &_Min_Heap_Size;
+uint32_t DriverSTM32::currentRamData() const {
+    extern uint32_t _sdata, _edata;
+    return reinterpret_cast<uint32_t>(&_edata) - reinterpret_cast<uint32_t>(&_sdata);
+}
 
-    return data + bss + stack + heap;
+uint32_t DriverSTM32::currentRamStack() const {
+    extern uint32_t _estack;
+    uint32_t sp;
+    __asm__ volatile ("mov %0, sp" : "=r" (sp));
+    return reinterpret_cast<uint32_t>(&_estack) - sp;
+}
+
+uint32_t DriverSTM32::currentRamHeap() const {
+    return mallinfo().uordblks;
 }
 
 uint32_t DriverSTM32::currentFlash() const {
     extern uint32_t _etext;
-    return (uint32_t)&_etext - FLASH_BASE;
+    return reinterpret_cast<uint32_t>(&_etext) - FLASH_BASE;
 }
 
 uint32_t DriverSTM32::boardId() const {

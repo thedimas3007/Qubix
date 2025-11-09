@@ -2,7 +2,8 @@
 
 #include <Arduino.h>
 
-// TOOD: more detailed stats
+struct RAMInfo { uint32_t bss, data, stack, heap; };
+
 class DriverBase {
     const float rise_alpha = 0.35f;
     const float fall_alpha = 0.10f;
@@ -25,17 +26,21 @@ public:
 
     float currentLoad() const { return last_load; }
 
-    virtual const char* platform() const { return PIO_PLATFORM; }
-    virtual const char* board() const { return PIO_BOARD; }
-    virtual const char* mcu() const { return HW_MCU; }
+    const char* platform() const { return PIO_PLATFORM; }
+    const char* board() const { return PIO_BOARD; }
+    const char* mcu() const { return HW_MCU; }
 
     virtual uint32_t maxClock() const { return HW_F_CPU; }
     virtual uint32_t currentClock() const = 0;
 
-    virtual uint32_t maxRam() const { return HW_RAM_BYTES; }
-    virtual uint32_t currentRam() const = 0;
+    uint32_t maxRam() const { return HW_RAM_BYTES; }
+    virtual uint32_t currentRamBSS() const = 0;
+    virtual uint32_t currentRamData() const = 0;
+    virtual uint32_t currentRamStack() const = 0;
+    virtual uint32_t currentRamHeap() const = 0;
+    RAMInfo currentRamInfo() const { return {currentRamBSS(), currentRamData(), currentRamStack(), currentRamHeap()}; };
 
-    virtual uint32_t maxFlash() const { return HW_FLASH_BYTES; }
+    uint32_t maxFlash() const { return HW_FLASH_BYTES; }
     virtual uint32_t currentFlash() const = 0;
 
     virtual uint32_t boardId() const = 0;

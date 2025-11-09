@@ -35,7 +35,10 @@ public:
     DriverRP2040() = default;
 
     uint32_t currentClock() const override;
-    uint32_t currentRam() const override;
+    uint32_t currentRamBSS() const override;
+    uint32_t currentRamData() const override;
+    uint32_t currentRamStack() const override;
+    uint32_t currentRamHeap() const override;
     uint32_t currentFlash() const override;
 
     uint32_t boardId() const override;
