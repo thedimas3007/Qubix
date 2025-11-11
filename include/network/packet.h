@@ -10,9 +10,10 @@
 #include "buffer.h"
 
 class Packet : public Serializable {
-    uint32_t _pktid = 0;
-    uint32_t _hwid = 0;
-    uint32_t _target = 0;
+    uint32_t _pktid =   0;
+    uint32_t _hwid =    0;
+    uint32_t _target =  0;
+    uint8_t  _hops =    0;
 protected:
     virtual size_t localSize() = 0;
 
@@ -25,7 +26,7 @@ private:
 public:
     virtual ~Packet() = default;
     virtual uint8_t type() = 0;
-    size_t size() override { return localSize() + 1 + sizeof(uint32_t)*3; };
+    size_t size() override { return localSize() + sizeof(uint8_t)*2 + sizeof(uint32_t)*3; };
 
     static void registerType(uint8_t id, const Factory& factory) {
         registry[id] = factory;
@@ -42,15 +43,17 @@ public:
     void hwid(uint32_t id)      { _hwid = id; }
     uint32_t target() const     { return _target; }
     void target(uint32_t id)    { _target = id; }
+    uint8_t hops() const        { return _hops; }
+    void hops(uint8_t hops)     { _hops = hops; }
 };
 
 
 class NetManager {
     struct Listener {
         std::function<void(NetManager&, Packet&)> listener;
-        std::function<void(bool)> timeout = [](bool _){};
+        std::function<void(bool)> timeout = [](bool){};
         uint32_t ttl = 0;
-        bool temporary = false;
+        bool temporary = false; // maybe merge into flags?
         bool received = false;
     };
 

@@ -10,6 +10,7 @@ void NetManager::begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx) {
 }
 
 void NetManager::queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority) {
+    if (packet->hops() >= MAX_HOPS) return;
     packet_queue.push({std::move(packet), target, priority});
 }
 
@@ -26,6 +27,7 @@ int16_t NetManager::send(Packet& packet, uint32_t target = 0xFFFFFFFF) const {
     buffer.u32(driver->boardId());
     buffer.u32(target);
     buffer.u8(packet.type());
+    buffer.u8(packet.hops()+1);
     packet.serialize(buffer);
     int16_t status = radio->transmit(buffer.raw(), buffer.len());
     *irq_en = true;
@@ -44,13 +46,9 @@ void NetManager::received() {
     uint32_t sender = buffer.u32();
     uint32_t target = buffer.u32();
     uint8_t packet_type = buffer.u8();
+    uint8_t hops = buffer.u8();
 
-    if (sender == driver->boardId()) {
-        radio->startReceive();
-        return;
-    }
-
-    if (seen(sender, packet_id)) {
+    if (sender == driver->boardId() || seen(sender, packet_id) ) {
         radio->startReceive();
         return;
     }
@@ -58,10 +56,10 @@ void NetManager::received() {
     if (last_packets.size() == 32) last_packets.pop_front();
     last_packets.push_back({sender, packet_id});
 
-    Serial.println(stringf("RX #%08lX | %d@%d bytes | 0x%08lX -> 0x%08lX",
-        packet_id, packet_type, len, sender, target));
+    Serial.println(stringf("RX $%02d #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX",
+        packet_type, packet_id, hops, len, sender, target));
 
-    if (target != driver->boardId() && target != 0xFFFFFFFF) {
+    if ((target != driver->boardId() && target != 0xFFFFFFFF) || hops > MAX_HOPS) {
         radio->startReceive();
         return;
     };
@@ -76,6 +74,7 @@ void NetManager::received() {
         packet->pktid(packet_id);
         packet->hwid(sender);
         packet->target(target);
+        packet->hops(hops);
         packet->deserialize(buffer);
         dispatch(*packet);
     }
@@ -90,6 +89,7 @@ void NetManager::dispatch(Packet& p) {
     auto& vec = it->second;
     for (auto iter = vec.begin(); iter != vec.end();) {
         if (iter->temporary && millis() > iter->ttl) {
+            ++iter;
             continue; // could theoretically be timed-out before being deleted
         }
 
