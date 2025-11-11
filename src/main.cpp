@@ -309,16 +309,44 @@ void setup() {
         manager.queue(std::move(pkt), packet.hwid());
     });
 
-    // netman.reg<Medved>([](auto& /* manager */, const Medved& packet) {
-    //     char buf[11];
-    //     snprintf(buf, sizeof(buf), "0x%08lX", packet.hwid());
-    //     nodes_menu->addChild(MenuView::make().title("Node " + String(buf)).children({
-    //         Label::make().title("HWID:" + String(buf)).buildPtr(),
-    //         Label::make().title("MCU:" + packet.mcu()).buildPtr(),
-    //         Label::make().title("RSSI:" + String(packet.rssi())).buildPtr(),
-    //         Label::make().title("SNR:" + String(packet.snr())).buildPtr(),
-    //     }).buildPtr());
-    // });
+    netman.reg<NodeLocate>([](auto& manager, const auto& packet) {
+        uint32_t board = driver->boardId();
+        if (packet.node() == board) {
+            auto pkt = std::make_unique<NodeFound>();
+            pkt->node(board);
+            pkt->path(packet.path());
+            pkt->addHop(board);
+            manager.queue(std::move(pkt), packet.hwid());
+        } else {
+            if (!packet.pathLength()) return;
+            for (uint8_t i = 0; i < packet.pathLength(); i++) {
+                if (packet.path()[i] == board) return;
+            }
+
+            auto pkt = std::make_unique<NodeLocate>(packet);
+            pkt->addHop(board);
+            manager.queue(std::move(pkt), 0xFFFFFFFF);
+        }
+    });
+
+    netman.reg<NodeFound>([](auto& manager, const auto& packet) {
+        uint32_t board = driver->boardId();
+
+        int16_t pos = -1;
+
+        for (uint8_t i = 0; i < packet.pathLength(); i++) {
+            if (packet.path()[i] == board) {
+                pos = i;
+                break;
+            }
+        }
+
+        if (pos == -1 || pos == 0) return;
+
+        auto pkt = std::make_unique<NodeFound>(packet);
+        uint32_t next_hop = packet.path()[pos - 1];
+        manager.queue(std::move(pkt), next_hop);
+    });
 
     ui_context.println("OK");
     ui_context.flush();
@@ -376,15 +404,42 @@ void loop() {
         String s = Serial.readStringUntil('\n');
         s.trim();
 
-        if (s == "locate") {
+        if (s == "neighbors") {
             Serial.println("Locating neighbors");
             auto pkt = std::make_unique<Preved>();
             netman.request<Medved>(std::move(pkt), [](auto& /* manager */, auto& packet) {
-                Serial.println(stringf("Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
+                Serial.println(stringf("+ Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
             }, [](bool success) {
                 Serial.print("Found: ");
                 Serial.println(success ? "yes" : "no");
             }, 0xFFFFFFFF, 5000);
+        } else if (s.startsWith("locate ")) {
+            String arg = s.substring(7);
+            arg.trim();
+
+            uint32_t hwid = 0;
+
+            if (arg.startsWith("0x") && arg.length() == 10) {
+                hwid = strtoul(arg.c_str(), nullptr, 16);
+                Serial.println(stringf("= Trying to find 0x%08lX", hwid));
+                auto pkt = std::make_unique<NodeLocate>();
+                pkt->node(hwid);
+                pkt->addHop(driver->boardId());
+
+                netman.request<NodeFound>(std::move(pkt), [](auto& /* manager */, auto& packet) {
+                    Serial.print(stringf("+ Response from 0x%08lX\r\n\t", packet.hwid()));
+                    for (uint8_t i = 0; i < packet.pathLength(); i++) {
+                        Serial.print(packet.path()[i], HEX);
+                        if (i < packet.pathLength() - 1) Serial.print(" <-> ");
+                    }
+                    Serial.println();
+                }, [](bool success) {
+                    Serial.print("Found: ");
+                    Serial.println(success ? "yes" : "no");
+                }, 0xFFFFFFFF, 10000);
+            } else {
+                Serial.println("Usage: locate 0xABCD1234");
+            }
         } else {
             Serial.println("Command " + s + " not found");
         }

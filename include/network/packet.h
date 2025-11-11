@@ -9,11 +9,20 @@
 #include "RadioLib.h"
 #include "buffer.h"
 
+inline String packet_names[] = {
+    "Unknown",      // 0x00
+    "HelloPacket",  // 0x01
+    "Preved",       // 0x02
+    "Medved",       // 0x03
+    "NodeLocate",   // 0x04
+    "NodeFound"     // 0x05
+};
+
 class Packet : public Serializable {
-    uint32_t _pktid =   0;
-    uint32_t _hwid =    0;
-    uint32_t _target =  0;
-    uint8_t  _hops =    0;
+    uint32_t _pktid = 0;
+    uint32_t _hwid = 0;
+    uint32_t _target = 0;
+    uint8_t _hops = 0;
 protected:
     virtual size_t localSize() = 0;
 
@@ -61,7 +70,7 @@ class NetManager {
     struct PendingPacket { std::unique_ptr<Packet> packet; uint32_t target; int8_t priority; };
     struct ComparePriority {
         bool operator()(const PendingPacket& a, const PendingPacket& b) const {
-            return a.priority < b.priority;
+            return a.priority > b.priority;
         }
     };
 
@@ -77,11 +86,17 @@ class NetManager {
     uint32_t timed_out = 0;
     uint8_t retries = 0; // max retries maybe
 
+public:
     bool seen(uint32_t sender, uint32_t id) {
         return std::find_if(last_packets.begin(), last_packets.end(),
             [&](auto& p) { return p.sender==sender && p.id==id; }) != last_packets.end();
     }
-public:
+
+    bool seen(uint32_t id) {
+        return std::find_if(last_packets.begin(), last_packets.end(),
+            [&](auto& p) { return p.id==id; }) != last_packets.end();
+    }
+
     void begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx);
     void queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
     int16_t send(Packet& packet, uint32_t target) const; // should I make it private?
