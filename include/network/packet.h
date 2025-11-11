@@ -44,7 +44,16 @@ public:
     void target(uint32_t id)    { _target = id; }
 };
 
+
 class NetManager {
+    struct Listener {
+        std::function<void(NetManager&, Packet&)> listener;
+        std::function<void(bool)> timeout = [](bool _){};
+        uint32_t ttl = 0;
+        bool temporary = false;
+        bool received = false;
+    };
+
     struct PacketKey { uint32_t sender, id; };
     struct PendingPacket { std::unique_ptr<Packet> packet; uint32_t target; int8_t priority; };
     struct ComparePriority {
@@ -53,8 +62,9 @@ class NetManager {
         }
     };
 
+
     PhysicalLayer* radio = nullptr;
-    std::map<uint8_t, std::vector<std::function<void(NetManager&, Packet&)>>> listeners; // type_id -> vector of listeners
+    std::map<uint8_t, std::vector<Listener>> listeners; // type_id -> vector of listeners
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
     std::deque<PacketKey> last_packets;
 
@@ -66,7 +76,7 @@ class NetManager {
 
     bool seen(uint32_t sender, uint32_t id) {
         return std::find_if(last_packets.begin(), last_packets.end(),
-            [&](auto& p){ return p.sender==sender && p.id==id; }) != last_packets.end();
+            [&](auto& p) { return p.sender==sender && p.id==id; }) != last_packets.end();
     }
 public:
     void begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx);
@@ -82,9 +92,20 @@ public:
     void reg(std::function<void(NetManager&, T&)> fn) {
         uint8_t id = T::PACKET_TYPE;
         listeners[id].push_back(
-            [fn](NetManager& nm, Packet& p) {
+            {[fn](NetManager& nm, Packet& p) {
                 fn(nm, static_cast<T&>(p));
-            }
+            }}
+        );
+    }
+
+    template <typename T>
+    void request(std::unique_ptr<Packet> packet, std::function<void(NetManager&, T&)> fn, std::function<void(bool)> tout_fn, uint32_t target, uint32_t timeout, int8_t priority = 0) {
+        uint8_t id = T::PACKET_TYPE;
+        queue(std::move(packet), target, priority);
+        listeners[id].push_back(
+            {[fn](NetManager& nm, Packet& p) {
+                fn(nm, static_cast<T&>(p));
+            }, tout_fn, millis() + timeout, true}
         );
     }
 };

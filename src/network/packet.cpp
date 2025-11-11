@@ -85,12 +85,30 @@ void NetManager::received() {
 
 void NetManager::dispatch(Packet& p) {
     auto it = listeners.find(p.type());
-    if (it != listeners.end()) {
-        for (auto& f : it->second) f(*this, p);
+    if (it == listeners.end()) return;
+
+    auto& vec = it->second;
+    for (auto iter = vec.begin(); iter != vec.end();) {
+        if (iter->temporary && millis() > iter->ttl) {
+            continue; // could theoretically be timed-out before being deleted
+        }
+
+        iter->listener(*this, p);
+        iter->received = true;
+        ++iter;
     }
 }
 
 int16_t NetManager::tick() {
+    for (auto& [type, vec] : listeners) {
+        for (auto it = vec.begin(); it != vec.end();) {
+            if (it->temporary && millis() > it->ttl) {
+                it->timeout(it->received);
+                it = vec.erase(it);
+            } else ++it;
+        }
+    }
+
     if (!radio) return RADIOLIB_ERR_NULL_POINTER;
     if (packet_queue.empty() || isTimedOut()) return 0;
 

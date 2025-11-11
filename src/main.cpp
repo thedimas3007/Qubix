@@ -309,16 +309,16 @@ void setup() {
         manager.queue(std::move(pkt), packet.hwid());
     });
 
-    netman.reg<Medved>([](auto& /* manager */, const Medved& packet) {
-        char buf[11];
-        snprintf(buf, sizeof(buf), "0x%08lX", packet.hwid());
-        nodes_menu->addChild(MenuView::make().title("Node " + String(buf)).children({
-            Label::make().title("HWID:" + String(buf)).buildPtr(),
-            Label::make().title("MCU:" + packet.mcu()).buildPtr(),
-            Label::make().title("RSSI:" + String(packet.rssi())).buildPtr(),
-            Label::make().title("SNR:" + String(packet.snr())).buildPtr(),
-        }).buildPtr());
-    });
+    // netman.reg<Medved>([](auto& /* manager */, const Medved& packet) {
+    //     char buf[11];
+    //     snprintf(buf, sizeof(buf), "0x%08lX", packet.hwid());
+    //     nodes_menu->addChild(MenuView::make().title("Node " + String(buf)).children({
+    //         Label::make().title("HWID:" + String(buf)).buildPtr(),
+    //         Label::make().title("MCU:" + packet.mcu()).buildPtr(),
+    //         Label::make().title("RSSI:" + String(packet.rssi())).buildPtr(),
+    //         Label::make().title("SNR:" + String(packet.snr())).buildPtr(),
+    //     }).buildPtr());
+    // });
 
     ui_context.println("OK");
     ui_context.flush();
@@ -353,7 +353,6 @@ void setup() {
 
 void loop() {
     driver->loadTick();
-    // delay(250); // 25% load
     scheduler.tick();
 
     extI2C->requestFrom(KEYBOARD_ADDRESS, 1);
@@ -371,5 +370,23 @@ void loop() {
         received_flag = false;
         netman.received();
         enable_interrupt = true;
+    }
+
+    if (Serial.available()) {
+        String s = Serial.readStringUntil('\n');
+        s.trim();
+
+        if (s == "locate") {
+            Serial.println("Locating neighbors");
+            auto pkt = std::make_unique<Preved>();
+            netman.request<Medved>(std::move(pkt), [](auto& /* manager */, auto& packet) {
+                Serial.println(stringf("Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
+            }, [](bool success) {
+                Serial.print("Found: ");
+                Serial.println(success ? "yes" : "no");
+            }, 0xFFFFFFFF, 5000);
+        } else {
+            Serial.println("Command " + s + " not found");
+        }
     }
 }
