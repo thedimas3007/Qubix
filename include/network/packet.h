@@ -75,7 +75,7 @@ class NetManager {
     };
 
 
-    PhysicalLayer* radio = nullptr;
+    SX126x* radio = nullptr;
     std::map<uint8_t, std::vector<Listener>> listeners; // type_id -> vector of listeners
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
     std::deque<PacketKey> last_packets;
@@ -97,7 +97,7 @@ public:
             [&](auto& p) { return p.id==id; }) != last_packets.end();
     }
 
-    void begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx);
+    void begin(SX126x* r, volatile bool* en, volatile bool* rx);
     void queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
     int16_t send(Packet& packet, uint32_t target) const; // should I make it private?
     void received();

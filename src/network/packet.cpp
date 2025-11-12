@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "network/packet_types.h"
 
-void NetManager::begin(PhysicalLayer* r, volatile bool* en, volatile bool* rx) {
+void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
     this->radio = r;
     this->irq_en = en;
     this->irq_rx = rx;
@@ -130,7 +130,15 @@ int16_t NetManager::tick() {
     uint32_t start = millis();
     bool busy = false;
 
-    while (millis() - start < duration) {
+    while (millis() < start+duration) {
+        float rssi = radio->getRSSI(false);
+        // Serial.println(stringf("## RSSI: %.1f dBm", rssi));
+        if (rssi >= -85) {
+            Serial.println(stringf("## Activity detected, %.1fdBm", rssi));
+            busy = true;
+            break;
+        }
+
         int16_t ch_status = radio->scanChannel();
 
         if (ch_status != RADIOLIB_CHANNEL_FREE && ch_status != RADIOLIB_LORA_DETECTED) {
@@ -138,12 +146,11 @@ int16_t NetManager::tick() {
         }
 
         if (ch_status == RADIOLIB_LORA_DETECTED) {
+            Serial.println("LoRa detected");
             busy = true;
             break;
         }
     }
-
-    // TODO: implement RSSI scan, aka LBT
 
     if (busy) {
         uint16_t base_delay = 30;
