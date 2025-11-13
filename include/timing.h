@@ -16,15 +16,18 @@ public:
 };
 
 class Scheduler {
-    struct Entry { std::function<void()> callback; Interval interval; };
-    std::vector<std::unique_ptr<Entry>> entries;
-
+    struct ScheduleEntry { std::function<void()> callback; Interval interval; };
+    struct TimeoutEntry { std::function<void()> callback; uint32_t timeout; };
+    std::vector<std::unique_ptr<ScheduleEntry>> sch_entries;
+    std::vector<std::unique_ptr<TimeoutEntry>> tmt_entries;
 public:
     Scheduler() = default;
     ~Scheduler() = default;
 
     size_t size() const;
     size_t schedule(std::function<void()> callback, uint32_t interval_ms);
-    bool remove(size_t index);
+    size_t postpone(std::function<void()> callback, uint32_t interval_ms);
+    bool removeScheduled(size_t index);
+    bool removePostponed(size_t index);
     void tick();
 };
