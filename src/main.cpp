@@ -7,6 +7,7 @@
 #include "configuration.h"
 #include "keycodes.h"
 #include "settings.h"
+#include "structs.h"
 #include "timing.h"
 #include "utils.h"
 
@@ -41,6 +42,13 @@ UIContext ui_context(display);
 std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7@GP"};
 std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
+
+struct Path {
+    uint8_t hops = 0;
+    uint32_t path[MAX_HOPS]{};
+};
+
+CacheMap<uint32_t, Path> cache;
 
 uint32_t last_update;
 uint32_t netman_update;
@@ -341,7 +349,15 @@ void setup() {
             }
         }
 
-        if (pos == -1 || pos == 0) return;
+        if (pos == -1) return;
+
+        Path p{static_cast<uint8_t>(packet.pathLength() - pos - 1)};
+        for (uint8_t i = pos+1; i < packet.pathLength(); i++) {
+            p.path[i-pos-1] = packet.path()[i];
+        }
+        cache.put(packet.path().back(), p);
+
+        if (pos == 0) return;
 
         auto pkt = std::make_unique<NodeFound>(packet);
         uint32_t next_hop = packet.path()[pos - 1];
@@ -413,6 +429,16 @@ void loop() {
                 Serial.print("Found: ");
                 Serial.println(success ? "yes" : "no");
             }, 0xFFFFFFFF, 5000);
+        } else if (s == "storage") {
+            for (const auto& [node, path] : cache) {
+                Serial.print(stringf("Node 0x%08lX: ", node));
+                Serial.print(stringf("0x%08lX <-> ", driver->boardId()));
+                for (int i = 0; i < path.hops; ++i) {
+                    Serial.print(stringf("0x%08lX", path.path[i]));
+                    if (i < path.hops - 1) Serial.print(" <-> ");
+                    else Serial.println();
+                }
+            }
         } else if (s.startsWith("locate ")) {
             String arg = s.substring(7);
             arg.trim();

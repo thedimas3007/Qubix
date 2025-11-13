@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <cassert>
 #include <map>
 
 template <class Key, class Value>
@@ -24,28 +25,35 @@ class CacheMap {
 public:
     class Iterator {
         using Base = typename std::map<Key,Container>::iterator;
+
         Base it, end;
         uint32_t now;
 
+        struct RefPair {
+            const Key key;
+            Value value;
+        };
+
+        // mutable RefPair current { *(Key*)nullptr, *(Value*)nullptr };
+
         void skip() {
-            while (it != end) {
-                if ((int32_t)(it->second.timeout - now) >= 0) break;
-                it = std::next(it);
-            }
+            while (it != end && (int32_t)(it->second.timeout - now) < 0)
+                ++it;
         }
 
     public:
-        Iterator(Base i, Base e, uint32_t now) : it(i), end(e), now(now) { skip(); }
+        Iterator(Base i, Base e, uint32_t n) : it(i), end(e), now(n) { skip(); }
         Iterator& operator++() { ++it; skip(); return *this; }
 
         bool operator!=(const Iterator& o) const { return it != o.it; }
 
-        std::pair<const Key&, Value&> operator*() const {
+        RefPair operator*() const {
             return { it->first, it->second.value };
         }
     };
 
-    CacheMap(uint32_t ttl_ms = 30000) : ttl_ms(ttl_ms) {}
+
+    explicit CacheMap(uint32_t ttl_ms = 30000) : ttl_ms(ttl_ms) {}
 
     Value& operator[](const Key& key) {
         auto& c = data[key];
