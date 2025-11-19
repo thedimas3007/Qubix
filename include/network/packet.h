@@ -8,14 +8,16 @@
 
 #include "RadioLib.h"
 #include "buffer.h"
+#include "configuration.h"
+#include "structs.h"
 
 inline String packet_names[] = {
-    "Unknown",      // 0x00
-    "HelloPacket",  // 0x01
-    "Preved",       // 0x02
-    "Medved",       // 0x03
-    "NodeLocate",   // 0x04
-    "NodeFound"     // 0x05
+    "Unknown",          // 0x00
+    "HelloPacket",      // 0x01
+    "NeighborLocate",   // 0x02
+    "NeighborResponse", // 0x03
+    "NodeLocate",       // 0x04
+    "NodeFound"         // 0x05
 };
 
 class Packet : public Serializable {
@@ -58,6 +60,17 @@ public:
 
 
 class NetManager {
+public:
+    struct Path {
+        uint8_t hops = 0;
+        uint32_t path[MAX_HOPS]{};
+
+        void reset()            { for (auto& i : path) i = 0; }
+        void push(uint32_t id)  { if (hops < MAX_HOPS) path[hops++] = id; }
+        void pop()              { if (hops > 0)        path[--hops] = 0; }
+    };
+
+private:
     struct Listener {
         std::function<void(NetManager&, Packet&)> listener;
         std::function<void(bool)> timeout = [](bool){};
@@ -79,6 +92,7 @@ class NetManager {
     std::map<uint8_t, std::vector<Listener>> listeners; // type_id -> vector of listeners
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
     std::deque<PacketKey> last_packets;
+    CacheMap<uint32_t, Path> path_cache;
 
     volatile bool* irq_en = nullptr;
     volatile bool* irq_rx = nullptr;

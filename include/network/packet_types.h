@@ -19,13 +19,13 @@ public:
 };
 
 
-class Preved : public Packet {
+class NeighborLocate : public Packet {
 protected:
     size_t localSize() override { return 0; }
 public:
     const static uint8_t PACKET_TYPE = 0x02;
-    Preved() = default;
-    ~Preved() override = default;
+    NeighborLocate() = default;
+    ~NeighborLocate() override = default;
 
     uint8_t type() override { return PACKET_TYPE; }
 
@@ -34,7 +34,7 @@ public:
 };
 
 
-class Medved : public Packet {
+class NeighborResponse : public Packet {
     String _mcu{};
     int8_t _rssi = -128;
     int8_t _snr = -128;
@@ -44,8 +44,8 @@ protected:
 
 public:
     const static uint8_t PACKET_TYPE = 0x03;
-    Medved() = default;
-    ~Medved() override = default;
+    NeighborResponse() = default;
+    ~NeighborResponse() override = default;
 
     uint8_t type() override { return PACKET_TYPE; }
 

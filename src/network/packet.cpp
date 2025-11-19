@@ -8,6 +8,72 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
     this->radio = r;
     this->irq_en = en;
     this->irq_rx = rx;
+
+    auto pkt = std::make_unique<NeighborLocate>();
+    request<NeighborResponse>(std::move(pkt), [](auto& manager, auto& packet) {
+        Serial.println(stringf("<> Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
+        manager.path_cache.put(packet.hwid(), {1, {packet.hwid()}});
+    }, [](bool success) {
+        if (!success) {
+            Serial.println("!! No neighbors found");
+        }
+    }, 0xFFFFFFFF, 5000);
+
+    reg<NeighborLocate>([](auto& manager, const auto& packet) {
+        // TODO: RX stats for the packet: rssi and snr
+        auto pkt = std::make_unique<NeighborResponse>();
+        pkt->mcu(driver->mcu());
+        pkt->rssi(std::clamp<float>(manager.radio->getRSSI(), -128, 127));
+        pkt->snr(std::clamp<float>(manager.radio->getSNR(), -128, 127));
+        manager.queue(std::move(pkt), packet.hwid());
+    });
+
+    reg<NodeFound>([](auto& manager, const auto& packet) {
+        uint32_t board = driver->boardId();
+
+        int16_t pos = -1;
+
+        for (uint8_t i = 0; i < packet.pathLength(); i++) {
+            if (packet.path()[i] == board) {
+                pos = i;
+                break;
+            }
+        }
+
+        if (pos == -1) return;
+
+        Path p{static_cast<uint8_t>(packet.pathLength() - pos - 1)};
+        for (uint8_t i = pos+1; i < packet.pathLength(); i++) {
+            p.path[i-pos-1] = packet.path()[i];
+        }
+        manager.path_cache.put(packet.path().back(), p);
+
+        if (pos == 0) return;
+
+        auto pkt = std::make_unique<NodeFound>(packet);
+        uint32_t next_hop = packet.path()[pos - 1];
+        manager.queue(std::move(pkt), next_hop);
+    });
+
+    reg<NodeLocate>([](auto& manager, const auto& packet) {
+        uint32_t board = driver->boardId();
+        if (packet.node() == board) {
+            auto pkt = std::make_unique<NodeFound>();
+            pkt->node(board);
+            pkt->path(packet.path());
+            pkt->addHop(board);
+            manager.queue(std::move(pkt), packet.hwid());
+        } else {
+            if (!packet.pathLength()) return;
+            for (uint8_t i = 0; i < packet.pathLength(); i++) {
+                if (packet.path()[i] == board) return;
+            }
+
+            auto pkt = std::make_unique<NodeLocate>(packet);
+            pkt->addHop(board);
+            manager.queue(std::move(pkt), 0xFFFFFFFF);
+        }
+    });
 }
 
 void NetManager::queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority) {
@@ -134,7 +200,7 @@ int16_t NetManager::tick() {
         float rssi = radio->getRSSI(false);
         // Serial.println(stringf("## RSSI: %.1f dBm", rssi));
         if (rssi >= -85) {
-            Serial.println(stringf("## Activity detected, %.1fdBm", rssi));
+            // Serial.println(stringf("## Activity detected, %.1fdBm", rssi));
             busy = true;
             break;
         }
@@ -146,7 +212,7 @@ int16_t NetManager::tick() {
         }
 
         if (ch_status == RADIOLIB_LORA_DETECTED) {
-            Serial.println("LoRa detected");
+            // Serial.println("## LoRa detected");
             busy = true;
             break;
         }
@@ -161,7 +227,7 @@ int16_t NetManager::tick() {
 
         retries++;
         wait(total_delay);
-        Serial.println(stringf("## Postpone #%i, +%i ms", retries, total_delay));
+        // Serial.println(stringf("## Postpone #%i, +%i ms", retries, total_delay));
         return 0;
     }
 

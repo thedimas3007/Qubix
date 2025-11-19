@@ -43,12 +43,6 @@ std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7
 std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
-struct Path {
-    uint8_t hops = 0;
-    uint32_t path[MAX_HOPS]{};
-};
-
-CacheMap<uint32_t, Path> cache;
 
 uint32_t last_update;
 uint32_t netman_update;
@@ -65,7 +59,7 @@ void setFlag() {
 
 void updateNodes() {
     nodes_menu->clearChildren();
-    auto pkt = std::make_unique<Preved>();
+    auto pkt = std::make_unique<NeighborLocate>();
     // pkt->hwid(driver->boardId());
     netman.queue(std::move(pkt), 0xFFFFFFFF);
 }
@@ -298,77 +292,10 @@ void setup() {
         while (true) {}
     }
 
-    ui_context.print("Events...");
-    ui_context.flush();
     netman.begin(&radio, &enable_interrupt, &received_flag);
-
-    netman.reg<HelloPacket>([](auto& /* manager */, const auto& packet) {
-        char txt[11];
-        snprintf(txt, sizeof(txt), "0x%08lX", (unsigned long)(packet.hwid()));
-        root.addModal(Alert::make().message(txt).buildPtr());
-    });
-
-    netman.reg<Preved>([](auto& manager, const auto& packet) {
-        auto pkt = std::make_unique<Medved>();
-        // pkt->hwid(driver->boardId());
-        pkt->mcu(driver->mcu());
-        pkt->rssi(std::clamp<float>(radio.getRSSI(), -128, 127));
-        pkt->snr(std::clamp<float>(radio.getSNR(), -128, 127));
-        manager.queue(std::move(pkt), packet.hwid());
-    });
-
-    netman.reg<NodeLocate>([](auto& manager, const auto& packet) {
-        uint32_t board = driver->boardId();
-        if (packet.node() == board) {
-            auto pkt = std::make_unique<NodeFound>();
-            pkt->node(board);
-            pkt->path(packet.path());
-            pkt->addHop(board);
-            manager.queue(std::move(pkt), packet.hwid());
-        } else {
-            if (!packet.pathLength()) return;
-            for (uint8_t i = 0; i < packet.pathLength(); i++) {
-                if (packet.path()[i] == board) return;
-            }
-
-            auto pkt = std::make_unique<NodeLocate>(packet);
-            pkt->addHop(board);
-            manager.queue(std::move(pkt), 0xFFFFFFFF);
-        }
-    });
-
-    netman.reg<NodeFound>([](auto& manager, const auto& packet) {
-        uint32_t board = driver->boardId();
-
-        int16_t pos = -1;
-
-        for (uint8_t i = 0; i < packet.pathLength(); i++) {
-            if (packet.path()[i] == board) {
-                pos = i;
-                break;
-            }
-        }
-
-        if (pos == -1) return;
-
-        Path p{static_cast<uint8_t>(packet.pathLength() - pos - 1)};
-        for (uint8_t i = pos+1; i < packet.pathLength(); i++) {
-            p.path[i-pos-1] = packet.path()[i];
-        }
-        cache.put(packet.path().back(), p);
-
-        if (pos == 0) return;
-
-        auto pkt = std::make_unique<NodeFound>(packet);
-        uint32_t next_hop = packet.path()[pos - 1];
-        manager.queue(std::move(pkt), next_hop);
-    });
 
     ui_context.println("OK");
     ui_context.flush();
-
-    auto packet = std::make_unique<HelloPacket>();
-    netman.queue(std::move(packet), 0xFFFFFFFF);
 
     Serial.println("Loaded");
     ui_context.println("Loaded!");
@@ -422,14 +349,14 @@ void loop() {
 
         if (s == "neighbors") {
             Serial.println("Locating neighbors");
-            auto pkt = std::make_unique<Preved>();
-            netman.request<Medved>(std::move(pkt), [](auto& /* manager */, auto& packet) {
+            auto pkt = std::make_unique<NeighborLocate>();
+            netman.request<NeighborResponse>(std::move(pkt), [](auto& /* manager */, auto& packet) {
                 Serial.println(stringf("+ Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
             }, [](bool success) {
                 Serial.print("Found: ");
                 Serial.println(success ? "yes" : "no");
             }, 0xFFFFFFFF, 5000);
-        } else if (s == "storage") {
+        } /*else if (s == "storage") {
             for (const auto& [node, path] : cache) {
                 Serial.print(stringf("Node 0x%08lX: ", node));
                 Serial.print(stringf("0x%08lX <-> ", driver->boardId()));
@@ -439,7 +366,7 @@ void loop() {
                     else Serial.println();
                 }
             }
-        } else if (s.startsWith("locate ")) {
+        */ else if (s.startsWith("locate ")) {
             String arg = s.substring(7);
             arg.trim();
 

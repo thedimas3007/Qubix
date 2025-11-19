@@ -8,18 +8,18 @@ void HelloPacket::serialize(WriteBuffer& buffer) {
 void HelloPacket::deserialize(ReadBuffer& buffer) {}
 
 
-void Preved::serialize(WriteBuffer& buffer) {}
+void NeighborLocate::serialize(WriteBuffer& buffer) {}
 
-void Preved::deserialize(ReadBuffer& buffer) {}
+void NeighborLocate::deserialize(ReadBuffer& buffer) {}
 
 
-void Medved::serialize(WriteBuffer& buffer) {
+void NeighborResponse::serialize(WriteBuffer& buffer) {
     buffer.str(mcu());
     buffer.i8(rssi());
     buffer.i8(snr());
 }
 
-void Medved::deserialize(ReadBuffer& buffer) {
+void NeighborResponse::deserialize(ReadBuffer& buffer) {
     mcu(buffer.str());
     rssi(buffer.i8());
     snr(buffer.i8());
@@ -57,8 +57,8 @@ void NodeFound::deserialize(ReadBuffer& buffer) {
 namespace {
     const bool _registered = [](){
         Packet::registerType(HelloPacket::PACKET_TYPE, [](){ return std::make_unique<HelloPacket>(); });
-        Packet::registerType(Preved::PACKET_TYPE, [](){ return std::make_unique<Preved>(); });
-        Packet::registerType(Medved::PACKET_TYPE, [](){ return std::make_unique<Medved>(); });
+        Packet::registerType(NeighborLocate::PACKET_TYPE, [](){ return std::make_unique<NeighborLocate>(); });
+        Packet::registerType(NeighborResponse::PACKET_TYPE, [](){ return std::make_unique<NeighborResponse>(); });
         Packet::registerType(NodeLocate::PACKET_TYPE, [](){ return std::make_unique<NodeLocate>(); });
         Packet::registerType(NodeFound::PACKET_TYPE, [](){ return std::make_unique<NodeFound>(); });
         return true;
