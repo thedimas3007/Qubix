@@ -2,7 +2,7 @@
 
 void HelloPacket::serialize(WriteBuffer& buffer) {
     buffer.u8(type());
-    buffer.u32(hwid());
+    buffer.u32(current());
 }
 
 void HelloPacket::deserialize(ReadBuffer& buffer) {}

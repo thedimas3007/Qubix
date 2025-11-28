@@ -302,7 +302,7 @@ void setup() {
     ui_context.flush();
 
     scheduler.schedule([]() {
-        if (netman.isTimedOut()) return;
+        if (netman.isWaiting()) return;
 
         int16_t st = netman.tick();
         if (st) {
@@ -351,7 +351,7 @@ void loop() {
             Serial.println("Locating neighbors");
             auto pkt = std::make_unique<NeighborLocate>();
             netman.request<NeighborResponse>(std::move(pkt), [](auto& /* manager */, auto& packet) {
-                Serial.println(stringf("+ Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
+                Serial.println(stringf("+ Discovered: 0x%08lX - %s", packet.current(), packet.mcu().c_str()));
             }, [](bool success) {
                 Serial.print("Found: ");
                 Serial.println(success ? "yes" : "no");
@@ -380,7 +380,7 @@ void loop() {
                 pkt->addHop(driver->boardId());
 
                 netman.request<NodeFound>(std::move(pkt), [](auto& /* manager */, auto& packet) {
-                    Serial.print(stringf("+ Response from 0x%08lX\r\n\t", packet.hwid()));
+                    Serial.print(stringf("+ Response from 0x%08lX\r\n\t", packet.current()));
                     for (uint8_t i = 0; i < packet.pathLength(); i++) {
                         Serial.print(packet.path()[i], HEX);
                         if (i < packet.pathLength() - 1) Serial.print(" <-> ");

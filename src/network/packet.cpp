@@ -11,8 +11,8 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
 
     auto pkt = std::make_unique<NeighborLocate>();
     request<NeighborResponse>(std::move(pkt), [](auto& manager, auto& packet) {
-        Serial.println(stringf("<> Discovered: 0x%08lX - %s", packet.hwid(), packet.mcu().c_str()));
-        manager.path_cache.put(packet.hwid(), {1, {packet.hwid()}});
+        Serial.println(stringf("<> Discovered: 0x%08lX - %s", packet.sender(), packet.mcu().c_str()));
+        manager.path_cache.put(packet.sender(), {1, {packet.sender()}});
     }, [](bool success) {
         if (!success) {
             Serial.println("!! No neighbors found");
@@ -25,7 +25,7 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
         pkt->mcu(driver->mcu());
         pkt->rssi(std::clamp<float>(manager.radio->getRSSI(), -128, 127));
         pkt->snr(std::clamp<float>(manager.radio->getSNR(), -128, 127));
-        manager.queue(std::move(pkt), packet.hwid());
+        manager.queue(std::move(pkt), packet.sender());
     });
 
     reg<NodeFound>([](auto& manager, const auto& packet) {
@@ -62,7 +62,7 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
             pkt->node(board);
             pkt->path(packet.path());
             pkt->addHop(board);
-            manager.queue(std::move(pkt), packet.hwid());
+            manager.queue(std::move(pkt), packet.sender());
         } else {
             if (!packet.pathLength()) return;
             for (uint8_t i = 0; i < packet.pathLength(); i++) {
@@ -81,20 +81,21 @@ void NetManager::queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t p
     packet_queue.push({std::move(packet), target, priority});
 }
 
-int16_t NetManager::send(Packet& packet, uint32_t target = 0xFFFFFFFF) const {
+int16_t NetManager::send(Packet& packet) const {
     if (!radio || !irq_en) { return RADIOLIB_ERR_NULL_POINTER; }
     uint32_t packet_id = packet.pktid() ? packet.pktid() : static_cast<uint32_t>(random(0, 0x7FFFFFFF)) << 1 ^ micros();
 
     Serial.println(stringf("<< TX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX",
-        packet_names[packet.type()].c_str(), packet_id, packet.hops()+1, packet.size(), packet.hwid() ? packet.hwid() : driver->boardId(), target));
+        packet_names[packet.type()].c_str(), packet_id, packet.hops()+1, packet.size(), packet.current() ? packet.current() : driver->boardId(), packet.target()));
 
     *irq_en = false;
+
     WriteBuffer buffer = WriteBuffer(packet.size());
     buffer.u32(packet_id);
-    buffer.u32(driver->boardId());
-    buffer.u32(target);
     buffer.u8(packet.type());
-    buffer.u8(packet.hops()+1);
+    buffer.u8(packet.hops()+1 & 0xF << packet.pathLength() & 0xF); // TODO: assert
+    for (uint32_t id : packet.path()) buffer.u32(id);
+
     packet.serialize(buffer);
     int16_t status = radio->transmit(buffer.raw(), buffer.len());
     *irq_en = true;
@@ -110,28 +111,43 @@ void NetManager::received() {
     ReadBuffer buffer = ReadBuffer(data.get(), len);
 
     uint32_t packet_id = buffer.u32();
-    uint32_t sender = buffer.u32();
-    uint32_t target = buffer.u32();
     uint8_t packet_type = buffer.u8();
-    uint8_t hops = buffer.u8();
+    uint8_t hop_info = buffer.u8();
+    uint8_t hops = hop_info >> 4;
+    uint8_t path_length = hop_info & 0xF;
 
-    if (sender == driver->boardId() || seen(sender, packet_id) ) {
+    std::vector<uint32_t> path{path_length};
+    for (uint8_t i = 0; i < path_length; i++) path[i] = buffer.u32();
+
+    auto packet = Packet::create(packet_type);
+
+    if (!packet) {
+        radio->startReceive();
+        return;
+    }
+
+    packet->pktid(packet_id);
+    packet->hops(hops);
+    packet->path(path);
+    packet->deserialize(buffer);
+
+    if (packet->sender() == driver->boardId() || seen(packet->sender(), packet_id) ) {
         radio->startReceive();
         return;
     }
 
     if (last_packets.size() == 32) last_packets.pop_front();
-    last_packets.push_back({sender, packet_id});
+    last_packets.push_back({packet->sender(), packet_id});
 
     Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX",
-        packet_names[packet_type].c_str(), packet_id, hops, len, sender, target));
+        packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current()));
 
-    if ((target != driver->boardId() && target != 0xFFFFFFFF) || hops > MAX_HOPS) {
+    if ((packet->current() != driver->boardId() && packet->current() != 0xFFFFFFFF) || hops > MAX_HOPS) {
         radio->startReceive();
         return;
     };
 
-    if (!isTimedOut()) {
+    if (!isWaiting()) {
         uint32_t hwid = driver->boardId();
         uint16_t base_jitter = ((hwid >> 8) & 0xFF) * 3;
         uint32_t jitter_delay = 0;
@@ -140,7 +156,7 @@ void NetManager::received() {
             jitter_delay = random(200, 600) + base_jitter + (hops * 50);
         } else if (packet_type == NodeFound::PACKET_TYPE) {
             jitter_delay = random(150, 400) + base_jitter + ((MAX_HOPS - hops) * 30);
-        } else if (target == 0xFFFFFFFF) {
+        } else if (packet->current() == 0xFFFFFFFF) {
             jitter_delay = random(150, 800) + base_jitter;
         }
 
@@ -149,15 +165,7 @@ void NetManager::received() {
         }
     }
 
-    if (auto packet = Packet::create(packet_type)) {
-        packet->pktid(packet_id);
-        packet->hwid(sender);
-        packet->target(target);
-        packet->hops(hops);
-        packet->deserialize(buffer);
-        dispatch(*packet);
-    }
-
+    dispatch(*packet);
     radio->startReceive();
 }
 
@@ -189,7 +197,7 @@ int16_t NetManager::tick() {
     }
 
     if (!radio) return RADIOLIB_ERR_NULL_POINTER;
-    if (packet_queue.empty() || isTimedOut()) return 0;
+    if (packet_queue.empty() || isWaiting()) return 0;
 
 
     uint32_t duration = random(100, 250);
@@ -237,7 +245,7 @@ int16_t NetManager::tick() {
     timed_out = 0;
     retries = 0; // TODO: per-packet retries
 
-    int16_t status = send(*pkt.packet, pkt.target);
+    int16_t status = send(*pkt.packet);
     if (status != RADIOLIB_ERR_NONE) {
         Serial.println(stringf("!! TX failed: %i, re-queuing", status));
 

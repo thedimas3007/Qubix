@@ -22,9 +22,8 @@ inline String packet_names[] = {
 
 class Packet : public Serializable {
     uint32_t _pktid = 0;
-    uint32_t _hwid = 0;
-    uint32_t _target = 0;
     uint8_t _hops = 0;
+    std::vector<uint32_t> _path;
 protected:
     virtual size_t localSize() = 0;
 
@@ -50,12 +49,24 @@ public:
 
     uint32_t pktid() const      { return _pktid; }
     void pktid(uint32_t pktid)  { _pktid = pktid; }
-    uint32_t hwid() const       { return _hwid; }
-    void hwid(uint32_t id)      { _hwid = id; }
-    uint32_t target() const     { return _target; }
-    void target(uint32_t id)    { _target = id; }
+
+    uint32_t sender() const     { return !isStart() ? _path[hops()-1] : 0; }
+    uint32_t current() const    { return _path[hops()]; }
+    uint32_t target() const     { return !isEnd() ? _path[hops()+1] : 0; }
+
+    bool isStart() const        { return hops() == 0; }
+    bool isEnd() const          { return hops()+1 == _path.size(); }
+    bool isBroadcast() const    { return current() == 0xFFFFFFFF; }
+
     uint8_t hops() const        { return _hops; }
-    void hops(uint8_t hops)     { _hops = hops; }
+    void hops(uint8_t hops)     { _hops = std::clamp<uint8_t>(hops, 0, 0xF);  }
+    void hopsInc(int8_t inc=1)  { hops(std::clamp<uint8_t>(hops()+inc, 0, 0xF)); }
+
+    const std::vector<uint32_t>& path() const   { return _path; }
+    void path(const std::vector<uint32_t>& p)   { _path = p; }
+    void pushNode(uint32_t id)                  { _path.push_back(id); }
+    uint8_t pathLength() const                  { return _path.size(); }
+    void clearPath()                            { _path.clear(); }
 };
 
 
@@ -113,11 +124,11 @@ public:
 
     void begin(SX126x* r, volatile bool* en, volatile bool* rx);
     void queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
-    int16_t send(Packet& packet, uint32_t target) const; // should I make it private?
+    int16_t send(Packet& packet) const; // should I make it private?
     void received();
     void dispatch(Packet& p);
     int16_t tick();
-    bool isTimedOut() const { return timed_out != 0 && timed_out > millis(); }
+    bool isWaiting() const { return timed_out != 0 && timed_out > millis(); }
     void wait(long time_ms) { timed_out = millis() + time_ms; };
 
     template <typename T>
