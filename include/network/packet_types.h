@@ -78,11 +78,11 @@ public:
     uint32_t node() const   { return _node; }
     void node(uint32_t n)   { _node = n; }
 
-    const std::vector<uint32_t>& path() const   { return _path; }
-    void path(const std::vector<uint32_t>& p)   { _path = p; }
-    void addHop(uint32_t id)                    { _path.push_back(id); }
-    uint8_t pathLength() const                  { return _path.size(); }
-    void clearPath()                            { _path.clear(); }
+    const std::vector<uint32_t>& visits() const { return _path; }
+    void visits(const std::vector<uint32_t>& p) { _path = p; }
+    void pushVisit(uint32_t id)                 { _path.push_back(id); }
+    uint8_t visitsLength() const                { return _path.size(); }
+    void clearVisits()                          { _path.clear(); }
 
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;
@@ -91,10 +91,9 @@ public:
 
 class NodeFound : public Packet {
     uint32_t _node = 0x00000000;
-    std::vector<uint32_t> _path{};
 
 protected:
-    size_t localSize() override { return sizeof(uint32_t) + sizeof(uint32_t)*_path.size() + sizeof(uint8_t); }
+    size_t localSize() override { return /*sizeof(uint32_t)*/ 0; }
 
 public:
     const static uint8_t PACKET_TYPE = 0x05;
@@ -103,14 +102,8 @@ public:
 
     uint8_t type() override { return PACKET_TYPE; }
 
-    uint32_t node() const                       { return _node; }
-    void node(uint32_t n)                       { _node = n; }
-
-    const std::vector<uint32_t>& path() const   { return _path; }
-    void path(const std::vector<uint32_t>& p)   { _path = p; }
-    void addHop(uint32_t id)                    { _path.push_back(id); }
-    uint8_t pathLength() const                  { return _path.size(); }
-    void clearPath()                            { _path.clear(); }
+    // uint32_t node() const                       { return _node; }
+    // void node(uint32_t n)                       { _node = n; }
 
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;

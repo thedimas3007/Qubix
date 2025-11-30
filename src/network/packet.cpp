@@ -25,44 +25,37 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
         pkt->mcu(driver->mcu());
         pkt->rssi(std::clamp<float>(manager.radio->getRSSI(), -128, 127));
         pkt->snr(std::clamp<float>(manager.radio->getSNR(), -128, 127));
-        manager.queue(std::move(pkt), packet.sender());
+
+        auto path = packet.path();
+        std::reverse(path.begin(), path.end());
+        pkt->path(path);
+        manager.queueDirect(std::move(pkt));
     });
 
+
     reg<NodeFound>([](auto& manager, const auto& packet) {
-        uint32_t board = driver->boardId();
+        int8_t pos = -1;
 
-        int16_t pos = -1;
+        auto trace = packet.path();
+        trace.pop_back();
+        std::reverse(trace.begin(), trace.end());
 
-        for (uint8_t i = 0; i < packet.pathLength(); i++) {
-            if (packet.path()[i] == board) {
-                pos = i;
-                break;
-            }
-        }
+        Path path;
+        for (uint32_t u : trace) path.push(u);
 
-        if (pos == -1) return;
-
-        Path p{static_cast<uint8_t>(packet.pathLength() - pos - 1)};
-        for (uint8_t i = pos+1; i < packet.pathLength(); i++) {
-            p.path[i-pos-1] = packet.path()[i];
-        }
-        manager.path_cache.put(packet.path().back(), p);
-
-        if (pos == 0) return;
-
-        auto pkt = std::make_unique<NodeFound>(packet);
-        uint32_t next_hop = packet.path()[pos - 1];
-        manager.queue(std::move(pkt), next_hop);
+        manager.path_cache.put(packet.path().front(), path);
     });
 
     reg<NodeLocate>([](auto& manager, const auto& packet) {
         uint32_t board = driver->boardId();
         if (packet.node() == board) {
             auto pkt = std::make_unique<NodeFound>();
-            pkt->node(board);
-            pkt->path(packet.path());
-            pkt->addHop(board);
-            manager.queue(std::move(pkt), packet.sender());
+            auto path = packet.path();
+            path.pop_back();
+            path.push_back(board);
+            std::reverse(path.begin(), path.end());
+            pkt->path(path);
+            manager.queueDirect(std::move(pkt), 1);
         } else {
             if (!packet.pathLength()) return;
             for (uint8_t i = 0; i < packet.pathLength(); i++) {
@@ -70,15 +63,40 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
             }
 
             auto pkt = std::make_unique<NodeLocate>(packet);
-            pkt->addHop(board);
-            manager.queue(std::move(pkt), 0xFFFFFFFF);
+            auto path = packet.path();
+            path.pop_back();
+            path.push_back(board);
+            path.push_back(0xFFFFFFFF);
+            pkt->path(path);
+            manager.queueDirect(std::move(pkt), 1);
         }
     });
 }
 
-void NetManager::queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority) {
+void NetManager::queueDirect(std::shared_ptr<Packet> packet, int8_t priority) {
+    packet_queue.push({std::move(packet), priority});
+}
+
+void NetManager::queue(std::shared_ptr<Packet> packet, uint32_t target, int8_t priority) {
     if (packet->hops() >= MAX_HOPS) return;
-    packet_queue.push({std::move(packet), target, priority});
+
+    if (target == 0xFFFFFFFF) {
+        packet->path({driver->boardId(), 0xFFFFFFFF});
+        queueDirect(std::move(packet), priority);
+        return;
+    }
+
+    locate(target, [this, packet, priority](const Path& path) mutable {
+        if (!path.hops) return;
+
+        std::vector<uint32_t> ids(path.hops + 1);
+        ids[0] = driver->boardId();
+        for (uint8_t i = 0; i < path.hops; i++) {
+            ids[i + 1] = path.path[i];
+        }
+        packet->path(ids);
+        packet_queue.push({std::move(packet), priority});
+    });
 }
 
 int16_t NetManager::send(Packet& packet) const {
@@ -93,7 +111,7 @@ int16_t NetManager::send(Packet& packet) const {
     WriteBuffer buffer = WriteBuffer(packet.size());
     buffer.u32(packet_id);
     buffer.u8(packet.type());
-    buffer.u8(packet.hops()+1 & 0xF << packet.pathLength() & 0xF); // TODO: assert
+    buffer.u8(((packet.hops()+1 & 0xF) << 4) | (packet.pathLength() & 0xF)); // TODO: assert
     for (uint32_t id : packet.path()) buffer.u32(id);
 
     packet.serialize(buffer);
@@ -116,7 +134,7 @@ void NetManager::received() {
     uint8_t hops = hop_info >> 4;
     uint8_t path_length = hop_info & 0xF;
 
-    std::vector<uint32_t> path{path_length};
+    std::vector<uint32_t> path(path_length);
     for (uint8_t i = 0; i < path_length; i++) path[i] = buffer.u32();
 
     auto packet = Packet::create(packet_type);
@@ -139,10 +157,16 @@ void NetManager::received() {
     if (last_packets.size() == 32) last_packets.pop_front();
     last_packets.push_back({packet->sender(), packet_id});
 
+    if (!path_cache.contains(packet->sender())) {
+        path_cache.put(packet->sender(), {1, {packet->sender()}});
+    } else {
+        path_cache.refresh(packet->sender());
+    }
+
     Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX",
         packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current()));
 
-    if ((packet->current() != driver->boardId() && packet->current() != 0xFFFFFFFF) || hops > MAX_HOPS) {
+    if ((packet->current() != driver->boardId() && !packet->isBroadcast()) || hops > MAX_HOPS) {
         radio->startReceive();
         return;
     };
@@ -156,7 +180,7 @@ void NetManager::received() {
             jitter_delay = random(200, 600) + base_jitter + (hops * 50);
         } else if (packet_type == NodeFound::PACKET_TYPE) {
             jitter_delay = random(150, 400) + base_jitter + ((MAX_HOPS - hops) * 30);
-        } else if (packet->current() == 0xFFFFFFFF) {
+        } else if (packet->isBroadcast()) {
             jitter_delay = random(150, 800) + base_jitter;
         }
 
@@ -165,7 +189,11 @@ void NetManager::received() {
         }
     }
 
-    dispatch(*packet);
+    if (!packet->isEnd()) {
+        if (packet->hops() < MAX_HOPS) queueDirect(std::move(packet));
+    } else {
+        dispatch(*packet);
+    }
     radio->startReceive();
 }
 
@@ -196,9 +224,20 @@ int16_t NetManager::tick() {
         }
     }
 
+    for (auto& [target, vec] : path_listeners) {
+        Path p;
+        if (path_cache.contains(target)) { p = path_cache.at(target); }
+
+        for (auto it = vec.begin(); it != vec.end();) {
+            if (millis() > it->ttl) {
+                it->listener(p);
+                it = vec.erase(it);
+            } else ++it;
+        }
+    }
+
     if (!radio) return RADIOLIB_ERR_NULL_POINTER;
     if (packet_queue.empty() || isWaiting()) return 0;
-
 
     uint32_t duration = random(100, 250);
     uint32_t start = millis();
@@ -258,4 +297,24 @@ int16_t NetManager::tick() {
     }
 
     return status;
+}
+
+void NetManager::locate(uint32_t target, std::function<void(Path& path)> callback, uint32_t timeout_ms) {
+    if (path_cache.contains(target)) {
+        callback(path_cache.at(target));
+        return;
+    }
+
+    if (!path_listeners.count(target)) {
+        path_listeners[target] = {};
+    }
+    path_listeners.at(target).push_back({std::move(callback), millis() + timeout_ms});
+
+    auto pkt = std::make_unique<NodeLocate>();
+    pkt->node(target);
+    queue(std::move(pkt), 0xFFFFFFFF, 1);
+}
+
+CacheMap<uint32_t, NetManager::Path>& NetManager::cache() {
+    return path_cache;
 }

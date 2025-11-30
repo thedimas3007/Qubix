@@ -34,9 +34,11 @@ private:
     static inline std::map<uint8_t, Factory> registry{};
 
 public:
+    const static uint8_t PACKET_TYPE = 0;
+
     virtual ~Packet() = default;
     virtual uint8_t type() = 0;
-    size_t size() override { return localSize() + sizeof(uint8_t)*2 + sizeof(uint32_t)*3; };
+    size_t size() override { return localSize() + sizeof(uint8_t)*2 + sizeof(uint32_t)*(1+_path.size()); };
 
     static void registerType(uint8_t id, const Factory& factory) {
         registry[id] = factory;
@@ -55,7 +57,7 @@ public:
     uint32_t target() const     { return !isEnd() ? _path[hops()+1] : 0; }
 
     bool isStart() const        { return hops() == 0; }
-    bool isEnd() const          { return hops()+1 == _path.size(); }
+    bool isEnd() const          { return hops()+1 >= _path.size(); }
     bool isBroadcast() const    { return current() == 0xFFFFFFFF; }
 
     uint8_t hops() const        { return _hops; }
@@ -90,8 +92,14 @@ private:
         bool received = false;
     };
 
+    struct PathListener {
+        std::function<void(Path&)> listener;
+        // std::function<void()> timeout = []{};
+        uint32_t ttl = 0;
+    };
+
     struct PacketKey { uint32_t sender, id; };
-    struct PendingPacket { std::unique_ptr<Packet> packet; uint32_t target; int8_t priority; };
+    struct PendingPacket { std::shared_ptr<Packet> packet; int8_t priority; };
     struct ComparePriority {
         bool operator()(const PendingPacket& a, const PendingPacket& b) const {
             return a.priority > b.priority;
@@ -101,9 +109,10 @@ private:
 
     SX126x* radio = nullptr;
     std::map<uint8_t, std::vector<Listener>> listeners; // type_id -> vector of listeners
+    std::map<uint32_t, std::vector<PathListener>> path_listeners;
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
     std::deque<PacketKey> last_packets;
-    CacheMap<uint32_t, Path> path_cache;
+    CacheMap<uint32_t, Path> path_cache{900'000}; // 15 mins
 
     volatile bool* irq_en = nullptr;
     volatile bool* irq_rx = nullptr;
@@ -123,13 +132,16 @@ public:
     }
 
     void begin(SX126x* r, volatile bool* en, volatile bool* rx);
-    void queue(std::unique_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
+    void queueDirect(std::shared_ptr<Packet> packet, int8_t priority = 0);
+    void queue(std::shared_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
     int16_t send(Packet& packet) const; // should I make it private?
     void received();
     void dispatch(Packet& p);
     int16_t tick();
     bool isWaiting() const { return timed_out != 0 && timed_out > millis(); }
-    void wait(long time_ms) { timed_out = millis() + time_ms; };
+    void wait(long time_ms) { timed_out = millis() + time_ms; }
+    void locate(uint32_t target, std::function<void(Path& path)> callback, uint32_t timeout_ms = 7500);
+    CacheMap<uint32_t, Path>& cache();
 
     template <typename T>
     void reg(std::function<void(NetManager&, T&)> fn) {
@@ -142,13 +154,13 @@ public:
     }
 
     template <typename T>
-    void request(std::unique_ptr<Packet> packet, std::function<void(NetManager&, T&)> fn, std::function<void(bool)> tout_fn, uint32_t target, uint32_t timeout, int8_t priority = 0) {
+    void request(std::unique_ptr<Packet> packet, std::function<void(NetManager&, T&)> callback, std::function<void(bool)> timeout, uint32_t target, uint32_t timeout_ms, int8_t priority = 0) {
         uint8_t id = T::PACKET_TYPE;
         queue(std::move(packet), target, priority);
         listeners[id].push_back(
-            {[fn](NetManager& nm, Packet& p) {
-                fn(nm, static_cast<T&>(p));
-            }, tout_fn, millis() + timeout, true}
+            {[callback](NetManager& nm, Packet& p) {
+                callback(nm, static_cast<T&>(p));
+            }, timeout, millis() + timeout_ms, true}
         );
     }
 };

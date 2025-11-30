@@ -7,7 +7,6 @@
 #include "configuration.h"
 #include "keycodes.h"
 #include "settings.h"
-#include "structs.h"
 #include "timing.h"
 #include "utils.h"
 
@@ -356,8 +355,8 @@ void loop() {
                 Serial.print("Found: ");
                 Serial.println(success ? "yes" : "no");
             }, 0xFFFFFFFF, 5000);
-        } /*else if (s == "storage") {
-            for (const auto& [node, path] : cache) {
+        } else if (s == "cache") {
+            for (const auto& [node, path] : netman.cache()) {
                 Serial.print(stringf("Node 0x%08lX: ", node));
                 Serial.print(stringf("0x%08lX <-> ", driver->boardId()));
                 for (int i = 0; i < path.hops; ++i) {
@@ -366,30 +365,29 @@ void loop() {
                     else Serial.println();
                 }
             }
-        */ else if (s.startsWith("locate ")) {
+        } else if (s == "invd") {
+            netman.cache().clear();
+        } else if (s == "test") {
+            auto pkt = std::make_unique<NeighborLocate>();
+            netman.queue(std::move(pkt), 0x9800B191);
+        } else if (s.startsWith("locate ")) {
             String arg = s.substring(7);
             arg.trim();
 
-            uint32_t hwid = 0;
-
+            uint32_t node = 0;
             if (arg.startsWith("0x") && arg.length() == 10) {
-                hwid = strtoul(arg.c_str(), nullptr, 16);
-                Serial.println(stringf("= Trying to find 0x%08lX", hwid));
-                auto pkt = std::make_unique<NodeLocate>();
-                pkt->node(hwid);
-                pkt->addHop(driver->boardId());
-
-                netman.request<NodeFound>(std::move(pkt), [](auto& /* manager */, auto& packet) {
-                    Serial.print(stringf("+ Response from 0x%08lX\r\n\t", packet.current()));
-                    for (uint8_t i = 0; i < packet.pathLength(); i++) {
-                        Serial.print(packet.path()[i], HEX);
-                        if (i < packet.pathLength() - 1) Serial.print(" <-> ");
+                node = strtoul(arg.c_str(), nullptr, 16);
+                Serial.println(stringf("= Trying to find 0x%08lX", node));
+                netman.locate(node, [node](const auto& path) {
+                    Serial.print(stringf("Node 0x%08lX: ", node));
+                    Serial.print(stringf("0x%08lX <-> ", driver->boardId()));
+                    for (int i = 0; i < path.hops; ++i) {
+                        Serial.print(stringf("0x%08lX", path.path[i]));
+                        if (i < path.hops - 1) Serial.print(" <-> ");
+                        else Serial.println();
                     }
-                    Serial.println();
-                }, [](bool success) {
-                    Serial.print("Found: ");
-                    Serial.println(success ? "yes" : "no");
-                }, 0xFFFFFFFF, 10000);
+
+                });
             } else {
                 Serial.println("Usage: locate 0xABCD1234");
             }

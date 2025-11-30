@@ -141,4 +141,16 @@ public:
         }
         return data.size();
     }
+
+    bool refresh(const Key& key) {
+        uint32_t now = millis();
+        auto it = data.find(key);
+        if (it == data.end()) return false;
+        if (expired(it->second, now)) {
+            data.erase(it);
+            return false;
+        }
+        refresh(it->second, now);
+        return true;
+    }
 };
