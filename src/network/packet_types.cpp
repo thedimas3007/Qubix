@@ -15,14 +15,10 @@ void Ping::deserialize(ReadBuffer& buffer) {}
 
 void Pong::serialize(WriteBuffer& buffer) {
     buffer.str(mcu());
-    buffer.i8(rssi());
-    buffer.i8(snr());
 }
 
 void Pong::deserialize(ReadBuffer& buffer) {
     mcu(buffer.str());
-    rssi(buffer.i8());
-    snr(buffer.i8());
 }
 
 void NodeLocate::serialize(WriteBuffer& buffer) {}

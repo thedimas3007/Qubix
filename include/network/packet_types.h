@@ -36,11 +36,9 @@ public:
 
 class Pong : public Packet {
     String _mcu{};
-    int8_t _rssi = -128;
-    int8_t _snr = -128;
 
 protected:
-    size_t localSize() override { return _mcu.length()+1 + sizeof(int8_t)*2; }
+    size_t localSize() override { return _mcu.length()+1; }
 
 public:
     const static uint8_t PACKET_TYPE = 0x03;
@@ -51,10 +49,6 @@ public:
 
     String mcu() const      { return _mcu; }
     void mcu(String m)      { _mcu = m; }
-    int8_t rssi() const     { return _rssi; }
-    void rssi(int8_t r)     { _rssi = r; }
-    int8_t snr() const      { return _snr; }
-    void snr(int8_t s)      { _snr = s; }
 
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;
@@ -92,9 +86,6 @@ public:
     ~NodeFound() override = default;
 
     uint8_t type() override { return PACKET_TYPE; }
-
-    // uint32_t node() const                       { return _node; }
-    // void node(uint32_t n)                       { _node = n; }
 
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;

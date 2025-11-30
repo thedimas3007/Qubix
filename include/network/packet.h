@@ -24,6 +24,8 @@ class Packet : public Serializable {
     uint32_t _pktid = 0;
     uint8_t _hops = 0;
     std::vector<uint32_t> _path;
+
+    float _rssi = -255, _snr = -255;
 protected:
     virtual size_t localSize() = 0;
 
@@ -51,6 +53,11 @@ public:
 
     uint32_t pktid() const      { return _pktid; }
     void pktid(uint32_t pktid)  { _pktid = pktid; }
+
+    float rssi() const          { return _rssi; }
+    void rssi(float r)          { _rssi = r; }
+    float snr() const           { return _snr; }
+    void snr(float s)           { _snr = s; }
 
     uint32_t sender() const     { return !isStart() ? _path[hops()-1] : 0; }
     uint32_t current() const    { return _path[hops()]; }

@@ -23,10 +23,12 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
         // TODO: RX stats for the packet: rssi and snr
         auto pkt = std::make_unique<Pong>();
         pkt->mcu(driver->mcu());
-        pkt->rssi(std::clamp<float>(manager.radio->getRSSI(), -128, 127));
-        pkt->snr(std::clamp<float>(manager.radio->getSNR(), -128, 127));
 
         auto path = packet.path();
+        if (path.back() == 0xFFFFFFFF) {
+            path.pop_back();
+            path.push_back(driver->boardId());
+        }
         std::reverse(path.begin(), path.end());
         pkt->path(path);
         manager.queueDirect(std::move(pkt));
@@ -144,6 +146,9 @@ void NetManager::received() {
         return;
     }
 
+    packet->rssi(radio->getRSSI());
+    packet->snr(radio->getSNR());
+
     packet->pktid(packet_id);
     packet->hops(hops);
     packet->path(path);
@@ -163,8 +168,8 @@ void NetManager::received() {
         path_cache.refresh(packet->sender());
     }
 
-    Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX",
-        packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current()));
+    Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX | %.1fdBm | %.1fdB",
+        packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current(), packet->rssi(), packet->snr()));
 
     if ((packet->current() != driver->boardId() && !packet->isBroadcast()) || hops > MAX_HOPS) {
         radio->startReceive();
