@@ -9,8 +9,8 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
     this->irq_en = en;
     this->irq_rx = rx;
 
-    auto pkt = std::make_unique<NeighborLocate>();
-    request<NeighborResponse>(std::move(pkt), [](auto& manager, auto& packet) {
+    auto pkt = std::make_unique<Ping>();
+    request<Pong>(std::move(pkt), [](auto& manager, auto& packet) {
         Serial.println(stringf("<> Discovered: 0x%08lX - %s", packet.sender(), packet.mcu().c_str()));
         manager.path_cache.put(packet.sender(), {1, {packet.sender()}});
     }, [](bool success) {
@@ -19,9 +19,9 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
         }
     }, 0xFFFFFFFF, 5000);
 
-    reg<NeighborLocate>([](auto& manager, const auto& packet) {
+    reg<Ping>([](auto& manager, const auto& packet) {
         // TODO: RX stats for the packet: rssi and snr
-        auto pkt = std::make_unique<NeighborResponse>();
+        auto pkt = std::make_unique<Pong>();
         pkt->mcu(driver->mcu());
         pkt->rssi(std::clamp<float>(manager.radio->getRSSI(), -128, 127));
         pkt->snr(std::clamp<float>(manager.radio->getSNR(), -128, 127));

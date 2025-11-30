@@ -12,12 +12,12 @@
 #include "structs.h"
 
 inline String packet_names[] = {
-    "Unknown",          // 0x00
-    "HelloPacket",      // 0x01
-    "NeighborLocate",   // 0x02
-    "NeighborResponse", // 0x03
-    "NodeLocate",       // 0x04
-    "NodeFound"         // 0x05
+    "Unknown",      // 0x00
+    "HelloPacket",  // 0x01
+    "Ping",         // 0x02
+    "Pong",         // 0x03
+    "NodeLocate",   // 0x04
+    "NodeFound"     // 0x05
 };
 
 class Packet : public Serializable {

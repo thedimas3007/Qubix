@@ -58,7 +58,7 @@ void setFlag() {
 
 void updateNodes() {
     nodes_menu->clearChildren();
-    auto pkt = std::make_unique<NeighborLocate>();
+    auto pkt = std::make_unique<Ping>();
     // pkt->hwid(driver->boardId());
     netman.queue(std::move(pkt), 0xFFFFFFFF);
 }
@@ -348,8 +348,8 @@ void loop() {
 
         if (s == "neighbors") {
             Serial.println("Locating neighbors");
-            auto pkt = std::make_unique<NeighborLocate>();
-            netman.request<NeighborResponse>(std::move(pkt), [](auto& /* manager */, auto& packet) {
+            auto pkt = std::make_unique<Ping>();
+            netman.request<Pong>(std::move(pkt), [](auto& /* manager */, auto& packet) {
                 Serial.println(stringf("+ Discovered: 0x%08lX - %s", packet.current(), packet.mcu().c_str()));
             }, [](bool success) {
                 Serial.print("Found: ");
@@ -368,7 +368,7 @@ void loop() {
         } else if (s == "invd") {
             netman.cache().clear();
         } else if (s == "test") {
-            auto pkt = std::make_unique<NeighborLocate>();
+            auto pkt = std::make_unique<Ping>();
             netman.queue(std::move(pkt), 0x9800B191);
         } else if (s.startsWith("locate ")) {
             String arg = s.substring(7);

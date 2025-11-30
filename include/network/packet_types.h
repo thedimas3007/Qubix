@@ -3,7 +3,7 @@
 #include "configuration.h"
 #include "network/packet.h"
 
-class HelloPacket : public Packet {
+class [[deprecated("Use Ping instead")]] HelloPacket : public Packet {
 protected:
     size_t localSize() override { return 0; }
 public:
@@ -19,13 +19,13 @@ public:
 };
 
 
-class NeighborLocate : public Packet {
+class Ping : public Packet {
 protected:
     size_t localSize() override { return 0; }
 public:
     const static uint8_t PACKET_TYPE = 0x02;
-    NeighborLocate() = default;
-    ~NeighborLocate() override = default;
+    Ping() = default;
+    ~Ping() override = default;
 
     uint8_t type() override { return PACKET_TYPE; }
 
@@ -34,7 +34,7 @@ public:
 };
 
 
-class NeighborResponse : public Packet {
+class Pong : public Packet {
     String _mcu{};
     int8_t _rssi = -128;
     int8_t _snr = -128;
@@ -44,8 +44,8 @@ protected:
 
 public:
     const static uint8_t PACKET_TYPE = 0x03;
-    NeighborResponse() = default;
-    ~NeighborResponse() override = default;
+    Pong() = default;
+    ~Pong() override = default;
 
     uint8_t type() override { return PACKET_TYPE; }
 
@@ -63,10 +63,9 @@ public:
 
 class NodeLocate : public Packet {
     uint32_t _node = 0x00000000;
-    std::vector<uint32_t> _path{};
 
 protected:
-    size_t localSize() override { return sizeof(uint32_t) + sizeof(uint32_t)*_path.size() + sizeof(uint8_t); }
+    size_t localSize() override { return sizeof(uint32_t); }
 
 public:
     const static uint8_t PACKET_TYPE = 0x04;
@@ -78,22 +77,14 @@ public:
     uint32_t node() const   { return _node; }
     void node(uint32_t n)   { _node = n; }
 
-    const std::vector<uint32_t>& visits() const { return _path; }
-    void visits(const std::vector<uint32_t>& p) { _path = p; }
-    void pushVisit(uint32_t id)                 { _path.push_back(id); }
-    uint8_t visitsLength() const                { return _path.size(); }
-    void clearVisits()                          { _path.clear(); }
-
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;
 };
 
 
 class NodeFound : public Packet {
-    uint32_t _node = 0x00000000;
-
 protected:
-    size_t localSize() override { return /*sizeof(uint32_t)*/ 0; }
+    size_t localSize() override { return 0; }
 
 public:
     const static uint8_t PACKET_TYPE = 0x05;

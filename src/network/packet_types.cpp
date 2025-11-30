@@ -8,57 +8,34 @@ void HelloPacket::serialize(WriteBuffer& buffer) {
 void HelloPacket::deserialize(ReadBuffer& buffer) {}
 
 
-void NeighborLocate::serialize(WriteBuffer& buffer) {}
+void Ping::serialize(WriteBuffer& buffer) {}
 
-void NeighborLocate::deserialize(ReadBuffer& buffer) {}
+void Ping::deserialize(ReadBuffer& buffer) {}
 
 
-void NeighborResponse::serialize(WriteBuffer& buffer) {
+void Pong::serialize(WriteBuffer& buffer) {
     buffer.str(mcu());
     buffer.i8(rssi());
     buffer.i8(snr());
 }
 
-void NeighborResponse::deserialize(ReadBuffer& buffer) {
+void Pong::deserialize(ReadBuffer& buffer) {
     mcu(buffer.str());
     rssi(buffer.i8());
     snr(buffer.i8());
 }
 
-void NodeLocate::serialize(WriteBuffer& buffer) {
-    buffer.u32(node());
-    buffer.u8(visitsLength());
-    for (uint8_t i = 0; i < visitsLength(); i++) buffer.u32(visits()[i]);
-}
-
-void NodeLocate::deserialize(ReadBuffer& buffer) {
-    node(buffer.u32());
-    uint8_t l = buffer.u8();
-    std::vector<uint32_t> v(l);
-    for (uint8_t i = 0; i < l; i++) v.at(i) = buffer.u32();
-    visits(v);
-}
-
-void NodeFound::serialize(WriteBuffer& buffer) {
-    // buffer.u32(node());
-    // buffer.u8(pathLength());
-    // for (uint8_t i = 0; i < pathLength(); i++) buffer.u32(path()[i]);
-}
-
-void NodeFound::deserialize(ReadBuffer& buffer) {
-    // node(buffer.u32());
-    // uint8_t l = buffer.u8();
-    // std::vector<uint32_t> p(l);
-    // for (uint8_t i = 0; i < l; i++) p.at(i) = buffer.u32();
-    // path(p);
-}
+void NodeLocate::serialize(WriteBuffer& buffer) {}
+void NodeLocate::deserialize(ReadBuffer& buffer) {}
+void NodeFound::serialize(WriteBuffer& buffer) {}
+void NodeFound::deserialize(ReadBuffer& buffer) {}
 
 // TODO: find a way to make it look not that ugly
 namespace {
     const bool _registered = [](){
         Packet::registerType(HelloPacket::PACKET_TYPE, [](){ return std::make_unique<HelloPacket>(); });
-        Packet::registerType(NeighborLocate::PACKET_TYPE, [](){ return std::make_unique<NeighborLocate>(); });
-        Packet::registerType(NeighborResponse::PACKET_TYPE, [](){ return std::make_unique<NeighborResponse>(); });
+        Packet::registerType(Ping::PACKET_TYPE, [](){ return std::make_unique<Ping>(); });
+        Packet::registerType(Pong::PACKET_TYPE, [](){ return std::make_unique<Pong>(); });
         Packet::registerType(NodeLocate::PACKET_TYPE, [](){ return std::make_unique<NodeLocate>(); });
         Packet::registerType(NodeFound::PACKET_TYPE, [](){ return std::make_unique<NodeFound>(); });
         return true;
