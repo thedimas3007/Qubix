@@ -21,8 +21,13 @@ void Pong::deserialize(ReadBuffer& buffer) {
     mcu(buffer.str());
 }
 
-void NodeLocate::serialize(WriteBuffer& buffer) {}
-void NodeLocate::deserialize(ReadBuffer& buffer) {}
+void NodeLocate::serialize(WriteBuffer& buffer) {
+    buffer.u32(node());
+}
+void NodeLocate::deserialize(ReadBuffer& buffer) {
+    node(buffer.u32());
+}
+
 void NodeFound::serialize(WriteBuffer& buffer) {}
 void NodeFound::deserialize(ReadBuffer& buffer) {}
 

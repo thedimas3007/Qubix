@@ -21,7 +21,7 @@ inline String packet_names[] = {
 };
 
 class Packet : public Serializable {
-    uint32_t _pktid = 0;
+    uint32_t _packet_id = 0;
     uint8_t _hops = 0;
     std::vector<uint32_t> _path;
 
@@ -51,8 +51,8 @@ public:
         return (it != registry.end()) ? it->second() : nullptr;
     }
 
-    uint32_t pktid() const      { return _pktid; }
-    void pktid(uint32_t pktid)  { _pktid = pktid; }
+    uint32_t packetId() const   { return _packet_id; }
+    void packetId(uint32_t id)  { _packet_id = id; }
 
     float rssi() const          { return _rssi; }
     void rssi(float r)          { _rssi = r; }
@@ -114,46 +114,49 @@ private:
     };
 
 
-    SX126x* radio = nullptr;
-    std::map<uint8_t, std::vector<Listener>> listeners; // type_id -> vector of listeners
-    std::map<uint32_t, std::vector<PathListener>> path_listeners;
-    std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> packet_queue;
-    std::deque<PacketKey> last_packets;
-    CacheMap<uint32_t, Path> path_cache{900'000}; // 15 mins
+    SX126x* _radio = nullptr;
+    std::map<uint8_t, std::vector<Listener>> _listeners; // type_id -> vector of listeners
+    std::map<uint32_t, std::vector<PathListener>> _path_listeners;
+    std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> _packet_queue;
+    std::deque<PacketKey> _last_packets;
+    CacheMap<uint32_t, Path> _path_cache{900'000}; // 15 mins
 
-    volatile bool* irq_en = nullptr;
-    volatile bool* irq_rx = nullptr;
+    volatile bool* _irq_en = nullptr;
+    volatile bool* _irq_rx = nullptr;
 
-    uint32_t timed_out = 0;
-    uint8_t retries = 0; // max retries maybe
+    uint32_t _timed_out = 0;
+    uint8_t _retries = 0; // max retries maybe
 
+
+    uint64_t _bytes_tx = 0, _bytes_rx = 0;
+    uint16_t _packets_tx = 0, _packets_rx = 0;
 public:
     bool seen(uint32_t sender, uint32_t id) {
-        return std::find_if(last_packets.begin(), last_packets.end(),
-            [&](auto& p) { return p.sender==sender && p.id==id; }) != last_packets.end();
+        return std::find_if(_last_packets.begin(), _last_packets.end(),
+            [&](auto& p) { return p.sender==sender && p.id==id; }) != _last_packets.end();
     }
 
     bool seen(uint32_t id) {
-        return std::find_if(last_packets.begin(), last_packets.end(),
-            [&](auto& p) { return p.id==id; }) != last_packets.end();
+        return std::find_if(_last_packets.begin(), _last_packets.end(),
+            [&](auto& p) { return p.id==id; }) != _last_packets.end();
     }
 
     void begin(SX126x* r, volatile bool* en, volatile bool* rx);
     void queueDirect(std::shared_ptr<Packet> packet, int8_t priority = 0);
     void queue(std::shared_ptr<Packet> packet, uint32_t target, int8_t priority = 0);
-    int16_t send(Packet& packet) const; // should I make it private?
+    int16_t send(Packet& packet); // should I make it private?
     void received();
     void dispatch(Packet& p);
     int16_t tick();
-    bool isWaiting() const { return timed_out != 0 && timed_out > millis(); }
-    void wait(long time_ms) { timed_out = millis() + time_ms; }
+    bool isWaiting() const { return _timed_out != 0 && _timed_out > millis(); }
+    void wait(long time_ms) { _timed_out = millis() + time_ms; }
     void locate(uint32_t target, std::function<void(Path& path)> callback, uint32_t timeout_ms = 7500);
     CacheMap<uint32_t, Path>& cache();
 
     template <typename T>
     void reg(std::function<void(NetManager&, T&)> fn) {
         uint8_t id = T::PACKET_TYPE;
-        listeners[id].push_back(
+        _listeners[id].push_back(
             {[fn](NetManager& nm, Packet& p) {
                 fn(nm, static_cast<T&>(p));
             }}
@@ -164,10 +167,19 @@ public:
     void request(std::unique_ptr<Packet> packet, std::function<void(NetManager&, T&)> callback, std::function<void(bool)> timeout, uint32_t target, uint32_t timeout_ms, int8_t priority = 0) {
         uint8_t id = T::PACKET_TYPE;
         queue(std::move(packet), target, priority);
-        listeners[id].push_back(
+        _listeners[id].push_back(
             {[callback](NetManager& nm, Packet& p) {
                 callback(nm, static_cast<T&>(p));
             }, timeout, millis() + timeout_ms, true}
         );
     }
+
+    uint64_t bytesTx() const       { return _bytes_tx; }
+    // void bytesTx(uint64_t v)       { _bytes_tx = v; }
+    uint64_t bytesRx() const       { return _bytes_rx; }
+    // void bytesRx(uint64_t v)       { _bytes_rx = v; }
+    uint16_t packetsTx() const     { return _packets_tx; }
+    // void packetsTx(uint16_t v)     { _packets_tx = v; }
+    uint16_t packetsRx() const     { return _packets_rx; }
+    // void packetsRx(uint16_t v)     { _packets_rx = v; }
 };

@@ -130,7 +130,7 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
                 // display.display();
             }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
-                TextField::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
+                // TextField::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
             }).onExit([] {
                 settings.save();
             }).buildPtr(),
@@ -164,8 +164,8 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
 #endif
                 Property<uint8_t>::make().title("Rotation").pointer(&settings.data.display_rotation).fmt("%d").buildPtr(),
                 Property<bool>::make().title("Inverted").pointer(&settings.data.display_inverted).fmt("%d").buildPtr(),
-                Label::make().title("====").buildPtr(),
-                StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
+                // Label::make().title("====").buildPtr(),
+                // StringProperty::make().title("Name").pointer(settings.data.device_name).buildPtr(),
                 Label::make().title("====").buildPtr(),
                 Label::make().title(String("MCU:   ") + HW_MCU).buildPtr(),
                 Label::make().title(String("Clock: ") + prettyValue(HW_F_CPU,"Hz",0,1000)).buildPtr(),
@@ -199,6 +199,16 @@ UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x
         MenuView::make().icon('\x93').title("Power").buildPtr(),
 
         MenuView::make().icon('i').title("Info").children({
+            MenuView::make().title("Network").children({
+                LambdaProperty::make().title("Up").func([] {
+                    return stringf("%dx | %s",
+                        netman.packetsTx(), prettyValue(netman.bytesTx(), "B", 1, 1024).c_str());
+                }).buildPtr(),
+                LambdaProperty::make().title("Down").func([] {
+                    return stringf("%dx | %s",
+                        netman.packetsRx(), prettyValue(netman.bytesRx(), "B", 1, 1024).c_str());
+                }).buildPtr()
+            }).buildPtr(),
             MenuView::make().title("Device").children({
                 LambdaProperty::make().title("MCU").func([] { return driver->mcu(); }).buildPtr(),
                 LambdaProperty::make().title("Load").func([] { return stringf("%.1f%%", driver->currentLoad()*100); }).buildPtr(),

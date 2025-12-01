@@ -5,14 +5,14 @@
 #include "network/packet_types.h"
 
 void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
-    this->radio = r;
-    this->irq_en = en;
-    this->irq_rx = rx;
+    this->_radio = r;
+    this->_irq_en = en;
+    this->_irq_rx = rx;
 
     auto pkt = std::make_unique<Ping>();
     request<Pong>(std::move(pkt), [](auto& manager, auto& packet) {
         Serial.println(stringf("<> Discovered: 0x%08lX - %s", packet.sender(), packet.mcu().c_str()));
-        manager.path_cache.put(packet.sender(), {1, {packet.sender()}});
+        manager._path_cache.put(packet.sender(), {1, {packet.sender()}});
     }, [](bool success) {
         if (!success) {
             Serial.println("!! No neighbors found");
@@ -45,7 +45,7 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
         Path path;
         for (uint32_t u : trace) path.push(u);
 
-        manager.path_cache.put(packet.path().front(), path);
+        manager._path_cache.put(packet.path().front(), path);
     });
 
     reg<NodeLocate>([](auto& manager, const auto& packet) {
@@ -76,7 +76,7 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
 }
 
 void NetManager::queueDirect(std::shared_ptr<Packet> packet, int8_t priority) {
-    packet_queue.push({std::move(packet), priority});
+    _packet_queue.push({std::move(packet), priority});
 }
 
 void NetManager::queue(std::shared_ptr<Packet> packet, uint32_t target, int8_t priority) {
@@ -97,18 +97,18 @@ void NetManager::queue(std::shared_ptr<Packet> packet, uint32_t target, int8_t p
             ids[i + 1] = path.path[i];
         }
         packet->path(ids);
-        packet_queue.push({std::move(packet), priority});
+        _packet_queue.push({std::move(packet), priority});
     });
 }
 
-int16_t NetManager::send(Packet& packet) const {
-    if (!radio || !irq_en) { return RADIOLIB_ERR_NULL_POINTER; }
-    uint32_t packet_id = packet.pktid() ? packet.pktid() : static_cast<uint32_t>(random(0, 0x7FFFFFFF)) << 1 ^ micros();
+int16_t NetManager::send(Packet& packet) {
+    if (!_radio || !_irq_en) { return RADIOLIB_ERR_NULL_POINTER; }
+    uint32_t packet_id = packet.packetId() ? packet.packetId() : static_cast<uint32_t>(random(0, 0x7FFFFFFF)) << 1 ^ micros();
 
     Serial.println(stringf("<< TX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX",
         packet_names[packet.type()].c_str(), packet_id, packet.hops()+1, packet.size(), packet.current() ? packet.current() : driver->boardId(), packet.target()));
 
-    *irq_en = false;
+    *_irq_en = false;
 
     WriteBuffer buffer = WriteBuffer(packet.size());
     buffer.u32(packet_id);
@@ -117,17 +117,21 @@ int16_t NetManager::send(Packet& packet) const {
     for (uint32_t id : packet.path()) buffer.u32(id);
 
     packet.serialize(buffer);
-    int16_t status = radio->transmit(buffer.raw(), buffer.len());
-    *irq_en = true;
+    int16_t status = _radio->transmit(buffer.raw(), buffer.len());
+    *_irq_en = true;
     // *irq_rx = false;
-    radio->startReceive();
+    _radio->startReceive();
+
+    _bytes_tx += buffer.len();
+    _packets_tx++;
+
     return status;
 }
 
 void NetManager::received() {
-    size_t len = radio->getPacketLength();
+    size_t len = _radio->getPacketLength();
     auto data = std::make_unique<uint8_t[]>(len);
-    radio->readData(data.get(), 0);
+    _radio->readData(data.get(), 0);
     ReadBuffer buffer = ReadBuffer(data.get(), len);
 
     uint32_t packet_id = buffer.u32();
@@ -142,39 +146,42 @@ void NetManager::received() {
     auto packet = Packet::create(packet_type);
 
     if (!packet) {
-        radio->startReceive();
+        _radio->startReceive();
         return;
     }
 
-    packet->rssi(radio->getRSSI());
-    packet->snr(radio->getSNR());
+    packet->rssi(_radio->getRSSI());
+    packet->snr(_radio->getSNR());
 
-    packet->pktid(packet_id);
+    packet->packetId(packet_id);
     packet->hops(hops);
     packet->path(path);
     packet->deserialize(buffer);
 
     if (packet->sender() == driver->boardId() || seen(packet->sender(), packet_id) ) {
-        radio->startReceive();
+        _radio->startReceive();
         return;
     }
 
-    if (last_packets.size() == 32) last_packets.pop_front();
-    last_packets.push_back({packet->sender(), packet_id});
+    if (_last_packets.size() == 32) _last_packets.pop_front();
+    _last_packets.push_back({packet->sender(), packet_id});
 
-    if (!path_cache.contains(packet->sender())) {
-        path_cache.put(packet->sender(), {1, {packet->sender()}});
+    if (!_path_cache.contains(packet->sender())) {
+        _path_cache.put(packet->sender(), {1, {packet->sender()}});
     } else {
-        path_cache.refresh(packet->sender());
+        _path_cache.refresh(packet->sender());
     }
 
     Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX | %.1fdBm | %.1fdB",
         packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current(), packet->rssi(), packet->snr()));
 
     if ((packet->current() != driver->boardId() && !packet->isBroadcast()) || hops > MAX_HOPS) {
-        radio->startReceive();
+        _radio->startReceive();
         return;
     };
+
+    _bytes_rx += packet->size();
+    _packets_rx++;
 
     if (!isWaiting()) {
         uint32_t hwid = driver->boardId();
@@ -199,12 +206,12 @@ void NetManager::received() {
     } else {
         dispatch(*packet);
     }
-    radio->startReceive();
+    _radio->startReceive();
 }
 
 void NetManager::dispatch(Packet& p) {
-    auto it = listeners.find(p.type());
-    if (it == listeners.end()) return;
+    auto it = _listeners.find(p.type());
+    if (it == _listeners.end()) return;
 
     auto& vec = it->second;
     for (auto iter = vec.begin(); iter != vec.end();) {
@@ -220,7 +227,7 @@ void NetManager::dispatch(Packet& p) {
 }
 
 int16_t NetManager::tick() {
-    for (auto& [type, vec] : listeners) {
+    for (auto& [type, vec] : _listeners) {
         for (auto it = vec.begin(); it != vec.end();) {
             if (it->temporary && millis() > it->ttl) {
                 it->timeout(it->received);
@@ -229,9 +236,9 @@ int16_t NetManager::tick() {
         }
     }
 
-    for (auto& [target, vec] : path_listeners) {
+    for (auto& [target, vec] : _path_listeners) {
         Path p;
-        if (path_cache.contains(target)) { p = path_cache.at(target); }
+        if (_path_cache.contains(target)) { p = _path_cache.at(target); }
 
         for (auto it = vec.begin(); it != vec.end();) {
             if (millis() > it->ttl) {
@@ -241,15 +248,15 @@ int16_t NetManager::tick() {
         }
     }
 
-    if (!radio) return RADIOLIB_ERR_NULL_POINTER;
-    if (packet_queue.empty() || isWaiting()) return 0;
+    if (!_radio) return RADIOLIB_ERR_NULL_POINTER;
+    if (_packet_queue.empty() || isWaiting()) return 0;
 
     uint32_t duration = random(100, 250);
     uint32_t start = millis();
     bool busy = false;
 
     while (millis() < start+duration) {
-        float rssi = radio->getRSSI(false);
+        float rssi = _radio->getRSSI(false);
         // Serial.println(stringf("## RSSI: %.1f dBm", rssi));
         if (rssi >= -85) {
             // Serial.println(stringf("## Activity detected, %.1fdBm", rssi));
@@ -257,7 +264,7 @@ int16_t NetManager::tick() {
             break;
         }
 
-        int16_t ch_status = radio->scanChannel();
+        int16_t ch_status = _radio->scanChannel();
 
         if (ch_status != RADIOLIB_CHANNEL_FREE && ch_status != RADIOLIB_LORA_DETECTED) {
             return ch_status;
@@ -273,21 +280,21 @@ int16_t NetManager::tick() {
     if (busy) {
         uint16_t base_delay = 30;
         uint16_t max_delay = 500;
-        uint16_t backoff = min<uint16_t>(base_delay * (1 << min<uint16_t>(retries, 4)), max_delay);
+        uint16_t backoff = min<uint16_t>(base_delay * (1 << min<uint16_t>(_retries, 4)), max_delay);
         uint8_t jitter = random(0, backoff / 2);
         uint16_t total_delay = backoff + jitter;
 
-        retries++;
+        _retries++;
         wait(total_delay);
         // Serial.println(stringf("## Postpone #%i, +%i ms", retries, total_delay));
         return 0;
     }
 
-    auto pkt = std::move(const_cast<PendingPacket&>(packet_queue.top()));
-    packet_queue.pop();
+    auto pkt = std::move(const_cast<PendingPacket&>(_packet_queue.top()));
+    _packet_queue.pop();
 
-    timed_out = 0;
-    retries = 0; // TODO: per-packet retries
+    _timed_out = 0;
+    _retries = 0; // TODO: per-packet retries
 
     int16_t status = send(*pkt.packet);
     if (status != RADIOLIB_ERR_NONE) {
@@ -296,24 +303,24 @@ int16_t NetManager::tick() {
         // increased priority since the packet wasn't sent
         // ch-hopping maybe? or not, since nodes have their places
         if (pkt.priority < 127) pkt.priority++;
-        packet_queue.push(std::move(pkt));
+        _packet_queue.push(std::move(pkt));
         wait(100);
-        retries = 1;
+        _retries = 1;
     }
 
     return status;
 }
 
 void NetManager::locate(uint32_t target, std::function<void(Path& path)> callback, uint32_t timeout_ms) {
-    if (path_cache.contains(target)) {
-        callback(path_cache.at(target));
+    if (_path_cache.contains(target)) {
+        callback(_path_cache.at(target));
         return;
     }
 
-    if (!path_listeners.count(target)) {
-        path_listeners[target] = {};
+    if (!_path_listeners.count(target)) {
+        _path_listeners[target] = {};
     }
-    path_listeners.at(target).push_back({std::move(callback), millis() + timeout_ms});
+    _path_listeners.at(target).push_back({std::move(callback), millis() + timeout_ms});
 
     auto pkt = std::make_unique<NodeLocate>();
     pkt->node(target);
@@ -321,5 +328,5 @@ void NetManager::locate(uint32_t target, std::function<void(Path& path)> callbac
 }
 
 CacheMap<uint32_t, NetManager::Path>& NetManager::cache() {
-    return path_cache;
+    return _path_cache;
 }
