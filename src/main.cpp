@@ -325,6 +325,30 @@ void setup() {
         ui_context.render(root);
     }, 1000 / DISPLAY_UPS);
 
+    scheduler.schedule([]() {
+        char bars[3] = { '\x96', '\x96', '\0' };
+        float score = netman.avgScore();
+
+        if (score <= 5) {
+            bars[0] = '\x96';
+            bars[1] = '\x96';
+        }
+        else if (score <= 52.50f) {
+            bars[1] = '\x96';
+            if      (score <= 20.83f) bars[0] = '\x97';
+            else if (score <= 36.67f) bars[0] = '\x98';
+            else                      bars[0] = '\x99';
+        }
+        else {
+            bars[0] = '\x99';
+            if      (score <= 68.33f) bars[1] = '\x9A';
+            else if (score <= 84.17f) bars[1] = '\x9B';
+            else                      bars[1] = '\x9C';
+        }
+
+        root.title = stringf("\xAD%s", bars);
+    }, 100); // 10 Hz
+
     delay(1000);
 
     ui_context.refresh(true);

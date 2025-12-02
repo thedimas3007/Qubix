@@ -171,6 +171,7 @@ void NetManager::received() {
     } else {
         _path_cache.refresh(packet->sender());
     }
+    _last_rssi.put(packet->sender(), packet->rssi());
 
     Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX | %.1fdBm | %.1fdB",
         packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current(), packet->rssi(), packet->snr()));
@@ -329,4 +330,19 @@ void NetManager::locate(uint32_t target, std::function<void(Path& path)> callbac
 
 CacheMap<uint32_t, NetManager::Path>& NetManager::cache() {
     return _path_cache;
+}
+
+float NetManager::avgRssi() {
+    if (_last_rssi.size() == 0) return -140;
+    float sum = 0;
+    for (auto [_, rssi] : _last_rssi) { sum+=rssi; }
+    return sum / _last_rssi.size();
+}
+
+float NetManager::avgScore() {
+    float avg = avgRssi();
+    if (avg <= -120) return 0;
+    if (avg >= -30) return 100;
+
+    return (avg+120) / 90 * 100;
 }

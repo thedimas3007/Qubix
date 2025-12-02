@@ -120,6 +120,7 @@ private:
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> _packet_queue;
     std::deque<PacketKey> _last_packets;
     CacheMap<uint32_t, Path> _path_cache{900'000}; // 15 mins
+    CacheMap<uint32_t, float> _last_rssi{900'000};
 
     volatile bool* _irq_en = nullptr;
     volatile bool* _irq_rx = nullptr;
@@ -152,6 +153,8 @@ public:
     void wait(long time_ms) { _timed_out = millis() + time_ms; }
     void locate(uint32_t target, std::function<void(Path& path)> callback, uint32_t timeout_ms = 7500);
     CacheMap<uint32_t, Path>& cache();
+    float avgRssi();
+    float avgScore();
 
     template <typename T>
     void reg(std::function<void(NetManager&, T&)> fn) {
