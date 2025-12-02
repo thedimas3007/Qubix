@@ -38,12 +38,34 @@ public:
     uint32_t u32()          { return available(4) ? (u16() | (u16() << 16)) : 0; }
     uint64_t u64()          { return available(8) ? (u32() | (static_cast<uint64_t>(u32()) << 32)) : 0; }
 
-    int8_t  i8()            { return static_cast<int8_t>(u8()); }
+    int8_t i8()             { return static_cast<int8_t>(u8()); }
     int16_t i16()           { return static_cast<int16_t>(u16()); }
     int32_t i32()           { return static_cast<int32_t>(u32()); }
     int64_t i64()           { return static_cast<int64_t>(u64()); }
 
     char c()                { return static_cast<char>(u8()); }
+
+
+    float f32() {
+        if (!available(4)) return 0;
+        const uint32_t b = u32();
+        float v = 0;
+        memcpy(&v, &b, sizeof(float));
+        return v;
+    }
+
+    double f64() {
+        const uint8_t s = sizeof(double);
+        if (!available(s)) return 0;
+        if constexpr (s == 4) return f32();
+        else {
+            const uint64_t b = u64();
+            double v = 0;
+            memcpy(&v, &b, sizeof(double));
+            return v;
+        }
+    }
+
 
     String str() {
         if (!available(1)) return "";
@@ -101,6 +123,24 @@ public:
     void i64(int64_t v)     { u64(static_cast<uint64_t>(v)); }
 
     void c(char v)          { u8(static_cast<uint8_t>(v)); }
+
+    void f32(float v) {
+        if (!available(4)) return;
+        uint32_t b;
+        memcpy(&b, &v, sizeof(float));
+        u32(b);
+    }
+
+    void f64(double v) {
+        constexpr uint8_t s = sizeof(double);
+        if (!available(s)) return;
+        if constexpr (s == 4) return f32(v);
+        else {
+            uint64_t b;
+            memcpy(&b, &v, sizeof(double));
+            u64(b);
+        }
+    }
 
     void str(const String& s) {
         size_t n = s.length() + 1;
