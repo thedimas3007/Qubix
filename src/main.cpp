@@ -9,6 +9,7 @@
 #include "settings.h"
 #include "timing.h"
 #include "utils.h"
+#include "network/manager.h"
 
 #include "network/packet.h"
 #include "network/packet_types.h"
