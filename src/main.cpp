@@ -397,8 +397,8 @@ void loop() {
                 for (int i = 0; i < path.hops; ++i) {
                     Serial.print(stringf("0x%08lX", path.path[i]));
                     if (i < path.hops - 1) Serial.print(" <-> ");
-                    else Serial.println();
-                }
+                    else Serial.println(stringf(" / %.0fdBm / %.1fdB / %.1f", path.rssi, path.snr, path.score()));
+                };
             }
         } else if (s == "invd") {
             netman.cache().clear();
@@ -414,14 +414,18 @@ void loop() {
                 node = strtoul(arg.c_str(), nullptr, 16);
                 Serial.println(stringf("= Trying to find 0x%08lX", node));
                 netman.locate(node, [node](const auto& path) {
+                    if (!path.hops) {
+                        Serial.println(stringf("Not found: 0x%08lX", node));
+                        return;
+                    }
+
                     Serial.print(stringf("Node 0x%08lX: ", node));
                     Serial.print(stringf("0x%08lX <-> ", driver->boardId()));
                     for (int i = 0; i < path.hops; ++i) {
                         Serial.print(stringf("0x%08lX", path.path[i]));
                         if (i < path.hops - 1) Serial.print(" <-> ");
-                        else Serial.println();
+                        else Serial.println(stringf(" / %.0fdBm / %.1fdB / %.1f", path.rssi, path.snr, path.score()));
                     }
-
                 });
             } else {
                 Serial.println("Usage: locate 0xABCD1234");

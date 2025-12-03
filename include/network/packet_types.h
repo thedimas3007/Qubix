@@ -77,8 +77,9 @@ public:
 
 
 class NodeFound : public Packet {
+    float _rssi_avg = -140, _snr_avg = -140;
 protected:
-    size_t localSize() override { return 0; }
+    size_t localSize() override { return sizeof(float)*2; }
 
 public:
     const static uint8_t PACKET_TYPE = 0x05;
@@ -86,6 +87,14 @@ public:
     ~NodeFound() override = default;
 
     uint8_t type() override { return PACKET_TYPE; }
+
+
+    float rssiAvg() const   { return _rssi_avg; }
+    void rssiAvg(float v)   { _rssi_avg = v; }
+    float snrAvg() const    { return _snr_avg; }
+    void snrAvg(float v)    { _snr_avg = v; }
+
+    void appendInfo(float r, float s);
 
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;

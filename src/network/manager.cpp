@@ -13,7 +13,7 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
     auto pkt = std::make_unique<Ping>();
     request<Pong>(std::move(pkt), [](auto& manager, auto& packet) {
         Serial.println(stringf("<> Discovered: 0x%08lX - %s", packet.sender(), packet.mcu().c_str()));
-        manager._path_cache.put(packet.sender(), {1, {packet.sender()}});
+        // manager._path_cache.put(packet.sender(), {1, {packet.sender()}});
     }, [](bool success) {
         if (!success) {
             Serial.println("!! No neighbors found");
@@ -36,14 +36,14 @@ void NetManager::begin(SX126x* r, volatile bool* en, volatile bool* rx) {
 
 
     reg<NodeFound>([](auto& manager, const auto& packet) {
-        int8_t pos = -1;
-
         auto trace = packet.path();
         trace.pop_back();
         std::reverse(trace.begin(), trace.end());
 
         Path path;
         for (uint32_t u : trace) path.push(u);
+        path.rssi = packet.rssiAvg();
+        path.snr = packet.snrAvg();
 
         manager._path_cache.put(packet.path().front(), path);
     });
@@ -166,15 +166,21 @@ void NetManager::received() {
     if (_last_packets.size() == 32) _last_packets.pop_front();
     _last_packets.push_back({packet->sender(), packet_id});
 
-    if (!_path_cache.contains(packet->sender())) {
-        _path_cache.put(packet->sender(), {1, {packet->sender()}});
-    } else {
-        _path_cache.refresh(packet->sender());
-    }
-    _last_rssi.put(packet->sender(), packet->rssi());
-
     Serial.println(stringf(">> RX $%s #%08lX | %d hops | %d bytes | 0x%08lX -> 0x%08lX | %.1fdBm | %.1fdB",
         packet_names[packet_type].c_str(), packet_id, hops, len, packet->sender(), packet->current(), packet->rssi(), packet->snr()));
+
+    Path current_path{
+        .hops = 1,
+        .path = {packet->sender()},
+        .rssi = packet->rssi(),
+        .snr = packet->snr()
+    };
+
+    if (_path_cache.contains(packet->sender()) && _path_cache.at(packet->sender()) == current_path) {
+        _path_cache.refresh(packet->sender());
+    } else {
+        _path_cache.put(packet->sender(), current_path);
+    }
 
     if ((packet->current() != driver->boardId() && !packet->isBroadcast()) || hops > MAX_HOPS) {
         _radio->startReceive();
@@ -200,6 +206,11 @@ void NetManager::received() {
         if (jitter_delay > 0) {
             wait(jitter_delay);
         }
+    }
+
+    if (packet->type() == NodeFound::PACKET_TYPE) {
+        auto nf = static_cast<NodeFound*>(packet.get());
+        nf->appendInfo(packet->rssi(), packet->snr());
     }
 
     if (!packet->isEnd()) {
@@ -332,17 +343,14 @@ CacheMap<uint32_t, NetManager::Path>& NetManager::cache() {
     return _path_cache;
 }
 
-float NetManager::avgRssi() {
-    if (_last_rssi.size() == 0) return -140;
-    float sum = 0;
-    for (auto [_, rssi] : _last_rssi) { sum+=rssi; }
-    return sum / _last_rssi.size();
-}
-
 float NetManager::avgScore() {
-    float avg = avgRssi();
-    if (avg <= -120) return 0;
-    if (avg >= -30) return 100;
+    uint8_t count = 0;
+    float score = 0;
+    for (auto [_, path]: _path_cache) {
+        if (path.hops > 1) continue;
+        score += path.score();
+        count++;
+    }
 
-    return (avg+120) / 90 * 100;
+    return score / count;
 }

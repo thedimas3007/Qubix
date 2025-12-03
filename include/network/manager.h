@@ -7,10 +7,25 @@ public:
     struct Path {
         uint8_t hops = 0;
         uint32_t path[MAX_HOPS]{};
+        float rssi = -140, snr = -140;
 
         void reset()            { for (auto& i : path) i = 0; }
         void push(uint32_t id)  { if (hops < MAX_HOPS) path[hops++] = id; }
         void pop()              { if (hops > 0)        path[--hops] = 0; }
+
+        float score() const {
+            if (rssi < -120 || snr < -20) return 0;
+            float rssi_score = 100.0f / (1.0f + expf(-(rssi + 80.0f) / 10.0f));
+            float snr_score = std::clamp<float>((snr + 20) / 30.0f * 100.0f, 0.0f, 100.0f);
+            return 0.5f * rssi_score + 0.5f * snr_score; // 50/50
+        }
+
+        bool operator==(const Path& other) const {
+            for (uint32_t i = 0; i < MAX_HOPS; ++i) {
+                if (path[i] != other.path[i]) return false;
+            }
+            return true;
+        }
     };
 
 private:
@@ -43,7 +58,6 @@ private:
     std::priority_queue<PendingPacket, std::vector<PendingPacket>, ComparePriority> _packet_queue;
     std::deque<PacketKey> _last_packets;
     CacheMap<uint32_t, Path> _path_cache{900'000}; // 15 mins
-    CacheMap<uint32_t, float> _last_rssi{900'000};
 
     volatile bool* _irq_en = nullptr;
     volatile bool* _irq_rx = nullptr;
@@ -76,7 +90,6 @@ public:
     void wait(long time_ms) { _timed_out = millis() + time_ms; }
     void locate(uint32_t target, std::function<void(Path& path)> callback, uint32_t timeout_ms = 7500);
     CacheMap<uint32_t, Path>& cache();
-    float avgRssi();
     float avgScore();
 
     template <typename T>
@@ -100,12 +113,14 @@ public:
         );
     }
 
+
     uint64_t bytesTx() const       { return _bytes_tx; }
-    // void bytesTx(uint64_t v)       { _bytes_tx = v; }
     uint64_t bytesRx() const       { return _bytes_rx; }
-    // void bytesRx(uint64_t v)       { _bytes_rx = v; }
     uint16_t packetsTx() const     { return _packets_tx; }
-    // void packetsTx(uint16_t v)     { _packets_tx = v; }
     uint16_t packetsRx() const     { return _packets_rx; }
+
+    // void bytesTx(uint64_t v)       { _bytes_tx = v; }
+    // void bytesRx(uint64_t v)       { _bytes_rx = v; }
+    // void packetsTx(uint16_t v)     { _packets_tx = v; }
     // void packetsRx(uint16_t v)     { _packets_rx = v; }
 };
