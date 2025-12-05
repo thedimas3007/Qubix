@@ -327,27 +327,43 @@ void setup() {
     }, 1000 / DISPLAY_UPS);
 
     scheduler.schedule([]() {
-        char bars[3] = { '\x96', '\x96', '\0' };
+        char sig_bars[3] = { '\x96', '\x96', '\0' };
+        String batt_bars;
         float score = netman.avgScore();
+        float percentage = driver->batteryPercent();
 
         if (score <= 5) {
-            bars[0] = '\x96';
-            bars[1] = '\x96';
+            sig_bars[0] = '\x96';
+            sig_bars[1] = '\x96';
         }
         else if (score <= 52.50f) {
-            bars[1] = '\x96';
-            if      (score <= 20.83f) bars[0] = '\x97';
-            else if (score <= 36.67f) bars[0] = '\x98';
-            else                      bars[0] = '\x99';
+            sig_bars[1] = '\x96';
+            if      (score <= 20.83f) sig_bars[0] = '\x97';
+            else if (score <= 36.67f) sig_bars[0] = '\x98';
+            else                      sig_bars[0] = '\x99';
         }
         else {
-            bars[0] = '\x99';
-            if      (score <= 68.33f) bars[1] = '\x9A';
-            else if (score <= 84.17f) bars[1] = '\x9B';
-            else                      bars[1] = '\x9C';
+            sig_bars[0] = '\x99';
+            if      (score <= 68.33f) sig_bars[1] = '\x9A';
+            else if (score <= 84.17f) sig_bars[1] = '\x9B';
+            else                      sig_bars[1] = '\x9C';
         }
 
-        root.title = stringf("\xAD%s", bars);
+        if (percentage <= 10)       batt_bars = "\x9D\x9E\x9F";
+        else if (percentage <= 25)  batt_bars = "\x9D\x9E\xA3";
+        else if (percentage <= 50)  batt_bars = "\x9D\xA1\xA3";
+        else if (percentage <= 75)  batt_bars = "\x9D\xA2\xA3";
+        else if (percentage > 75)   batt_bars = "\xA0\xA2\xA3";
+
+        String title = "";
+        title += '\xAD';
+        title += sig_bars;
+        for (int i = 0; i < ui_context.maxCharsX()-5; ++i) {
+            title += ' ';
+        }
+        title += batt_bars;
+
+        root.title = title;
     }, 100); // 10 Hz
 
     delay(1000);

@@ -45,6 +45,13 @@ public:
 
     virtual uint32_t boardId() const = 0;
 
+    float batteryVoltage() const { return 3.76; }
+    float batteryPercent() const {
+        float v = batteryVoltage();
+        float p = 23.81f*std::pow(v, 2) - 88.1*v + 50;
+        return std::max(std::min(p, 100.0f), 0.0f);
+    }
+
     virtual void init() = 0;
     virtual void reboot() = 0;
 };
