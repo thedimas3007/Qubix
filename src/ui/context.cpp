@@ -12,8 +12,6 @@ uint16_t rgb565(uint32_t rgb) {
 
 
 void UIContext::setCursor(const int16_t tx, const int16_t ty) {
-    // assert(tx >= 0 && ty >= 0);
-    // assert(tx < width && ty < height);
     display.setCursor(tx, ty);
     sync();
 }
@@ -58,7 +56,7 @@ void UIContext::resetColors() {
 }
 
 void UIContext::print(const String& text, const bool colorized) {
-    display.setCursor(x, y);
+    display.setCursor(std::max<int16_t>(_x, 2), _y);
 
     if (!colorized) {
         display.print(text);
@@ -99,8 +97,7 @@ void UIContext::print(const String& text, const bool colorized) {
             }
 
             if (isxdigit(c)) {
-                if (color_buf.length() < 7)
-                    color_buf += c;
+                if (color_buf.length() < 7) color_buf += c;
                 else {
                     display.print("[");
                     display.print(color_buf);
@@ -111,10 +108,10 @@ void UIContext::print(const String& text, const bool colorized) {
             }
 
             if (c == ']') {
-                if (innerPos == 1) {  // []
+                if (innerPos == 1) { // []
                     if (!color_stack.empty()) color_stack.pop_back();
                     setTextColor(!color_stack.empty() ? color_stack.back() : theme.foreground);
-                } else if (innerPos == 2) {  // [#]
+                } else if (innerPos == 2) { // [#]
                     color_stack.clear();
                     setTextColor(theme.foreground);
                 } else {
@@ -194,10 +191,10 @@ uint8_t UIContext::availableSpaces(uint8_t chars) const {
 }
 
 void UIContext::sync() {
-    x = display.getCursorX();
-    y = display.getCursorY();
-    width = display.width();
-    height = display.height();
+    _x = display.getCursorX();
+    _y = display.getCursorY();
+    _width = display.width();
+    _height = display.height();
 }
 
 void UIContext::reset() {
@@ -218,7 +215,7 @@ void UIContext::render(UIApp& app) {
         display.setFullWindow();
         partial_updates = 0;
     } else {
-        display.setPartialWindow(0, 0, width, height);
+        display.setPartialWindow(0, 0, _width, _height);
     }
 
     display.firstPage();

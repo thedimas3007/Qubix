@@ -9,22 +9,23 @@ void CharTable::render(UIContext& ctx, bool minimalized) {
     if (minimalized) {
         ctx.println("Characters");
     } else {
-        ctx.println("  |0123456789ABCDEF| ");
-        ctx.println(" -+----------------+-");
-        for (uint8_t y = start; y < start + ctx.maxCharsY() - 1; y++) {
+        ctx.println("  |0123456789ABCDEF|");
+        ctx.println(" -+----------------+");
+        uint8_t v = std::min<uint8_t>(16, start + ctx.maxCharsY() - 3);
+        for (uint8_t y = start; y < v; y++) {
             if (y == 0x10) {
-                ctx.println(" -+----------------+-");
+                ctx.println(" -+----------------+");
             } else {
                 ctx.print(String(' '));
                 ctx.printf("%x", y);
                 ctx.print("|");
                 for (uint8_t x = 0; x < 16; x++) {
                     char c = static_cast<char>(x + y * 16);
-                    if (c == 0x0A || c == 0x0D || c == '\n' || c == '\t') c = ' ';
+                    if (c == 0x00 || c == 0x0D || c == '\n' /*|| c == '\t'*/) c = ' ';
                     ctx.print(String(c));
                 }
-                ctx.print("|");
-                ctx.printf("%x\n", y);
+                ctx.println("|");
+                // ctx.printf("%x\n", y);
             }
         }
     }
@@ -36,7 +37,7 @@ bool CharTable::update(UIContext& ctx, char key) {
         if (start < 0) start++;
     } else if (key == KEY_DOWN) {
         start++;
-        if (ctx.maxCharsY() > 16 || start > 16-ctx.maxCharsY()+4) start--;
+        if (ctx.maxCharsY() > 16 || start >= 16-ctx.maxCharsY()+4) start--;
     } else {
         return false;
     }
@@ -104,9 +105,9 @@ void ColorWheel::render(UIContext& ctx, bool minimalized) {
         return;
     }
 
-    int16_t radius = std::min(ctx.height, ctx.width) / 2;
-    int16_t cx = ctx.width / 2;
-    int16_t cy = ctx.height / 2;
+    int16_t radius = std::min(ctx.height(), ctx.width()) / 2;
+    int16_t cx = ctx.width() / 2;
+    int16_t cy = ctx.height() / 2;
     ctx.reset();
 
     for (int16_t y = cy - radius; y <= cy + radius; y++) {

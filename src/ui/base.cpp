@@ -37,7 +37,16 @@ void UIApp::addModal(UIModal* modal) {
 void UIApp::render() {
     if (!ctx) return;
 
-    if (title) ctx->println(title);
+    ctx->display.drawRect(0, 0, ctx->width(), ctx->height(), ctx->theme.fg);
+    if (title) {
+        ctx->display.fillRect(0, 0, ctx->width(), ctx->charHeight()+1, ctx->theme.fg);
+        ctx->setCursor(-3, 1); // yep, -2
+        ctx->invertColors();
+        ctx->println(title);
+        ctx->resetColors();
+    }
+
+    ctx->setCursor(0, ctx->charHeight()+2);
     root->render(*ctx, false);
 
     if (last_size != modals.size()) {
@@ -46,8 +55,8 @@ void UIApp::render() {
     }
 
     if (hasModals()) {
-        for (int16_t y = 0; y < ctx->height; y++) {
-            for (int16_t x = 0; x < ctx->width; x++) {
+        for (int16_t y = 0; y < ctx->height(); y++) {
+            for (int16_t x = 0; x < ctx->width(); x++) {
                 if ((x + y) % 2) ctx->display.writePixel(x, y, settings.data.display_inv_alert ? ctx->theme.foreground : ctx->theme.background);
             }
         }

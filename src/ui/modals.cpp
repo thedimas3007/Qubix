@@ -10,8 +10,8 @@ void drawBoxed(UIContext& ctx, const String& text, int16_t& bx, int16_t& by, uin
     uint16_t box_w = bw + pad_x*2;
     uint16_t box_h = bh + pad_y*2 + 2;
 
-    bx = (ctx.width  - box_w) / 2;
-    by = (ctx.height - box_h) / 2;
+    bx = (ctx.width()  - box_w) / 2;
+    by = (ctx.height() - box_h) / 2;
 
     ctx.display.fillRect(bx+2, by+1, box_w-1, box_h, ctx.theme.fg);
     ctx.display.fillRect(bx, by-1, box_w-1, box_h, ctx.theme.bg);

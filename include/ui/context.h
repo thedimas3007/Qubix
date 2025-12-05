@@ -27,6 +27,8 @@ class UIContext {
     bool refresh_requested = false;
     bool refresh_full = false;
 
+    int16_t _x, _y, _width, _height;
+
 #if DISPLAY_MODE == DISPLAY_MODE_EINK
     uint8_t partial_updates = 0;
     const uint8_t partial_cap = 15; // each n-th is full; TODO: move into configuration.h or make config configurable
@@ -40,19 +42,23 @@ public:
 
     // TODO: migrate to getters
     DisplayType& display;
-    int16_t x, y, width, height;
 
     explicit UIContext(DisplayType& display)
-        : display(display), x(0), y(0), width(display.width()), height(display.height()) {}
+        : display(display), _x(0), _y(0), _width(display.width()), _height(display.height()) {}
+
+    [[nodiscard]] int16_t x() const                 { return _x; }
+    [[nodiscard]] int16_t y() const                 { return _y; }
+    [[nodiscard]] int16_t width() const             { return _width; }
+    [[nodiscard]] int16_t height() const            { return _height; }
 
     [[nodiscard]] int16_t charWidth() const         { return glyph_width * text_size + 0.5; }
     [[nodiscard]] int16_t charHeight() const        { return glyph_height * text_size + 0.5; }
     [[nodiscard]] float textSize() const            { return text_size; }
 
-    [[nodiscard]] uint8_t maxCharsX() const         { return width / charWidth(); }
-    [[nodiscard]] uint8_t maxCharsY() const         { return height / charHeight(); }
-    [[nodiscard]] uint8_t availableCharsX() const   { return (width - x) / charWidth(); }
-    [[nodiscard]] uint8_t availableCharsY() const   { return (height - y) / charHeight(); }
+    [[nodiscard]] uint8_t maxCharsX() const         { return (width()-4) / charWidth(); }
+    [[nodiscard]] uint8_t maxCharsY() const         { return (height()-4) / charHeight(); }
+    [[nodiscard]] uint8_t availableCharsX() const   { return (width() - x() - 2) / charWidth(); }
+    [[nodiscard]] uint8_t availableCharsY() const   { return (height() - y() - 2) / charHeight(); }
 
     [[nodiscard]] uint8_t availableSpaces(uint8_t chars) const;
 
