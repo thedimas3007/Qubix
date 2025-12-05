@@ -64,7 +64,7 @@ void updateNodes() {
     netman.queue(std::move(pkt), 0xFFFFFFFF);
 }
 
-UIApp root = UIApp::make().ctx(&ui_context).title("\xAD\x99\x9A               \x9D\xA1\xA3").root(
+UIApp root = UIApp::make().ctx(&ui_context).title("").root(
     MenuView::make().title("Radio").children({
         TabSelector::make().icon('\x8C').title("Broadcast").children({
             TextField::make().title(">").spacer(false).maxLength(MESSAGE_LENGTH-1).onSubmit([](char* buf) {
@@ -358,9 +358,11 @@ void setup() {
         String title = "";
         title += '\xAD';
         title += sig_bars;
-        for (int i = 0; i < ui_context.maxCharsX()-5; ++i) {
-            title += ' ';
-        }
+
+        uint8_t spaces = ui_context.maxCharsX()-10;
+        for (int i = 0; i < std::floor(spaces/2.0f); ++i) { title += ' '; }
+        title += "04:20";
+        for (int i = 0; i < std::ceil(spaces/2.0f); ++i) { title += ' '; }
         title += batt_bars;
 
         root.title = title;
