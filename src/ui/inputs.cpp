@@ -382,7 +382,7 @@ void ColorInput<T>::render(UIContext& ctx, bool /*minimalized*/) {
 
     ctx.print(prefix);
     for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
-    ctx.printf("#%06X", getColor().pack());
+    ctx.printf("#%06X\n", getColor().pack());
 }
 
 template <class T>
@@ -411,10 +411,12 @@ void ColorInput<T>::renderInline(UIContext& ctx) {
             ctx.printf("%02X", color.raw[i]);
         }
     };
+    ctx.println();
     ctx.resetColors();
 }
 
-template <class T> bool ColorInput<T>::update(UIContext& ctx, char key) {
+template <class T>
+bool ColorInput<T>::update(UIContext& ctx, char key) {
     uint8_t channel = cursor / 2;
     bool high = (cursor % 2 == 0);
 
@@ -455,6 +457,196 @@ template <class T> bool ColorInput<T>::update(UIContext& ctx, char key) {
     if (mode == ColorMode::COLOR_16) *ptr = color.as565();
     else if (mode == ColorMode::COLOR_24) *ptr = color.pack();
     else *ptr = 0;
+
+    return true;
+}
+
+/*******************/
+/**** TimeInput ****/
+/*******************/
+void TimeInput::render(UIContext& ctx, bool minimalized) {
+    inline_mode = false;
+    String prefix = getLabel(ctx.availableCharsX() - 8);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 8);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    ctx.printf("%02d:%02d:%02d\n", time.f.hour, time.f.minute, time.f.second);
+}
+
+void TimeInput::renderInline(UIContext& ctx) {
+    inline_mode = true;
+    String prefix = getLabel(ctx.availableCharsX() - 8);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 8);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    bool high = (cursor % 2 == 0);
+    for (uint8_t i = 0; i < 3; ++i) {
+        if (cursor/2 == i) {
+            if (high) ctx.invertColors();
+            ctx.printf("%01d", time.raw[i] / 10);
+
+            if (high)   ctx.resetColors();
+            else        ctx.invertColors();
+
+            ctx.printf("%01d", time.raw[i] % 10);
+            ctx.resetColors();
+        } else {
+            ctx.resetColors();
+            ctx.printf("%02d", time.raw[i]);
+        }
+        if (i < 2) ctx.print(':');
+    };
+    ctx.println();
+    ctx.resetColors();
+}
+
+bool TimeInput::update(UIContext& ctx, char key) {
+    uint8_t channel = cursor / 2;
+    bool high = (cursor % 2 == 0);
+
+    if (key == KEY_UP) {
+        time.raw[channel] += high ? 10 : 1;
+        time.raw[channel] = time.raw[channel] > Time::limits[channel] ? 0 : time.raw[channel];
+    } else if (key == KEY_FN_UP) {
+        time.raw[channel] = Time::limits[channel];
+    } else if (key == KEY_DOWN) {
+        time.raw[channel] -= high ? 10 : 1;
+        time.raw[channel] = time.raw[channel] > Time::limits[channel] ? Time::limits[channel] : time.raw[channel];
+    } else if (key == KEY_FN_DOWN) {
+        time.raw[channel] -= 0;
+    } else if (key == KEY_LEFT) {
+        cursor--;
+        if (cursor < 0) cursor = 5;
+    } else if (key == KEY_FN_LEFT) {
+        cursor = 0;
+    } else if (key == KEY_RIGHT) {
+        cursor++;
+        if (cursor > 5) cursor = 0;
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = 5;
+    } else if (isdigit(key)) {
+        uint8_t value = key - '0';
+        uint8_t new_value;
+
+        if (high)   new_value = value*10 + time.raw[channel]%10;
+        else        new_value = time.raw[channel]/10*10 + value;
+
+        time.raw[channel] = std::min(new_value, Time::limits[channel]);
+
+        cursor++;
+        cursor = cursor % 6;
+    } else if (key == KEY_ESC) {
+        callback(time);
+        return false;
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+void DateInput::render(UIContext& ctx, bool minimalized) {
+    inline_mode = false;
+    String prefix = getLabel(ctx.availableCharsX() - 10);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 10);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    ctx.printf("%02d.%02d.20%02d\n", date.f.day, date.f.month, date.f.year);
+}
+
+void DateInput::renderInline(UIContext& ctx) {
+    inline_mode = true;
+    String prefix = getLabel(ctx.availableCharsX() - 10);
+    uint8_t spaces = ctx.availableSpaces(prefix.length() + 10);
+    ctx.print(prefix);
+    for (uint8_t i = 0; i < spaces; ++i) ctx.print(' ');
+    bool high = (cursor % 2 == 0);
+    for (uint8_t i = 0; i < 3; ++i) {
+        if (i == 2) ctx.print("20");
+        if (cursor/2 == i) {
+            if (high) ctx.invertColors();
+            ctx.printf("%01d", date.raw[i] / 10);
+
+            if (high)   ctx.resetColors();
+            else        ctx.invertColors();
+
+            ctx.printf("%01d", date.raw[i] % 10);
+            ctx.resetColors();
+        } else {
+            ctx.resetColors();
+            ctx.printf("%02d", date.raw[i]);
+        }
+        if (i < 2) ctx.print('.');
+    };
+    ctx.println();
+    ctx.resetColors();
+}
+
+bool DateInput::update(UIContext& ctx, char key) {
+    uint8_t channel = cursor / 2;
+    bool high = (cursor % 2 == 0);
+
+    if (key == KEY_UP) {
+        date.raw[channel] += high ? 10 : 1;
+
+        if (date.f.year > 99) date.f.year = 0;
+        if (date.f.month > 12) date.f.month = 1;
+
+        uint8_t max_days = Date::mdays[date.f.month-1];
+        if (date.f.year % 4 == 0) max_days++;
+        if (date.f.day > max_days)
+            date.f.day = channel==0 ? 1 : max_days;
+    } else if (key == KEY_FN_UP) {
+        if (channel == 1) date.f.year = 99;
+        else if (channel == 2) date.f.month = 12;
+        else if (channel == 0) date.f.day = 31;
+
+        uint8_t max_days = Date::mdays[date.f.month-1];
+        if (date.f.year % 4 == 0 && date.f.month == 2) max_days++;
+        if (date.f.day > max_days) date.f.day = max_days;
+    } else if (key == KEY_DOWN) {
+        date.raw[channel] -= high ? 10 : 1;
+
+        if (date.f.year > 99) date.f.year = 99;
+        if (date.f.month > 12 || date.f.month < 1) date.f.month = 12;
+
+        uint8_t max_days = Date::mdays[date.f.month-1];
+        if (date.f.year % 4 == 0 && date.f.month == 2) max_days++;
+
+        if (date.f.day > max_days || date.f.day < 1) date.f.day = max_days;
+    } else if (key == KEY_FN_DOWN) {
+        date.raw[channel] = channel != 2 ? 1 : 0;
+    } else if (key == KEY_LEFT) {
+        cursor--;
+        if (cursor < 0) cursor = 5;
+    } else if (key == KEY_FN_LEFT) {
+        cursor = 0;
+    } else if (key == KEY_RIGHT) {
+        cursor++;
+        if (cursor > 5) cursor = 0;
+    } else if (key == KEY_FN_RIGHT) {
+        cursor = 5;
+    } else if (isdigit(key)) {
+        uint8_t value = key - '0';
+        uint8_t new_value;
+
+        if (high)   new_value = value*10 + date.raw[channel]%10;
+        else        new_value = date.raw[channel]/10*10 + value;
+
+        date.raw[channel] = std::min(new_value, Date::limits[channel]);
+
+        uint8_t max_days = Date::mdays[date.f.month-1];
+        if (date.f.year % 4 == 0 && date.f.month == 2) max_days++;
+        if (date.f.day > max_days || date.f.day < 1) date.f.day = max_days;
+
+        cursor++;
+        cursor = cursor % 6;
+    } else if (key == KEY_ESC) {
+        callback(date);
+        return false;
+    } else {
+        return false;
+    }
 
     return true;
 }

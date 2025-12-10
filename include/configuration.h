@@ -72,6 +72,19 @@
 #endif
 
 
+/***************/
+/**** Clock ****/
+/***************/
+#include <RTClib.h>
+#if   defined(FEATURE_RTC)
+// So far only DS3231 is supported
+inline RTC_DS3231 rtc;
+#elif defined(FEATURE_GPS)
+
+#elif defined(FEATURE_WIFI)
+
+#endif
+
 /******************/
 /**** Hardware ****/
 /******************/

@@ -278,3 +278,100 @@ public:
 };
 template class ColorInput<uint16_t>;
 template class ColorInput<uint32_t>;
+
+
+struct Time {
+    union {
+        struct { uint8_t hour; uint8_t minute; uint8_t second; } f;
+        uint8_t raw[3];
+    };
+
+    static constexpr uint8_t limits[3] = {23, 59, 59};
+};
+
+class TimeInput : public UIInline {
+    // I don't think i need to implement pointer logic here
+    Time time{};
+    bool inline_mode = false;
+    std::function<void(Time&)> callback;
+    int8_t cursor = 0;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        std::function<void(Time&)> callback = [](Time&) {};
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& callback(std::function<void(Time&)> f) { c_.callback = std::move(f); return *this; }
+
+        [[nodiscard]] TimeInput build() const { return TimeInput(c_); }
+        [[nodiscard]] TimeInput* buildPtr() const { return new TimeInput(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit TimeInput(const Config& cfg) : callback(cfg.callback) {
+        icon = cfg.icon;
+        title = cfg.title;
+    };
+
+    void render(UIContext& ctx, bool minimalized) override;
+    void renderInline(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
+    void updateTime(const Time& t) { if (!inline_mode) time = t; }
+};
+
+
+struct Date {
+    union {
+        struct { uint8_t day; uint8_t month; uint8_t year; } f;
+        uint8_t raw[3];
+    };
+
+    static constexpr uint8_t limits[3] = {31, 12, 99};
+    static constexpr uint8_t mdays[12] = {
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    };
+};
+
+class DateInput : public UIInline {
+    Date date{};
+    bool inline_mode = false;
+    std::function<void(Date&)> callback;
+    int8_t cursor = 0;
+public:
+    struct Config {
+        char icon = 0x00;
+        String title = "";
+        std::function<void(Date&)> callback = [](Date&) {};
+    };
+
+    class Builder {
+        Config c_;
+    public:
+        Builder& icon(char i) { c_.icon = i; return *this; }
+        Builder& title(const String& t) { c_.title = t; return *this; }
+        Builder& callback(std::function<void(Date&)> f) { c_.callback = std::move(f); return *this; }
+
+        [[nodiscard]] DateInput build() const { return DateInput(c_); }
+        [[nodiscard]] DateInput* buildPtr() const { return new DateInput(c_); }
+    };
+
+    static Builder make() { return Builder{}; }
+
+    explicit DateInput(const Config& cfg) : callback(cfg.callback) {
+        icon = cfg.icon;
+        title = cfg.title;
+    };
+
+    void render(UIContext& ctx, bool minimalized) override;
+    void renderInline(UIContext& ctx) override;
+    bool update(UIContext& ctx, char key) override;
+    void updateDate(const Date& t) { if (!inline_mode) date = t; }
+};

@@ -51,6 +51,15 @@ volatile bool enable_interrupt = true;
 
 auto message_menu = MenuView::make().fill(FillMode::TOP).buildPtr();
 auto nodes_menu = MenuView::make().title("Nodes").buildPtr();
+auto time_input = TimeInput::make().title("Time").callback([](auto time) {
+    DateTime now = rtc.now();
+    rtc.adjust({now.year(), now.month(), now.day(), time.f.hour, time.f.minute, time.f.second});
+}).buildPtr();
+auto date_input = DateInput::make().title("Date").callback([](auto date) {
+    DateTime now = rtc.now();
+    rtc.adjust({date.f.year, date.f.month, date.f.day, now.hour(), now.minute(), now.second()});
+}).buildPtr();
+
 
 void setFlag() {
     if (!enable_interrupt) return;
@@ -60,7 +69,6 @@ void setFlag() {
 void updateNodes() {
     nodes_menu->clearChildren();
     auto pkt = std::make_unique<Ping>();
-    // pkt->hwid(driver->boardId());
     netman.queue(std::move(pkt), 0xFFFFFFFF);
 }
 
@@ -132,6 +140,7 @@ UIApp root = UIApp::make().ctx(&ui_context).title("").root(
             }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
                 // TextField::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
+                time_input, date_input
             }).onExit([] {
                 settings.save();
             }).buildPtr(),
@@ -302,6 +311,8 @@ void setup() {
         while (true) {}
     }
 
+    rtc.begin(extI2C);
+
     netman.begin(&radio, &enable_interrupt, &received_flag);
 
     ui_context.println("OK");
@@ -361,14 +372,21 @@ void setup() {
 
         uint8_t spaces = ui_context.maxCharsX()-10;
         for (int i = 0; i < std::floor(spaces/2.0f); ++i) { title += ' '; }
-        title += "04:20";
+        DateTime now = rtc.now();
+        title += stringf("%02d:%02d", now.hour(), now.minute()); // TODO: 12/24 hour clock
         for (int i = 0; i < std::ceil(spaces/2.0f); ++i) { title += ' '; }
         title += batt_bars;
 
         root.title = title;
     }, 100); // 10 Hz
 
-    delay(1000);
+    scheduler.schedule([]() {
+        DateTime now = rtc.now();
+        time_input->updateTime({now.hour(), now.minute(), now.second()});
+        date_input->updateDate({now.day(), now.month(), static_cast<uint8_t>(now.year()-2000U)});
+    }, 1000);
+
+    delay(500);
 
     ui_context.refresh(true);
 }
