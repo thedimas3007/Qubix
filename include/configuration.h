@@ -83,6 +83,9 @@ inline RTC_DS3231 rtc;
 
 #elif defined(FEATURE_WIFI)
 
+#else
+#include "hw_impl/clock.h"
+inline InternalRTC rtc;
 #endif
 
 /******************/

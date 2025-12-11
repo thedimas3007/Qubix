@@ -311,7 +311,19 @@ void setup() {
         while (true) {}
     }
 
+
+#if   defined(FEATURE_RTC)
+    // So far only DS3231 is supported
     rtc.begin(extI2C);
+#elif defined(FEATURE_GPS)
+
+#elif defined(FEATURE_WIFI)
+
+#else
+    rtc.begin();
+    scheduler.schedule([]() { rtc.update(); }, 250);
+#endif
+
 
     netman.begin(&radio, &enable_interrupt, &received_flag);
 
