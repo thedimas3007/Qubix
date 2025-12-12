@@ -2,7 +2,7 @@
 #include "RTClib.h"
 
 class InternalRTC {
-    bool _syncronized = false;
+    bool _synchronized = false;
     uint32_t _last_tick = 0;
     DateTime _date_time;
 public:
@@ -10,5 +10,5 @@ public:
     void adjust(const DateTime& date_time) ;
     DateTime now();
     void update();
-    bool synchronized() const { return _syncronized; };
+    bool synchronized() const { return _synchronized; };
 };

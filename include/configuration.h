@@ -79,9 +79,12 @@
 #if   defined(FEATURE_RTC)
 // So far only DS3231 is supported
 inline RTC_DS3231 rtc;
+
 #elif defined(FEATURE_GPS)
+#error "Not implemented"
 
 #elif defined(FEATURE_WIFI)
+#error "Not implemented"
 
 #else
 #include "hw_impl/clock.h"

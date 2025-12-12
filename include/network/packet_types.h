@@ -6,6 +6,7 @@
 class [[deprecated("Use Ping instead")]] HelloPacket : public Packet {
 protected:
     size_t localSize() override { return 0; }
+
 public:
     const static uint8_t PACKET_TYPE = 0x01;
 
@@ -22,6 +23,7 @@ public:
 class Ping : public Packet {
 protected:
     size_t localSize() override { return 0; }
+
 public:
     const static uint8_t PACKET_TYPE = 0x02;
     Ping() = default;
@@ -78,6 +80,7 @@ public:
 
 class NodeFound : public Packet {
     float _rssi_avg = -140, _snr_avg = -140;
+
 protected:
     size_t localSize() override { return sizeof(float)*2; }
 
@@ -95,6 +98,41 @@ public:
     void snrAvg(float v)    { _snr_avg = v; }
 
     void appendInfo(float r, float s);
+
+    void serialize(WriteBuffer& buffer) override;
+    void deserialize(ReadBuffer& buffer) override;
+};
+
+class TimeSync : public Packet {
+protected:
+    size_t localSize() override { return 0; }
+
+public:
+    const static uint8_t PACKET_TYPE = 0x06;
+    TimeSync() = default;
+    ~TimeSync() override = default;
+
+    uint8_t type() override { return PACKET_TYPE; }
+
+    void serialize(WriteBuffer& buffer) override;
+    void deserialize(ReadBuffer& buffer) override;
+};
+
+class TimeResponse : public Packet {
+    uint32_t _timestamp = 0;
+
+protected:
+    size_t localSize() override { return sizeof(uint32_t); }
+
+public:
+    const static uint8_t PACKET_TYPE = 0x07;
+    TimeResponse() = default;
+    ~TimeResponse() override = default;
+
+    uint8_t type() override { return PACKET_TYPE; }
+
+    uint32_t timestamp() const  { return _timestamp; }
+    void timestamp(uint32_t v)  { _timestamp = v; }
 
     void serialize(WriteBuffer& buffer) override;
     void deserialize(ReadBuffer& buffer) override;

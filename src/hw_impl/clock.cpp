@@ -7,7 +7,7 @@ bool InternalRTC::begin() {
 }
 
 void InternalRTC::adjust(const DateTime& date_time) {
-    _syncronized = true;
+    _synchronized = true;
     _date_time = date_time;
     _last_tick = millis();
 }

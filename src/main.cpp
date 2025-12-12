@@ -43,6 +43,7 @@ std::vector<String> bands = {"B1@LP","B2@GP","B3@GP","B4@LP","B5@HP","B6@SP","B7
 std::vector<float> bandwidths_float = {62.5, 125.0, 250.0, 500.0 };
 std::vector<String> bandwidths = {"62.5kHz", "125.0kHz", "250.0kHz", "500.0kHz" };
 
+std::vector<uint32_t> timestamps{};
 
 uint32_t last_update;
 uint32_t netman_update;
@@ -140,7 +141,23 @@ UIApp root = UIApp::make().ctx(&ui_context).title("").root(
             }).buildPtr(),
             MenuView::make().icon('\x91').title("Device").children({
                 // TextField::make().title("Name").pointer(settings.data.device_name).maxLength(15).buildPtr(),
-                time_input, date_input
+                time_input, date_input,
+                Button::make().title("Sync time").onClick([] {
+                    auto pkt = std::make_unique<TimeSync>();
+                    netman.request<TimeResponse>(std::move(pkt), [](auto& manager, auto& packet) {
+                        timestamps.push_back(packet.timestamp());
+                    }, [](bool success) {
+                        if (!success || timestamps.empty()) return;
+
+                        uint64_t sum = 0;
+                        for (uint32_t t : timestamps) {
+                            sum += t;
+                        }
+                        uint64_t avg = sum / timestamps.size();
+                        rtc.adjust(DateTime(avg));
+                        timestamps.clear();
+                    }, 0xFFFFFFFF, 5000);
+                }).buildPtr()
             }).onExit([] {
                 settings.save();
             }).buildPtr(),
@@ -397,6 +414,35 @@ void setup() {
         time_input->updateTime({now.hour(), now.minute(), now.second()});
         date_input->updateDate({now.day(), now.month(), static_cast<uint8_t>(now.year()-2000U)});
     }, 1000);
+
+
+    // TODO: RTC as a part of netman
+    netman.reg<TimeSync>([](auto& manager, auto& packet) {
+#if   defined(FEATURE_RTC)
+
+#elif defined(FEATURE_GPS)
+        return;
+#elif defined(FEATURE_WIFI)
+        return;
+#else
+        if (!rtc.synchronized()) return;
+#endif
+
+        auto pkt = std::make_unique<TimeResponse>();
+        DateTime now = rtc.now();
+        pkt->timestamp(now.unixtime());
+
+        auto path = packet.path();
+        if (path.back() == 0xFFFFFFFF) {
+            path.pop_back();
+            path.push_back(driver->boardId());
+        }
+        std::reverse(path.begin(), path.end());
+        pkt->path(path);
+
+        // TODO: queueResponse with old path
+        manager.queueDirect(std::move(pkt));
+    });
 
     delay(500);
 

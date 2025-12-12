@@ -17,7 +17,9 @@ inline String packet_names[] = {
     "Ping",         // 0x02
     "Pong",         // 0x03
     "NodeLocate",   // 0x04
-    "NodeFound"     // 0x05
+    "NodeFound",    // 0x05
+    "TimeSync",     // 0x06
+    "TimeResponse"  // 0x07
 };
 
 class Packet : public Serializable {

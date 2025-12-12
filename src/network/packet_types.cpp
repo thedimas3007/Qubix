@@ -45,6 +45,18 @@ void NodeFound::deserialize(ReadBuffer& buffer) {
     snrAvg(buffer.f32());
 }
 
+
+void TimeSync::serialize(WriteBuffer& buffer) {}
+void TimeSync::deserialize(ReadBuffer& buffer) {}
+
+
+void TimeResponse::serialize(WriteBuffer& buffer) {
+    buffer.u32(timestamp());
+}
+void TimeResponse::deserialize(ReadBuffer& buffer) {
+    timestamp(buffer.u32());
+}
+
 // TODO: find a way to make it look not that ugly
 namespace {
     const bool _registered = [](){
@@ -53,6 +65,8 @@ namespace {
         Packet::registerType(Pong::PACKET_TYPE, [](){ return std::make_unique<Pong>(); });
         Packet::registerType(NodeLocate::PACKET_TYPE, [](){ return std::make_unique<NodeLocate>(); });
         Packet::registerType(NodeFound::PACKET_TYPE, [](){ return std::make_unique<NodeFound>(); });
+        Packet::registerType(TimeSync::PACKET_TYPE, [](){ return std::make_unique<TimeSync>(); });
+        Packet::registerType(TimeResponse::PACKET_TYPE, [](){ return std::make_unique<TimeResponse>(); });
         return true;
     }();
 }
