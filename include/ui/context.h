@@ -27,7 +27,7 @@ class UIContext {
     bool refresh_requested = false;
     bool refresh_full = false;
 
-    int16_t _x, _y, _width, _height;
+    int16_t _x, _y, _width, _height, _padding_right;
 
 #if DISPLAY_MODE == DISPLAY_MODE_EINK
     uint8_t partial_updates = 0;
@@ -55,9 +55,9 @@ public:
     [[nodiscard]] int16_t charHeight() const        { return glyph_height * text_size + 0.5; }
     [[nodiscard]] float textSize() const            { return text_size; }
 
-    [[nodiscard]] uint8_t maxCharsX() const         { return (width()-4) / charWidth(); }
-    [[nodiscard]] uint8_t maxCharsY() const         { return (height()-4) / charHeight(); }
-    [[nodiscard]] uint8_t availableCharsX() const   { return (width() - x() - 2) / charWidth(); }
+    [[nodiscard]] uint8_t maxCharsX() const         { return (width() - 4 - _padding_right) / charWidth(); }
+    [[nodiscard]] uint8_t maxCharsY() const         { return (height() - 4) / charHeight(); }
+    [[nodiscard]] uint8_t availableCharsX() const   { return (width() - x() - 2 - _padding_right) / charWidth(); }
     [[nodiscard]] uint8_t availableCharsY() const   { return (height() - y() - 2) / charHeight(); }
 
     [[nodiscard]] uint8_t availableSpaces(uint8_t chars) const;
@@ -82,6 +82,9 @@ public:
     void setTextColor(uint32_t c);
     void invertColors();
     void resetColors();
+
+    void setPaddingRight(int16_t px) { _padding_right = px; } // Workaround for "scroller" on the right
+    // TODO: ^ real padding logic
 
     void print(const String& text, bool colorized = false);
     void print(const char text, bool colorized = false)                 { print(String(text), colorized); }

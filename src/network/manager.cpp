@@ -195,6 +195,7 @@ void NetManager::received() {
         uint16_t base_jitter = ((hwid >> 8) & 0xFF) * 3;
         uint32_t jitter_delay = 0;
 
+        // some smart ass jitter calculations to lower the chance of collisions
         if (packet_type == NodeLocate::PACKET_TYPE) {
             jitter_delay = random(200, 600) + base_jitter + (hops * 50);
         } else if (packet_type == NodeFound::PACKET_TYPE) {

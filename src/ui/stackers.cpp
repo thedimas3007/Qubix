@@ -23,9 +23,20 @@ void MenuView::render(UIContext& ctx, bool minimalized) {
             // TODO: maybe trim here as well
             ctx.println(getLabel());
         } else {
+            int16_t x = ctx.width() - (ctx.x()+5),
+                y = ctx.y(),
+                h_max = ctx.height() - ctx.y() - 2;
+            float px_line = h_max * 1.0f / n;
+
             if (title.length()) ctx.println(title);
 
             window_size = ctx.availableCharsY();
+
+            int16_t height = std::ceil(std::min<float>(window_size, n) / n * h_max);
+            ctx.setPaddingRight(4);
+            ctx.display.fillRect(x+1, y, 1, h_max, ctx.theme.fg);
+            ctx.display.fillRect(x, y+px_line*slice_at, 3, height, ctx.theme.fg);
+
             const int16_t last = std::min<int16_t>(slice_at + window_size, n);
 
             if (fill_mode == FillMode::TOP && n < window_size) {
@@ -40,6 +51,7 @@ void MenuView::render(UIContext& ctx, bool minimalized) {
             if (fill_mode == FillMode::BOTTOM && n < window_size) {
                 for (uint16_t i = 0; i < window_size-n; i++) ctx.println();
             }
+            ctx.setPaddingRight(0);
         }
     } else {
         if (selected->getType() == ElementType::INLINE) {
